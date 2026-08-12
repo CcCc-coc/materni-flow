@@ -1,0 +1,32 @@
+# Model is left unset on purpose: setting it here hardcodes the model for
+# everyone and can't be changed from within the app/CLI afterward. Leaving
+# it commented out lets each student pick their own model there instead.
+#
+# Uncomment the line below to default to gpt-5.6-luna, the lightweight/
+# high-concurrency tier of the gpt-5.6 family (vs. gpt-5.6-sol, the top-
+# capability tier). It's cheaper on tokens, so it's a good pick while
+# learning if you want your usage to last longer. Must be the full name
+# "gpt-5.6-luna", not just "luna". Loads only once this project is marked
+# trusted; start a new Codex task after changing it, since a running task
+# keeps the model it started with.
+# model = "gpt-5.6-luna"
+
+# "on-request" + "workspace-write": ask before anything outside the sandbox,
+# auto-allow file writes within the project.
+approval_policy = "on-request"
+sandbox_mode = "workspace-write"
+
+# ---- Permissions (beta) ----
+default_permissions = "project"
+
+[permissions.project]
+description = "Workspace-writable — write access across the whole project"
+
+[permissions.project.filesystem.":workspace_roots"]
+"." = "write"
+
+[permissions.project.network]
+enabled = true
+domains = { "raw.githubusercontent.com" = "allow" }
+
+# Command allow-rules live in .codex/rules/default.rules

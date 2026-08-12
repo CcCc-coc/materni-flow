@@ -1,0 +1,24 @@
+# See claude code environment variables documents at https://code.claude.com/docs/en/settings
+[env]
+
+[tools]
+claude = "latest"
+python = "3.12"
+uv = "latest"
+
+# === Tasks
+[tasks.venv-create]
+description = "✨ Create Python virtual environment (.venv)"
+run = "uv venv"
+
+[tasks.venv-remove]
+description = "💥 Remove Python virtual environment folder (.venv)"
+run = "rm -r .venv"
+
+[tasks.inst]
+description = "💾 Install Python dependencies (dev, test, doc, etc.) via uv"
+run = "uv sync --all-extras"
+
+[tasks.lesson-smith-sync]
+description = "🔄 Snapshot README/TICKET into docs/tasks/ and rebuild SYLLABUS via lesson-smith sync"
+run = "uvx --from shsk-lesson-smith==0.2.1 lesson-smith sync -p ."

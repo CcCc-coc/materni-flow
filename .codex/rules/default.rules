@@ -1,0 +1,20 @@
+# Ported from Claude Code .claude/settings.json permissions.allow Bash(...) rules.
+#
+# prefix_rule() matches command token prefixes; the docs show no
+# suffix/glob construct for trailing path patterns like "**/*.py", so the
+# four separate Bash(.venv/bin/python debug|scripts|config|tests/**/*.py)
+# rules are broadened here to any invocation of the venv's python. This is
+# wider than the source rules — narrow it back down once Codex documents a
+# path-glob-aware command rule construct.
+
+prefix_rule(
+    pattern = [{"token": ".venv/bin/python"}],
+    decision = "allow",
+    justification = "Run project virtualenv Python scripts (ported from Bash(.venv/bin/python debug|scripts|config|tests/**/*.py))",
+)
+
+prefix_rule(
+    pattern = [{"token": "mise"}],
+    decision = "allow",
+    justification = "Allow mise task runner (ported from Bash(mise *))",
+)
