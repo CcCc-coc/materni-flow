@@ -1,9 +1,5 @@
 {
-    "model": "haiku",
     "permissions": {
-        "defaultMode": "auto",
-        "deny": [
-        ],
         "allow": [
             "Read(========== Read Section ==========)",
             "Read(========== Write Section ==========)",
@@ -35,6 +31,12 @@
             "WebSearch",
             "Read(========== Web Fetch ==========)",
             "WebFetch(domain:raw.githubusercontent.com)"
-        ]
+        ],
+        "deny": [],
+        "defaultMode": "auto"
+    },
+    "model": "haiku",
+    "enabledPlugins": {
+        "frontend-design@claude-plugins-official": true
     }
 }

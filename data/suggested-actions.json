@@ -1,0 +1,62 @@
+[
+  {
+    "title": "Introduction",
+    "label": "What can you do?",
+    "action": "Please introduce yourself and describe all your capabilities. What queries can you run? What insights can you provide?"
+  },
+  {
+    "title": "Portfolio Overview",
+    "label": "Current loan status",
+    "action": "What's the current portfolio status? How many loans do we have by status (current, paid off, defaulted)?"
+  },
+  {
+    "title": "Risk Pricing",
+    "label": "Is pricing aligned with risk?",
+    "action": "Compare the implied default rate vs actual default rate for each risk grade. Are any grades mispriced?"
+  },
+  {
+    "title": "Concentration Risk",
+    "label": "Industry exposure",
+    "action": "Which industries have the highest concentration in our portfolio? Show outstanding balance and percentage of total."
+  },
+  {
+    "title": "Approval Leakage",
+    "label": "False rejections",
+    "action": "Are there any rejected applications where the customer profile looks better than our average approved borrower?"
+  },
+  {
+    "title": "Early Warning",
+    "label": "Payment patterns before default",
+    "action": "For loans that defaulted, what payment patterns did they show in the 90 days before default?"
+  },
+  {
+    "title": "Customer Value",
+    "label": "Repeat vs first-time",
+    "action": "How do repeat customers compare to first-time borrowers in terms of default rate and loan amounts?"
+  },
+  {
+    "title": "High-Risk Loans",
+    "label": "Top risk exposures",
+    "action": "Show me the top 10 highest-risk outstanding loans based on outstanding balance and risk grade."
+  },
+  {
+    "title": "Late Payments",
+    "label": "Recent delinquencies",
+    "action": "Which loans have had late payments in the last 30 days? Show loan number, business name, and days late."
+  },
+  {
+    "title": "Officer Performance",
+    "label": "Loan officer scorecard",
+    "action": "Show me loan officer performance: applications processed, approval rates, and default rates by officer."
+  },
+  {
+    "title": "Monthly Trends",
+    "label": "Application volume",
+    "action": "What are the monthly application volume trends over the past 12 months?"
+  },
+  {
+    "title": "Recovery Rates",
+    "label": "Default recoveries",
+    "action": "What are the recovery rates on defaulted loans by risk grade? How much was recovered vs lost?"
+  }
+]

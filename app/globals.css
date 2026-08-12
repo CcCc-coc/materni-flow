@@ -1,0 +1,265 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Font Variables - Professional Finance */
+  --font-figtree: "Figtree", sans-serif;
+  --font-noto-sans: "Noto Sans", sans-serif;
+  --font-inter: "Inter", sans-serif;
+
+  /* Bluevine-Inspired Fintech Color System */
+  --background: #FFFFFF;
+  --foreground: #0A1628;
+  --surface: #F8FAFC;
+
+  /* Navy Blue Brand */
+  --navy: #0A1628;
+  --navy-light: #1E3A5F;
+
+  /* Card */
+  --card: 0 0% 100%;
+  --card-foreground: 220 39% 11%;
+
+  /* Popover */
+  --popover: 0 0% 100%;
+  --popover-foreground: 220 39% 11%;
+
+  /* Primary (Navy) */
+  --primary: 220 39% 11%;
+  --primary-foreground: 0 0% 100%;
+
+  /* Secondary (Light Blue-Gray) */
+  --secondary: 214 32% 91%;
+  --secondary-foreground: 220 39% 11%;
+
+  /* Muted */
+  --muted: 210 40% 96%;
+  --muted-foreground: 215 16% 47%;
+
+  /* Accent (Gold/Amber) */
+  --accent: 38 92% 50%;
+  --accent-foreground: 220 39% 11%;
+
+  /* Destructive (Risk Red) */
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 0 0% 100%;
+
+  /* Border & Input */
+  --border: 214 32% 91%;
+  --input: 214 32% 91%;
+  --ring: 221 83% 53%;
+
+  /* Chart Colors - Financial Dashboard */
+  --chart-1: 221 83% 53%;   /* Blue */
+  --chart-2: 142 76% 36%;   /* Success Green */
+  --chart-3: 38 92% 50%;    /* Gold */
+  --chart-4: 0 84% 60%;     /* Risk Red */
+  --chart-5: 262 83% 58%;   /* Purple */
+
+  /* Radius */
+  --radius: 12px;
+
+  /* Sidebar */
+  --sidebar-background: 220 39% 11%;
+  --sidebar-foreground: 0 0% 100%;
+  --sidebar-primary: 38 92% 50%;
+  --sidebar-primary-foreground: 220 39% 11%;
+  --sidebar-accent: 220 30% 20%;
+  --sidebar-accent-foreground: 0 0% 100%;
+  --sidebar-border: 220 30% 20%;
+  --sidebar-ring: 38 92% 50%;
+}
+
+.dark {
+  /* Dark Mode - Navy Finance */
+  --background: #0A1628;
+  --foreground: #F1F5F9;
+  --surface: #0F1D32;
+
+  /* Card */
+  --card: 220 39% 11%;
+  --card-foreground: 210 40% 98%;
+
+  /* Popover */
+  --popover: 220 39% 11%;
+  --popover-foreground: 210 40% 98%;
+
+  /* Primary (Light Blue) */
+  --primary: 217 91% 60%;
+  --primary-foreground: 220 39% 11%;
+
+  /* Secondary */
+  --secondary: 220 30% 20%;
+  --secondary-foreground: 210 40% 98%;
+
+  /* Muted */
+  --muted: 220 30% 20%;
+  --muted-foreground: 215 20% 65%;
+
+  /* Accent (Gold) */
+  --accent: 38 92% 50%;
+  --accent-foreground: 220 39% 11%;
+
+  /* Destructive */
+  --destructive: 0 63% 50%;
+  --destructive-foreground: 0 0% 100%;
+
+  /* Border & Input */
+  --border: 220 30% 25%;
+  --input: 220 30% 20%;
+  --ring: 217 91% 60%;
+
+  /* Sidebar */
+  --sidebar-background: 220 39% 8%;
+  --sidebar-foreground: 210 40% 98%;
+  --sidebar-primary: 38 92% 50%;
+  --sidebar-primary-foreground: 220 39% 11%;
+  --sidebar-accent: 220 30% 15%;
+  --sidebar-accent-foreground: 210 40% 98%;
+  --sidebar-border: 220 30% 20%;
+  --sidebar-ring: 38 92% 50%;
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    font-family: var(--font-noto-sans), var(--font-inter), sans-serif;
+    background-color: var(--background);
+    color: var(--foreground);
+    @apply antialiased;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-figtree), var(--font-inter), sans-serif;
+    @apply font-semibold tracking-tight;
+  }
+}
+
+@layer components {
+  /* Finance Card - Clean white with subtle shadow */
+  .finance-card {
+    @apply bg-white dark:bg-slate-900 rounded-xl p-6;
+    @apply border border-slate-200 dark:border-slate-700;
+    @apply shadow-sm hover:shadow-md transition-shadow duration-200;
+    @apply cursor-pointer;
+  }
+
+  /* Finance Button - Navy Primary */
+  .finance-button {
+    @apply bg-[#0A1628] text-white;
+    @apply rounded-lg px-6 py-3 font-semibold;
+    @apply hover:bg-[#1E3A5F] transition-colors duration-200 cursor-pointer;
+  }
+
+  /* Finance Button - Gold Accent */
+  .finance-button-accent {
+    @apply bg-amber-500 text-[#0A1628];
+    @apply rounded-lg px-6 py-3 font-semibold;
+    @apply hover:bg-amber-400 transition-colors duration-200 cursor-pointer;
+  }
+
+  /* Finance Navbar - Navy */
+  .finance-nav {
+    @apply bg-[#0A1628] text-white;
+    @apply border-b border-[#1E3A5F];
+  }
+
+  /* Glass Card (for chat) */
+  .glass-card {
+    @apply bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm;
+    @apply border border-slate-200 dark:border-slate-700 rounded-xl;
+  }
+
+  /* KPI Card - For metrics display */
+  .kpi-card {
+    @apply bg-white dark:bg-slate-900 rounded-xl p-5;
+    @apply border border-slate-200 dark:border-slate-700;
+    @apply shadow-sm;
+  }
+
+  /* Feature Card - Bluevine style */
+  .feature-card {
+    @apply bg-white rounded-xl p-6;
+    @apply border border-slate-200;
+    @apply hover:border-slate-300 transition-colors duration-200;
+  }
+
+  /* Status indicators */
+  .status-success {
+    @apply text-emerald-600 dark:text-emerald-400;
+  }
+
+  .status-warning {
+    @apply text-amber-600 dark:text-amber-400;
+  }
+
+  .status-danger {
+    @apply text-red-600 dark:text-red-400;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  /* Accent underline - Gold */
+  .accent-underline {
+    @apply relative inline-block;
+  }
+
+  .accent-underline::after {
+    content: '';
+    @apply absolute bottom-0 left-0 w-full h-1 bg-amber-500 -z-10 rounded;
+  }
+
+  /* Navy gradient text */
+  .text-gradient-navy {
+    @apply bg-gradient-to-r from-[#0A1628] to-[#1E3A5F] bg-clip-text text-transparent;
+  }
+
+  /* Blue gradient text */
+  .text-gradient-blue {
+    @apply bg-gradient-to-r from-blue-600 to-blue-400 bg-clip-text text-transparent;
+  }
+}
+
+/* Custom scrollbar - Navy style */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #F1F5F9;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #0A1628;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #1E3A5F;
+}
+
+/* Dark mode scrollbar */
+.dark ::-webkit-scrollbar-track {
+  background: #0A1628;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: #3B82F6;
+  border-radius: 4px;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #60A5FA;
+}
