@@ -297,8 +297,21 @@ them in sequence the first time, then individually as needed.
 | 05 | `test_05_connect_remote_database.py` | Smoke-test the NeonDB Postgres connection (`SELECT 1`) |
 | 06 | `test_06_sync_data_to_remote_db.py` | Drop, recreate, and repopulate the remote DB from local SQLite |
 | 07 | `test_07_verify_remote_data.py` | Confirm the remote DB really matches local, table by table (exit 1 on mismatch) |
+| 11 | `test_11_ai_aws_bedrock.py` | Raw Bedrock `converse` call — proves AWS credentials work |
+| 12 | `test_12_ai_aws_bedrock_with_cached_prompt.py` | Bedrock prompt caching demo (not a connectivity check) |
+| 13 | `test_13_ai_anthropic_claude.py` | Raw Anthropic `messages.create` — proves `ANTHROPIC_API_KEY` works |
+| 14 | `test_14_ai_openai.py` | Raw OpenAI `chat.completions.create` — proves `OPENAI_API_KEY` works |
+| 15 | `test_15_ai_google_gemini.py` | Raw Gemini `generate_content` — proves `GOOGLE_API_KEY` works |
 
 Steps 01-04 are local only. Steps 05-07 need the `DB_*` variables set (see `.env.example`).
+
+Scripts 11-15 hit each supported LLM provider through that vendor's **lowest-level
+SDK call** — no `strands`, no agent, no project config. They exist so a student can
+see the raw API shape and confirm a key or IAM permission is actually valid before
+debugging anything higher up. 11 and 12 are the two Bedrock scripts (basic call, then
+prompt caching); 13-15 are one per API-key provider and each needs its extra installed
+(`uv sync --extra anthropic|openai|gemini`). Bedrock needs no extra, since boto3 is a
+core dependency.
 
 **When adding a script:** give it the next number for its stage, or insert it at the
 right position and renumber the ones after it — keep the sequence meaningful rather
