@@ -3,31 +3,45 @@
 """
 Sync local SQLite database to remote PostgreSQL (NeonDB).
 
-This script is idempotent - each run will:
-1. DROP all tables in remote database
-2. CREATE tables with the same schema
-3. INSERT all data from local database
+Remote tables are namespaced with the project prefix from ``PROJECT_NAME``, so
+this project can share one NeonDB instance with others without colliding:
+local ``loan`` becomes remote ``smbll_loan``, and its foreign keys are rewritten
+to match.
+
+This script is DESTRUCTIVE and idempotent - each run will:
+1. DROP this project's prefixed tables in reverse dependency order
+2. CREATE them again with prefixed names and prefixed FK references
+3. INSERT all data from local, in dependency order, in batches
+
+Tables belonging to other projects are never touched.
 
 Usage:
-    .venv/bin/python scripts/test_sync_data_to_remote_db.py
+    .venv/bin/python scripts/test_06_sync_data_to_remote_db.py
+
+Verify the result afterwards with:
+    .venv/bin/python scripts/test_07_verify_remote_data.py
 """
 
+from learn_smb_lending_lens.api import one
 from learn_smb_lending_lens.tests.db_sync import reset_remote_database
 
 
 def main():
     """Run the sync operation."""
-    print("=" * 60)
+    print("=" * 68)
     print("Syncing local SQLite to remote PostgreSQL (NeonDB)")
-    print("=" * 60)
+    print(f"Project prefix: {one.config.project_name_snake}_")
+    print("=" * 68)
 
     result = reset_remote_database(verbose=True)
 
-    print("=" * 60)
+    print("=" * 68)
     print("Summary:")
     for table_name, row_count in result["tables"].items():
-        print(f"  {table_name}: {row_count} rows")
-    print("=" * 60)
+        print(f"  {table_name}: {row_count:,} rows")
+    print(f"  total: {sum(result['tables'].values()):,} rows")
+    print("=" * 68)
+    print("Now verify with: .venv/bin/python scripts/test_07_verify_remote_data.py")
 
 
 if __name__ == "__main__":

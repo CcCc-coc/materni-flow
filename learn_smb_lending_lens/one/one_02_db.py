@@ -55,9 +55,26 @@ class DbMixin:
 
     @cached_property
     def database_schema_str(self: "One") -> str:
-        """Get the database schema encoded in LLM-optimized compact format."""
+        """
+        Get the database schema encoded in LLM-optimized compact format.
+
+        Local SQLite holds only this project's tables, so everything is reflected.
+        The remote PostgreSQL instance is shared with other projects, so only
+        tables carrying this project's prefix are reflected — otherwise the
+        agent's schema tool would describe, and happily write queries against,
+        tables this project does not own.
+        """
         metadata = sa.MetaData()
-        metadata.reflect(bind=self.engine)
+        if runtime.is_local():
+            metadata.reflect(bind=self.engine)
+            db_type = DbTypeEnum.SQLITE
+        else:
+            table_prefix = f"{self.config.project_name_snake}_"
+            metadata.reflect(
+                bind=self.engine,
+                only=lambda table_name, _meta: table_name.startswith(table_prefix),
+            )
+            db_type = DbTypeEnum.POSTGRESQL
         schema_info = new_schema_info(
             engine=self.engine,
             metadata=metadata,
@@ -65,7 +82,7 @@ class DbMixin:
         )
         database_info = new_database_info(
             name="fintech_smb_lending_pipeline_medium_data",
-            db_type=DbTypeEnum.SQLITE,
+            db_type=db_type,
             schemas=[
                 schema_info,
             ],

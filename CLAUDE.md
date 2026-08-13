@@ -172,6 +172,9 @@ exactly one LLM backend is active per process, and only *that* provider's creden
 is required.
 
 ```bash
+# Prefixed onto every remote table name so several projects can share one NeonDB
+PROJECT_NAME=smbll
+
 # bedrock (default) | anthropic | openai | google
 LLM_PROVIDER=bedrock
 AWS_REGION=us-east-1
@@ -244,6 +247,25 @@ tests_python/
 ---
 
 ## Database
+
+**Two databases, two naming schemes:**
+
+| | Local | Remote |
+|---|---|---|
+| Engine | SQLite `tmp/data.sqlite` | PostgreSQL (NeonDB) |
+| Table names | `loan`, `customer`, … | `smbll_loan`, `smbll_customer`, … |
+| Used by | local dev + tests | Vercel deployment |
+
+The remote instance is **shared with other projects**, so every table this project
+owns is prefixed with `config.project_name_snake` (from `PROJECT_NAME`). Foreign
+keys are rewritten to match, and the sync script only ever touches prefixed
+tables — other projects' tables are never dropped. `database_schema_str` likewise
+reflects only prefixed tables when running remotely, so the agent never sees
+another project's schema.
+
+`TABLE_INSERT_ORDER` in `learn_smb_lending_lens/tests/db_sync.py` is the single
+source of truth for dependency order: inserts walk it forwards, drops walk it
+backwards. Add a new table there, in the right position, or the sync breaks.
 
 **Schema Reference:**
 - `data/database-exploration/database-schema.txt` - Database schema (read only when needed)

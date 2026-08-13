@@ -86,22 +86,28 @@ selected provider's credential is missing.
 """
 
 import os
+import re
 import dataclasses
 
 from ..runtime import runtime
 from ..constants import LlmProviderEnum, DEFAULT_MODEL_ID
 
 
-def get_env(name: str) -> str | None:
+def get_env(name: str) -> str | None: # pragma: no cover
     """
-    Read an environment variable, treating placeholders as "not set".
+    Read an environment variable, treating placeholder values as "not set".
 
-    ``.env.example`` ships dotted placeholders like ``AWS_ACCESS_KEY_ID="..."``.
-    When a copied ``.env`` still holds those, we must NOT feed them to the SDKs:
-    a placeholder AWS key silently shadows ``~/.aws/credentials`` (boto3 reads
-    env vars first) and Bedrock then fails with a confusing
-    ``UnrecognizedClientException``. Returning None instead lets each SDK fall
-    back to its own default credential chain.
+    Why this is not just ``os.environ.get(name)``: ``load_dotenv()`` parses the
+    file and strips quotes, but it has no notion of a value being a *placeholder*.
+    A ``.env`` copied from ``.env.example`` with ``AWS_ACCESS_KEY_ID="..."`` left
+    uncommented gives you a variable that is set, non-empty, and useless — and
+    boto3 reads env vars before ``~/.aws/credentials``, so that placeholder
+    silently shadows a working local profile and Bedrock fails with
+    ``UnrecognizedClientException: The security token ... is invalid``. Mapping
+    it to None instead lets each SDK fall back to its own credential chain.
+
+    The same applies to Vercel, where a variable created but left blank in the
+    dashboard arrives as an empty string rather than being absent.
 
     Returns:
         The stripped value, or None if unset, empty, or a dots-only placeholder.
@@ -109,7 +115,7 @@ def get_env(name: str) -> str | None:
     value = os.environ.get(name)
     if value is None:
         return None
-    value = value.strip().strip('"').strip("'").strip()
+    value = value.strip()
     if not value:
         return None
     if set(value) == {"."}:  # "...", "." and friends are placeholders
@@ -117,9 +123,15 @@ def get_env(name: str) -> str | None:
     return value
 
 
-def get_env_int(name: str) -> int | None:
+def get_env_int(name: str) -> int | None: # pragma: no cover
     """
     Read an environment variable as an int, treating placeholders as "not set".
+
+    Env vars are always strings, so something has to do the conversion. Doing it
+    here rather than with a bare ``int(os.environ[...])`` at the call site means a
+    blank or malformed ``DB_PORT`` yields None — which the caller already handles
+    as "not configured" — instead of a ValueError raised at import time, before
+    any of the readable error messages in :meth:`Config.validate` can run.
 
     Returns:
         The parsed integer, or None if unset or not a valid integer.
@@ -132,6 +144,10 @@ def get_env_int(name: str) -> int | None:
     except ValueError:
         return None
 
+
+#: Fallback project name when ``PROJECT_NAME`` is not set. Short on purpose: it is
+#: prefixed onto every remote table name, and PostgreSQL identifiers cap at 63 chars.
+DEFAULT_PROJECT_NAME = "smbll"
 
 #: Environment variable holding the credential for each API-key based provider.
 #: Bedrock is absent on purpose: it authenticates with AWS credentials, not a key.
@@ -152,6 +168,8 @@ class Config:
     ``config`` singleton for normal application code.
 
     Attributes:
+        project_name: Short identifier for this project, used to namespace shared
+            infrastructure. See :attr:`project_name_snake`.
         llm_provider: Which LLM backend to talk to. One of :class:`LlmProviderEnum`.
             Defaults to ``bedrock``.
         model_id: Model identifier for the selected provider. When None, the
@@ -172,6 +190,8 @@ class Config:
         db_name: PostgreSQL database name.
     """
 
+    # --- Project identity ---
+    project_name: str = dataclasses.field(default=DEFAULT_PROJECT_NAME)
     # --- LLM ---
     llm_provider: str = dataclasses.field(default=LlmProviderEnum.BEDROCK.value)
     model_id: str | None = dataclasses.field(default=None)
@@ -206,6 +226,44 @@ class Config:
             )
         if self.model_id is None:
             self.model_id = DEFAULT_MODEL_ID[self.llm_provider]
+
+    @property
+    def project_name_snake(self) -> str:
+        """
+        The project name as a snake_case identifier, e.g. ``smb_lending_lens``.
+
+        Use this wherever the name has to be a valid SQL / Python identifier —
+        most importantly as the prefix on remote database table names, which is
+        how several projects share one NeonDB instance without colliding.
+
+        Any run of characters that is not a letter or digit collapses to a single
+        underscore, so ``"SMB Lending-Lens"`` and ``"smb_lending_lens"`` normalize
+        to the same value.
+        """
+        return re.sub(r"[^a-z0-9]+", "_", self.project_name.strip().lower()).strip("_")
+
+    @property
+    def project_name_slug(self) -> str:
+        """
+        The project name as a hyphenated slug, e.g. ``smb-lending-lens``.
+
+        Same normalization as :attr:`project_name_snake`, but with hyphens — the
+        form wanted by things that live in a URL or a hostname (deployment names,
+        S3 buckets, DNS labels), where underscores are awkward or illegal.
+        """
+        return re.sub(r"[^a-z0-9]+", "-", self.project_name.strip().lower()).strip("-")
+
+    def prefix_table_name(self, table_name: str) -> str:
+        """
+        Namespace a table name for the shared remote database.
+
+        Args:
+            table_name: The local, unprefixed table name, e.g. ``"loan"``.
+
+        Returns:
+            The remote table name, e.g. ``"smbll_loan"``.
+        """
+        return f"{self.project_name_snake}_{table_name}"
 
     @property
     def llm_api_key(self) -> str | None:
@@ -262,6 +320,7 @@ class Config:
         load_dotenv()
 
         return cls(
+            project_name=get_env("PROJECT_NAME") or DEFAULT_PROJECT_NAME,
             llm_provider=get_env("LLM_PROVIDER") or LlmProviderEnum.BEDROCK.value,
             model_id=get_env("LLM_MODEL_ID"),
             aws_region=get_env("AWS_REGION") or "us-east-1",
@@ -284,6 +343,7 @@ class Config:
         variables. The database is always the remote Postgres instance here.
         """
         return cls(
+            project_name=get_env("PROJECT_NAME") or DEFAULT_PROJECT_NAME,
             llm_provider=get_env("LLM_PROVIDER") or LlmProviderEnum.BEDROCK.value,
             model_id=get_env("LLM_MODEL_ID"),
             aws_region=get_env("AWS_REGION") or "us-east-1",
