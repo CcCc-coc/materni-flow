@@ -33,9 +33,20 @@ dependencies = [
 # "bedrock" (the default) needs nothing extra: boto3 is already a core dependency.
 # Install only the one you use, e.g. `uv sync --extra anthropic`.
 # Note `mise run inst-python-deps` runs `uv sync --all-extras`, which installs all of them.
-anthropic = ["strands-agents[anthropic]>=1.50.2,<2.0.0"] # LLM_PROVIDER=anthropic
-openai = ["strands-agents[openai]>=1.50.2,<2.0.0"]       # LLM_PROVIDER=openai
-gemini = ["strands-agents[gemini]>=1.50.2,<2.0.0"]       # LLM_PROVIDER=google
+anthropic = [
+    "strands-agents[anthropic]>=1.50.2,<2.0.0",         # LLM_PROVIDER=anthropic
+    "anthropic>=0.121.0,<1.0.0",
+] # LLM_PROVIDER=anthropic
+openai = [
+    "strands-agents[openai]>=1.50.2,<2.0.0",             # LLM_PROVIDER=openai
+    # >=2.0.0 is required by strands' OpenAIResponsesModel, which we use so that
+    # function tools work with the reasoning models (see one_04_agent.py).
+    "openai>=2.0.0,<3.0.0",
+]
+gemini = [
+    "strands-agents[gemini]>=1.50.2,<2.0.0",
+    "google-genai>=2.17.0,<3.0.0",
+]       # LLM_PROVIDER=google
 
 # (Unit/Coverage/Integration/Load) Test dependenceies
 test = [

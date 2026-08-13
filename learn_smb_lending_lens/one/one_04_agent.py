@@ -97,7 +97,20 @@ class AgentMixin:
             )
 
         if provider == LlmProviderEnum.OPENAI.value:
-            openai_model_class = load_strands_model_class("OpenAIModel", provider)
+            # OpenAIResponsesModel targets /v1/responses, NOT /v1/chat/completions.
+            # This matters: the reasoning models (gpt-5.x) refuse to combine
+            # function tools with reasoning on the chat-completions endpoint --
+            #     "Function tools with reasoning_effort are not supported for
+            #      <model> in /v1/chat/completions. To use function tools, use
+            #      /v1/responses or set reasoning_effort to 'none'."
+            # This agent is nothing but tools, so the endpoint is the fix.
+            # Setting reasoning_effort='none' would work too, but only for the
+            # reasoning models -- the older ones reject the argument outright.
+            # Responses is also OpenAI's current primary API, so this keeps
+            # working across model generations.
+            openai_model_class = load_strands_model_class(
+                "OpenAIResponsesModel", provider
+            )
             return openai_model_class(
                 client_args={"api_key": self.config.openai_api_key},
                 model_id=self.config.model_id,
@@ -126,10 +139,6 @@ class AgentMixin:
                 self.tool_execute_sql_query,
                 self.tool_write_debug_report,
                 # Write operation tools
-                # self.tool_assign_bed,
-                # self.tool_update_prediction,
-                # self.tool_create_alert,
-                # self.tool_create_order,
             ],
         )
 
@@ -188,7 +197,6 @@ class AgentMixin:
         """
         return self.execute_and_print_result(sql=sql)
 
-
     @tool(
         name="write_debug_report",
     )
@@ -220,182 +228,3 @@ class AgentMixin:
             path_enum.dir_tmp.mkdir(parents=True, exist_ok=True)
             path_enum.path_debug_report_md.write_text(content, encoding="utf-8")
         return f"Debug report written to: {path_enum.path_debug_report_md}"
-
-    # =========================================================================
-    # Write Operation Tools
-    # =========================================================================
-
-    @tool(name="assign_bed")
-    def tool_assign_bed(
-        self,
-        admission_id: str,
-        bed_id: str,
-    ) -> str:
-        """
-        Assign or transfer a patient to a bed.
-
-        Use this tool when:
-        - A new patient needs to be assigned to an available bed
-        - A patient needs to be transferred to a different bed
-        - Nurse says things like "assign patient X to bed Y" or "move patient to room Z"
-
-        The tool will:
-        1. Release the patient's old bed (if any)
-        2. Mark the new bed as occupied
-        3. Update the admission record with the new bed
-
-        Args:
-            admission_id: The UUID of the admission record (patient's current stay).
-            bed_id: The UUID of the target bed to assign.
-
-        Returns:
-            JSON string with success status and message, or error details.
-
-        Example user requests that trigger this tool:
-        - "Assign the new patient to bed 101-A"
-        - "Transfer patient Wang to triage area"
-        - "Move the patient in room 203 to delivery room 1"
-        """
-        try:
-            result = write_operations.assign_bed(
-                engine=self.engine,
-                admission_id=admission_id,
-                bed_id=bed_id,
-            )
-            return json.dumps(result)
-        except ValueError as e:
-            return json.dumps({"success": False, "error": str(e)})
-
-    @tool(name="update_prediction")
-    def tool_update_prediction(
-        self,
-        admission_id: str,
-        predicted_los_hours: int,
-        predicted_discharge_time: str,
-    ) -> str:
-        """
-        Update the length-of-stay (LOS) prediction for a patient.
-
-        Use this tool when:
-        - Updating discharge time estimates after clinical assessment
-        - Adjusting LOS prediction based on patient progress
-        - Nurse asks "when can patient X be discharged?" and you provide an estimate
-
-        Args:
-            admission_id: The UUID of the admission record.
-            predicted_los_hours: Predicted length of stay in hours (must be 6-336, i.e., 6 hours to 14 days).
-            predicted_discharge_time: Predicted discharge datetime in ISO format (e.g., "2024-01-15T10:00:00").
-
-        Returns:
-            JSON string with success status and message, or error details.
-
-        Example user requests that trigger this tool:
-        - "Patient Chen just had a C-section, estimate discharge in 3 days"
-        - "Update the discharge prediction for room 205 to Friday morning"
-        - "The patient is recovering well, she can go home in 48 hours"
-        """
-        try:
-            discharge_dt = datetime.fromisoformat(predicted_discharge_time)
-            result = write_operations.update_prediction(
-                engine=self.engine,
-                admission_id=admission_id,
-                predicted_los_hours=predicted_los_hours,
-                predicted_discharge_time=discharge_dt,
-            )
-            return json.dumps(result)
-        except ValueError as e:
-            return json.dumps({"success": False, "error": str(e)})
-
-    @tool(name="create_alert")
-    def tool_create_alert(
-        self,
-        admission_id: str,
-        alert_type: str,
-        severity: str,
-        message: str,
-    ) -> str:
-        """
-        Create a high-risk alert for a patient.
-
-        Use this tool when:
-        - Detecting abnormal vital signs or trends
-        - Identifying high-risk conditions that need attention
-        - Nurse asks about patients who need special monitoring
-
-        Args:
-            admission_id: The UUID of the admission record.
-            alert_type: Type of alert. Must be one of: "high_bp", "abnormal_fhr", "fever", "preterm_risk".
-            severity: Severity level. Must be one of: "warning", "critical".
-            message: Descriptive message explaining the alert (e.g., "BP rising trend: 130 -> 138 -> 145").
-
-        Returns:
-            JSON string with success status, message, and alert_id, or error details.
-
-        Example user requests that trigger this tool:
-        - "Patient Liu's blood pressure is trending up, create an alert"
-        - "Flag patient Zhou as high-risk for preterm delivery"
-        - "The fetal heart rate is abnormal, we need to monitor closely"
-        """
-        try:
-            result = write_operations.create_alert(
-                engine=self.engine,
-                admission_id=admission_id,
-                alert_type=alert_type,
-                severity=severity,
-                message=message,
-            )
-            return json.dumps(result)
-        except ValueError as e:
-            return json.dumps({"success": False, "error": str(e)})
-
-    @tool(name="create_order")
-    def tool_create_order(
-        self,
-        admission_id: str,
-        order_type: str,
-        scheduled_time: str,
-        assigned_provider_id: str,
-        priority: str = "routine",
-        assigned_room_id: T.Optional[str] = None,
-        notes: str = "",
-    ) -> str:
-        """
-        Create a medical order (surgery, procedure, lab test, etc.).
-
-        Use this tool when:
-        - Scheduling a C-section or other surgery
-        - Ordering lab tests or procedures
-        - Nurse says "schedule X for patient Y"
-
-        Args:
-            admission_id: The UUID of the admission record.
-            order_type: Type of order. Must be one of: "c_section", "induction", "epidural", "lab_test", "medication", "consult".
-            scheduled_time: Scheduled datetime in ISO format (e.g., "2024-01-15T09:00:00").
-            assigned_provider_id: The UUID of the provider who will execute the order.
-            priority: Priority level. Must be one of: "routine", "urgent", "emergency". Default: "routine".
-            assigned_room_id: The UUID of the room (optional, but required for surgeries like c_section).
-            notes: Additional notes (optional).
-
-        Returns:
-            JSON string with success status, message, and order_id, or error details.
-
-        Example user requests that trigger this tool:
-        - "Schedule a C-section for patient Wang tomorrow at 9am"
-        - "Order an epidural for the patient in room 203"
-        - "Schedule a lab test for patient Chen"
-        """
-        try:
-            scheduled_dt = datetime.fromisoformat(scheduled_time)
-            result = write_operations.create_order(
-                engine=self.engine,
-                admission_id=admission_id,
-                order_type=order_type,
-                scheduled_time=scheduled_dt,
-                assigned_provider_id=assigned_provider_id,
-                priority=priority,
-                assigned_room_id=assigned_room_id,
-                notes=notes,
-            )
-            return json.dumps(result)
-        except ValueError as e:
-            return json.dumps({"success": False, "error": str(e)})

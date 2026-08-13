@@ -87,5 +87,14 @@ Give me a portfolio health summary:
 
 # Change this to test different requests (request_01 to request_10)
 request = request_01
+# request = request_02
+# request = request_03
+# request = request_04
+# request = request_05
+# request = request_06
+# request = request_07
+# request = request_08
+# request = request_09
+# request = request_10
 
 one.agent(request)
