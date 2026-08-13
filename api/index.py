@@ -22,14 +22,14 @@ from fastapi import FastAPI, Request, Query
 from fastapi.responses import JSONResponse, StreamingResponse
 from vercel_ai_sdk_mate.api import RequestBody  # Parses AI SDK request format
 
-from learn_smb_lending_lens.utils import debug
-from learn_smb_lending_lens.ai_sdk_adapter import debug_ai_sdk_request
-from learn_smb_lending_lens.ai_sdk_adapter import ai_sdk_message_with_reasoning_generator
-from learn_smb_lending_lens.ai_sdk_adapter import get_last_user_message_text
-from learn_smb_lending_lens.ai_sdk_adapter import request_body_to_agent_history
-from learn_smb_lending_lens.one.api import one  # Main singleton with agent
-from learn_smb_lending_lens.agent_debugger import extract_text_from_messages
-from learn_smb_lending_lens.agent_debugger import parse_response_text
+from agent_app.utils import debug
+from agent_app.ai_sdk_adapter import debug_ai_sdk_request
+from agent_app.ai_sdk_adapter import ai_sdk_message_with_reasoning_generator
+from agent_app.ai_sdk_adapter import get_last_user_message_text
+from agent_app.ai_sdk_adapter import request_body_to_agent_history
+from agent_app.one.api import one  # Main singleton with agent
+from agent_app.agent_debugger import extract_text_from_messages
+from agent_app.agent_debugger import parse_response_text
 # fmt: on
 
 # Add project root to sys.path for module imports
@@ -65,11 +65,9 @@ async def handle_chat_data(request: Request, protocol: str = Query("data")):
     Vercel AI SDK v5 Data Stream Protocol.
 
     The agent has access to database tools for:
-    - Querying database schema and data
-    - Assigning beds to patients
-    - Creating medical orders
-    - Creating alerts
-    - Updating predictions
+    - Querying the database schema
+    - Running read-only SQL queries against the business database
+    - Writing a debug report of its own reasoning
 
     Args:
         request: The incoming HTTP request containing chat messages
