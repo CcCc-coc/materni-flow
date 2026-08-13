@@ -8,13 +8,16 @@ Converse API, making it easier to manage multi-turn conversations with AI models
 
 Key features:
 - Manages conversation history automatically
-- Converts raw API responses to typed dataclasses (via boto3_dataclass library)
 - Provides convenient methods for sending text messages
 
+Everything the Converse API sends and returns is a plain dict, and this module
+keeps it that way. It deliberately depends on no typed-wrapper or type-stub
+package: those add a third-party dependency on top of boto3 just for editor
+autocompletion, and when one lags behind a boto3 release it breaks the install
+for everyone. The type aliases below name the dict shapes so the signatures stay
+readable without that cost.
+
 Dependencies:
-- boto3_dataclass: https://github.com/MacHu-GWU/boto3_dataclass-project
-  Converts boto3 dictionary responses into typed dataclass objects,
-  enabling IDE autocompletion and type checking.
 - func_args: Utility for handling optional parameters in function calls.
 """
 
@@ -26,21 +29,17 @@ from func_args.api import (
     OPT,
     remove_optional,
 )  # OPT marks optional fields, remove_optional strips them
-import boto3_dataclass_bedrock_runtime  # Typed dataclass wrappers for Bedrock responses
 
 from rich import print as rprint  # Pretty printing for debugging
 
 from .utils import debug
 
-if T.TYPE_CHECKING:  # pragma: no cover
-    from mypy_boto3_bedrock_runtime import Client
-    from mypy_boto3_bedrock_runtime.type_defs import (
-        SystemContentBlockTypeDef,  # Type for system prompt blocks
-        MessageUnionTypeDef,  # Type for user/assistant message blocks
-    )
-    from boto3_dataclass_bedrock_runtime.type_defs import (
-        ConverseResponse,  # Typed response from converse() API
-    )
+#: Shapes exchanged with the Bedrock Converse API. They are all plain dicts;
+#: these aliases exist purely to make the signatures below self-documenting.
+#: See https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/bedrock-runtime/client/converse.html
+SystemContentBlock = dict[str, T.Any]  # e.g. {"text": "You are a helpful assistant."}
+Message = dict[str, T.Any]  # e.g. {"role": "user", "content": [{"text": "Hi"}]}
+ConverseResponse = dict[str, T.Any]  # the raw converse() return value
 
 
 @dataclasses.dataclass
@@ -50,7 +49,6 @@ class ChatSession:
 
     This class wraps the Bedrock Converse API to provide:
     - Automatic conversation history management
-    - Typed responses via boto3_dataclass
     - Simple interface for sending messages
 
     Attributes:
@@ -65,20 +63,21 @@ class ChatSession:
         ...     system=[{"text": "You are a helpful assistant."}],
         ... )
         >>> response = session.send_text_message("Hello!")
-        >>> print(response.output.message.content[0].text)
+        >>> print(response["output"]["message"]["content"][0]["text"])
     """
 
-    # Required: boto3 Bedrock Runtime client
-    client: "Client" = dataclasses.field()
+    # Required: boto3 Bedrock Runtime client. Annotated loosely because boto3
+    # builds its service clients at runtime, so there is no importable class.
+    client: T.Any = dataclasses.field()
     # Required: Model ID to use for inference
     model_id: str = dataclasses.field()
     # Optional: System prompt defining AI behavior and context
-    system: T.Sequence["SystemContentBlockTypeDef"] = dataclasses.field(default=OPT)
+    system: T.Sequence[SystemContentBlock] = dataclasses.field(default=OPT)
 
     # Internal: Unique session identifier (can be overwritten for session continuity)
     _session_id: str = dataclasses.field(init=False)
     # Internal: Accumulated conversation history (user + assistant messages)
-    _messages: list["MessageUnionTypeDef"] = dataclasses.field(init=False)
+    _messages: list[Message] = dataclasses.field(init=False)
 
     def __post_init__(self):
         """Initialize internal state after dataclass construction."""
@@ -87,8 +86,8 @@ class ChatSession:
 
     def send_message(
         self,
-        messages: T.Sequence["MessageUnionTypeDef"],
-    ) -> "ConverseResponse":
+        messages: T.Sequence[Message],
+    ) -> ConverseResponse:
         """
         Send message(s) to the AI and get a response.
 
@@ -96,15 +95,16 @@ class ChatSession:
         1. Appends new messages to conversation history
         2. Calls the Bedrock Converse API with full history
         3. Appends the AI's response to history for future turns
-        4. Returns a typed response object
+        4. Returns the raw response dict
 
         Args:
             messages: List of message blocks to send. Each message should have
                       'role' ('user' or 'assistant') and 'content' fields.
 
         Returns:
-            ConverseResponse: Typed response with output text, usage stats, etc.
-                             Access the response text via: response.output.message.content[0].text
+            ConverseResponse: Raw response dict with output text, usage stats, etc.
+                Access the response text via:
+                ``response["output"]["message"]["content"][0]["text"]``
         """
         print("===== Send message")
 
@@ -123,26 +123,23 @@ class ChatSession:
         print("----- Converse kwargs:")
         rprint(kwargs)
 
-        # Call Bedrock Converse API
+        # Call Bedrock Converse API. The return value is a plain dict.
         response = self.client.converse(**kwargs)
-
-        # Convert raw dict response to typed dataclass for better IDE support
-        response = boto3_dataclass_bedrock_runtime.caster.converse(response)
 
         # Debug: Print response (excluding metadata noise)
         print("----- Converse response:")
-        del response.boto3_raw_data["ResponseMetadata"]
-        rprint(response.boto3_raw_data)
+        response.pop("ResponseMetadata", None)
+        rprint(response)
 
         # Append AI's response to history for multi-turn context
-        self._messages.append(response.output.message.boto3_raw_data)
+        self._messages.append(response["output"]["message"])
 
         return response
 
     def send_text_message(
         self,
         message: str,
-    ) -> "ConverseResponse":
+    ) -> ConverseResponse:
         """
         Convenience method to send a simple text message.
 
@@ -168,14 +165,14 @@ class ChatSession:
             ],
         )
 
-    def debug_response(self, response: "ConverseResponse") -> str:
+    def debug_response(self, response: ConverseResponse) -> str:
         """
         Log response for debugging.
         """
         debug("------ Chat response")
-        output_text = response.output.message.content[0].text
+        output_text = response["output"]["message"]["content"][0]["text"]
         debug(output_text)
         debug("------ Token Usage")
-        debug(str(response.usage))
+        debug(str(response["usage"]))
         sys.stderr.flush()
         return output_text

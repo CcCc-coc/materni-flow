@@ -93,45 +93,37 @@ from ..runtime import runtime
 from ..constants import LlmProviderEnum, DEFAULT_MODEL_ID
 
 
-def get_env(name: str) -> str | None: # pragma: no cover
+#: The placeholder ``.env.example`` uses for values the reader has to fill in.
+PLACEHOLDER = "..."
+
+
+def get_env(name: str) -> str | None:  # pragma: no cover
     """
-    Read an environment variable, treating placeholder values as "not set".
+    Read an environment variable, treating the ``"..."`` placeholder as unset.
 
-    Why this is not just ``os.environ.get(name)``: ``load_dotenv()`` parses the
-    file and strips quotes, but it has no notion of a value being a *placeholder*.
-    A ``.env`` copied from ``.env.example`` with ``AWS_ACCESS_KEY_ID="..."`` left
-    uncommented gives you a variable that is set, non-empty, and useless — and
-    boto3 reads env vars before ``~/.aws/credentials``, so that placeholder
-    silently shadows a working local profile and Bedrock fails with
-    ``UnrecognizedClientException: The security token ... is invalid``. Mapping
-    it to None instead lets each SDK fall back to its own credential chain.
-
-    The same applies to Vercel, where a variable created but left blank in the
-    dashboard arrives as an empty string rather than being absent.
+    ``load_dotenv()`` has no notion of a placeholder: a ``.env`` copied from
+    ``.env.example`` with ``AWS_ACCESS_KEY_ID="..."`` left uncommented gives you
+    a variable that is set, non-empty, and useless. boto3 reads env vars before
+    ``~/.aws/credentials``, so that placeholder shadows a working local profile
+    and Bedrock fails with ``UnrecognizedClientException``. Returning None lets
+    each SDK fall back to its own credential chain.
 
     Returns:
-        The stripped value, or None if unset, empty, or a dots-only placeholder.
+        The value, or None if unset or still the placeholder.
     """
     value = os.environ.get(name)
-    if value is None:
-        return None
-    value = value.strip()
-    if not value:
-        return None
-    if set(value) == {"."}:  # "...", "." and friends are placeholders
+    if value == PLACEHOLDER:
         return None
     return value
 
 
-def get_env_int(name: str) -> int | None: # pragma: no cover
+def get_env_int(name: str) -> int | None:  # pragma: no cover
     """
-    Read an environment variable as an int, treating placeholders as "not set".
+    Read an environment variable as an int, or None if unset / not a number.
 
     Env vars are always strings, so something has to do the conversion. Doing it
-    here rather than with a bare ``int(os.environ[...])`` at the call site means a
-    blank or malformed ``DB_PORT`` yields None — which the caller already handles
-    as "not configured" — instead of a ValueError raised at import time, before
-    any of the readable error messages in :meth:`Config.validate` can run.
+    here means a blank or malformed ``DB_PORT`` yields None, which callers
+    already treat as "not configured", instead of a ValueError at import time.
 
     Returns:
         The parsed integer, or None if unset or not a valid integer.

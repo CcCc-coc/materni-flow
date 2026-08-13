@@ -9,7 +9,6 @@ import boto3
 
 if T.TYPE_CHECKING:  # pragma: no cover
     from .one_00_main import One
-    from mypy_boto3_bedrock_runtime.client import BedrockRuntimeClient
 
 
 class Boto3Mixin:
@@ -24,6 +23,12 @@ class Boto3Mixin:
             aws_secret_access_key=self.config.aws_secret_access_key,
         )
 
-    def bedrock_runtime_client(self: "One") -> "BedrockRuntimeClient":
-        """Get the Bedrock Runtime client for invoking models."""
+    def bedrock_runtime_client(self: "One") -> T.Any:
+        """
+        Get the Bedrock Runtime client for invoking models.
+
+        The return type is loose on purpose: boto3 builds its service clients at
+        runtime, so annotating it precisely would mean depending on a
+        third-party stubs package just for editor autocompletion.
+        """
         return self.boto_ses.client("bedrock-runtime")
