@@ -12,4 +12,7 @@ Copies (overwriting) data.sqlite.example -> tmp/data.sqlite.
 from learn_smb_lending_lens.tests.db_helper import setup_sqlite_db
 
 if __name__ == "__main__":
-    setup_sqlite_db()
+    setup_sqlite_db(
+        overwrite=True,
+        # overwrite=False,
+    )
