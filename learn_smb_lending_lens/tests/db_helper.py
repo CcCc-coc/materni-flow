@@ -1,71 +1,81 @@
 # -*- coding: utf-8 -*-
 
 """
-Database helper functions for testing.
+Database helper functions for local development and testing.
 
-Provides utilities to download and reset the SQLite database for tests.
+Sync mechanism
+--------------
+
+The local SQLite database is seeded from a pristine copy that **is** committed
+to Git::
+
+    data.sqlite.example   (repo root, tracked by Git, never modified)
+            |
+            |  copy + overwrite
+            v
+    tmp/data.sqlite       (gitignored, the working copy)
+
+``tmp/data.sqlite`` is what the app and the tests actually read and write, so it
+drifts as soon as any write tool runs. Re-running :func:`setup_sqlite_db` throws
+that drift away and restores a known-good state.
+
+This replaces the old mechanism, which downloaded the database from a GitHub
+Release over the network. Seeding from a tracked file means no network access is
+needed and every checkout starts from the exact same data.
 """
 
-import urllib.request
+import shutil
 from pathlib import Path
 
 from ..paths import path_enum
 
 
-SQLITE_URL = "https://github.com/easyscale-academy/public-dataset/releases/download/data/fintech_smb_lending_pipeline_medium.sqlite"
-
-
-def download_sqlite_db(
-    url: str = SQLITE_URL,
+def setup_sqlite_db(
+    src: Path = path_enum.path_sqlite_db_example,
     dest: Path = path_enum.path_sqlite_db,
-    force: bool = False,
+    overwrite: bool = True,
 ) -> Path:
     """
-    Download SQLite database file.
+    Seed the working SQLite database from the committed example file.
 
     Args:
-        url: URL to download from
-        dest: Destination path for the file
-        force: If True, always download and overwrite existing file
+        src: Pristine seed file tracked by Git (``data.sqlite.example``).
+        dest: Working copy used by the app and tests (``tmp/data.sqlite``).
+        overwrite: If True (default), always replace an existing working copy.
+            If False, keep the existing file and do nothing.
 
     Returns:
-        Path to the downloaded file
+        Path to the working copy.
+
+    Raises:
+        FileNotFoundError: If the seed file is missing.
     """
-    if dest.exists() and not force:
-        print(f"File already exists: {dest}")
+    if src.exists() is False:
+        raise FileNotFoundError(
+            f"Seed database not found: {src}\n"
+            f"This file is tracked by Git — try 'git checkout {src.name}'."
+        )
+
+    if dest.exists() and overwrite is False:
+        print(f"Database already exists, keeping it: {dest}")
         return dest
 
-    # Remove existing file if force download
-    if dest.exists():
-        dest.unlink()
-
-    # Ensure parent directory exists
     dest.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copyfile(src, dest)
 
-    print(f"Downloading {url}")
-    print(f"To: {dest}")
-
-    urllib.request.urlretrieve(url, dest)
-
-    print(f"Download complete! File size: {dest.stat().st_size:,} bytes")
+    print(f"Copied {src.name} -> {dest.name}")
+    print(f"Database ready at: {dest} ({dest.stat().st_size:,} bytes)")
     return dest
 
 
 def reset_test_database() -> Path:
     """
-    Reset the test database by deleting and re-downloading.
+    Reset the working database back to the pristine seed.
 
-    This ensures a clean database state before each test run.
+    Use this to discard any mutation made by write operations, so tests start
+    from a clean, known state.
 
     Returns:
-        Path to the fresh database file
+        Path to the freshly seeded working copy.
     """
-    dest = path_enum.path_sqlite_db
-
-    # Delete existing file
-    if dest.exists():
-        dest.unlink()
-        print(f"Deleted existing database: {dest}")
-
-    # Download fresh copy
-    return download_sqlite_db(force=True)
+    return setup_sqlite_db(overwrite=True)

@@ -27,6 +27,14 @@ dependencies = [
 
 [project.optional-dependencies]
 
+# LLM provider SDKs, one extra per non-default LLM_PROVIDER value.
+# "bedrock" (the default) needs nothing extra: boto3 is already a core dependency.
+# Install only the one you use, e.g. `uv sync --extra anthropic`.
+# Note `mise run inst-python-deps` runs `uv sync --all-extras`, which installs all of them.
+anthropic = ["strands-agents[anthropic]>=1.26.0,<2.0.0"] # LLM_PROVIDER=anthropic
+openai = ["strands-agents[openai]>=1.26.0,<2.0.0"]       # LLM_PROVIDER=openai
+gemini = ["strands-agents[gemini]>=1.26.0,<2.0.0"]       # LLM_PROVIDER=google
+
 # (Unit/Coverage/Integration/Load) Test dependenceies
 test = [
     "pytest>=8.2.2,<9.0.0", # Testing framework

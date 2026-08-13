@@ -44,6 +44,18 @@ class PathEnum:
         return self.path_bi_agent_system_prompt_md.read_text(encoding="utf-8")
 
     dir_tmp = dir_project_root / "tmp"
+
+    # Written by the agent's ``write_debug_report`` tool.
+    path_debug_report_md = dir_tmp / "debug_report.md"
+
+    # Local SQLite database, synced by ``learn_smb_lending_lens.tests.db_helper``.
+    #
+    #   data.sqlite.example  (repo root, committed to Git, pristine seed)
+    #       --copy/overwrite-->
+    #   tmp/data.sqlite      (gitignored via the `tmp` rule, the working copy)
+    #
+    # Never commit the working copy: tests and write tools mutate it.
+    path_sqlite_db_example = dir_project_root / "data.sqlite.example"
     path_sqlite_db = dir_tmp / "data.sqlite"
 
 

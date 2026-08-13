@@ -12,6 +12,33 @@ from pydantic import BaseModel, Field
 TAB = " " * 2
 
 
+# [startllmproviderenum]
+class LlmProviderEnum(BetterStrEnum):
+    """
+    Supported LLM backends for the BI agent.
+
+    Selected at runtime by the ``LLM_PROVIDER`` environment variable. Exactly one
+    provider is active per process; each one needs its own credential (see
+    ``.env.example``).
+    """
+
+    BEDROCK = "bedrock"  # AWS Bedrock, authenticated with AWS credentials
+    ANTHROPIC = "anthropic"  # Claude API, needs ANTHROPIC_API_KEY
+    OPENAI = "openai"  # OpenAI API, needs OPENAI_API_KEY
+    GOOGLE = "google"  # Gemini API, needs GOOGLE_API_KEY
+
+
+#: Model used when ``LLM_MODEL_ID`` is not set. One default per provider, since
+#: model ID formats are provider specific and not interchangeable.
+DEFAULT_MODEL_ID = {
+    LlmProviderEnum.BEDROCK.value: "us.amazon.nova-micro-v1:0",
+    LlmProviderEnum.ANTHROPIC.value: "claude-sonnet-5",
+    LlmProviderEnum.OPENAI.value: "gpt-4o",
+    LlmProviderEnum.GOOGLE.value: "gemini-2.5-flash",
+}
+# [endllmproviderenum]
+
+
 class LLMColumnConstraintEnum(BetterStrEnum):
     """
     Simplified database column constraints optimized for LLM token efficiency.

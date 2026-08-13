@@ -30,9 +30,9 @@ run = "pnpm install"
 description = "💾 Install all dependencies (Python + Node.js)"
 depends = ["inst-python-deps", "inst-node-deps"]
 
-[tasks.download-db]
-description = "📥 Download SQLite database file from GitHub Release"
-run = ".venv/bin/python scripts/test_download_sqlite_file.py"
+[tasks.setup-db]
+description = "📥 Seed tmp/data.sqlite from the committed data.sqlite.example"
+run = ".venv/bin/python scripts/test_setup_sqlite_file.py"
 
 [tasks.export]
 description = "💾 Export Core Python dependencies to requirements.txt via uv"

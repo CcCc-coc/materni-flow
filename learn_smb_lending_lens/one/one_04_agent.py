@@ -11,10 +11,54 @@ from strands import Agent, tool
 from strands.models import BedrockModel
 
 from ..paths import path_enum
+from ..constants import LlmProviderEnum
 from .. import write_operations
 
 if T.TYPE_CHECKING:  # pragma: no cover
     from .one_00_main import One
+
+
+#: Extra to install for each provider whose SDK is not a core dependency.
+#: Only ``bedrock`` works out of the box; the rest are opt-in so that a student
+#: using Bedrock never has to download three unused vendor SDKs.
+PROVIDER_INSTALL_EXTRA = {
+    LlmProviderEnum.ANTHROPIC.value: "anthropic",
+    LlmProviderEnum.OPENAI.value: "openai",
+    LlmProviderEnum.GOOGLE.value: "gemini",
+}
+
+
+def load_strands_model_class(class_name: str, provider: str):
+    """
+    Import a strands model class, with an actionable error when its SDK is missing.
+
+    ``strands.models`` lazy-imports each provider, so the vendor SDK is only
+    required when that provider is actually selected. Without this wrapper the
+    failure surfaces as a bare ``ModuleNotFoundError: No module named 'anthropic'``,
+    which does not tell you what to do about it.
+
+    Args:
+        class_name: The strands class to import, e.g. ``"AnthropicModel"``.
+        provider: The ``LLM_PROVIDER`` value that asked for it.
+
+    Returns:
+        The strands model class.
+
+    Raises:
+        ImportError: If the provider's SDK is not installed.
+    """
+    from strands import models
+
+    try:
+        return getattr(models, class_name)
+    except (AttributeError, ImportError) as e:  # pragma: no cover
+        extra = PROVIDER_INSTALL_EXTRA[provider]
+        raise ImportError(
+            f"LLM_PROVIDER={provider!r} needs the {extra!r} SDK, which is not installed.\n"
+            f"Install it with:\n"
+            f"    uv sync --extra {extra}\n"
+            f"Or switch back to the default provider with LLM_PROVIDER=bedrock."
+        ) from e
 
 
 class AgentMixin:
@@ -30,8 +74,45 @@ class AgentMixin:
 
     @cached_property
     def model(self: "One"):
-        """Get the model instance (alias for bedrock_model)."""
-        return self.bedrock_model
+        """
+        Build the model for the provider selected by ``LLM_PROVIDER``.
+
+        Exactly one provider is active per process. The credential check happens
+        first so a missing API key fails here, with a readable message, rather
+        than as an authentication error on the first user question.
+        """
+        self.config.validate()
+        provider = self.config.llm_provider
+
+        if provider == LlmProviderEnum.BEDROCK.value:
+            return self.bedrock_model
+
+        if provider == LlmProviderEnum.ANTHROPIC.value:
+            anthropic_model_class = load_strands_model_class("AnthropicModel", provider)
+            return anthropic_model_class(
+                client_args={"api_key": self.config.anthropic_api_key},
+                model_id=self.config.model_id,
+                # max_tokens is required by the Anthropic provider, unlike the others.
+                max_tokens=self.config.max_tokens,
+            )
+
+        if provider == LlmProviderEnum.OPENAI.value:
+            openai_model_class = load_strands_model_class("OpenAIModel", provider)
+            return openai_model_class(
+                client_args={"api_key": self.config.openai_api_key},
+                model_id=self.config.model_id,
+            )
+
+        if provider == LlmProviderEnum.GOOGLE.value:
+            gemini_model_class = load_strands_model_class("GeminiModel", provider)
+            return gemini_model_class(
+                client_args={"api_key": self.config.google_api_key},
+                model_id=self.config.model_id,
+            )
+
+        raise NotImplementedError(  # pragma: no cover
+            f"No model builder for LLM_PROVIDER={provider!r}."
+        )
 
     @cached_property
     def agent(self: "One") -> Agent:

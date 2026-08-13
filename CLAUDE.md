@@ -160,13 +160,35 @@ from learn_smb_lending_lens.runtime import runtime   # Runtime detection
 - `node_modules/` - Node.js dependencies directory
 
 **Environment Variables (.env):**
+
+See `.env.example` for the fully documented template. The key switch is `LLM_PROVIDER`:
+exactly one LLM backend is active per process, and only *that* provider's credential
+is required.
+
 ```bash
-DB_HOST=ep-xxx-pooler.us-east-1.aws.neon.tech
-DB_PORT=5432
-DB_USER=neondb_owner
-DB_PASS=your_password
-DB_NAME=neondb
+# bedrock (default) | anthropic | openai | google
+LLM_PROVIDER=bedrock
+AWS_REGION=us-east-1
+
+# Optional: override the provider's default model (formats are NOT interchangeable)
+# LLM_MODEL_ID=us.amazon.nova-micro-v1:0
+
+# Only the key matching LLM_PROVIDER is needed
+# ANTHROPIC_API_KEY=sk-ant-...   (requires: uv sync --extra anthropic)
+# OPENAI_API_KEY=sk-...          (requires: uv sync --extra openai)
+# GOOGLE_API_KEY=...             (requires: uv sync --extra gemini)
+
+# Unused locally (local runtime reads tmp/data.sqlite); needed for remote Postgres
+# DB_HOST=ep-xxx-pooler.us-east-1.aws.neon.tech
+# DB_PORT=5432
+# DB_USER=neondb_owner
+# DB_PASS=your_password
+# DB_NAME=neondb
 ```
+
+For `LLM_PROVIDER=bedrock` locally, do **not** set `AWS_ACCESS_KEY_ID` /
+`AWS_SECRET_ACCESS_KEY` in `.env` — boto3 reads env vars before `~/.aws/credentials`,
+so a placeholder there shadows a working local profile.
 
 ---
 
@@ -205,6 +227,7 @@ tests_python/
 - `mise run inst-python-deps` - Install Python dependencies
 - `mise run inst-node-deps` - Install Node.js dependencies
 - `mise run inst` - Install all dependencies (Python + Node.js)
+- `mise run setup-db` - Seed `tmp/data.sqlite` from the committed `data.sqlite.example`
 - `mise run test-python` - Run Python tests
 - `mise run test-node` - Run Node.js tests
 - `mise run test` - Run all tests (Python + Node.js)
