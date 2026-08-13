@@ -161,6 +161,12 @@ from learn_smb_lending_lens.runtime import runtime   # Runtime detection
 
 **Environment Variables (.env):**
 
+> ⚠️ **Never read, print, or otherwise open `.env`.** It holds real credentials —
+> API keys, database passwords, AWS tokens. Read `.env.example` instead: it is the
+> committed, placeholder-only template and documents every supported variable.
+> If you need to know whether a variable is *set*, check for the key name via
+> `.env.example`, or ask the user — do not `cat` / `Read` the `.env` file.
+
 See `.env.example` for the fully documented template. The key switch is `LLM_PROVIDER`:
 exactly one LLM backend is active per process, and only *that* provider's credential
 is required.
@@ -171,7 +177,7 @@ LLM_PROVIDER=bedrock
 AWS_REGION=us-east-1
 
 # Optional: override the provider's default model (formats are NOT interchangeable)
-# LLM_MODEL_ID=us.amazon.nova-micro-v1:0
+# LLM_MODEL_ID=us.amazon.nova-lite-v1:0
 
 # Only the key matching LLM_PROVIDER is needed
 # ANTHROPIC_API_KEY=sk-ant-...   (requires: uv sync --extra anthropic)
@@ -244,10 +250,35 @@ tests_python/
 
 **Run SQL Locally:**
 ```bash
-.venv/bin/python scripts/test_run_sql_locally_cli.py --sql "SELECT * FROM table_name LIMIT 5"
+.venv/bin/python scripts/test_03_run_sql_locally_cli.py --sql "SELECT * FROM table_name LIMIT 5"
 ```
 
 **Print LLM-Optimized Schema:**
 ```bash
-.venv/bin/python scripts/test_print_database_schema.py
+.venv/bin/python scripts/test_04_print_database_schema.py
 ```
+
+---
+
+## Scripts
+
+Scripts in `scripts/` are numbered in the order you would run them when setting a
+project up from scratch. The number is the workflow position, not a priority — run
+them in sequence the first time, then individually as needed.
+
+| # | Script | What it does |
+|---|--------|--------------|
+| 01 | `test_01_setup_sqlite_file.py` | Seed `tmp/data.sqlite` from `data.sqlite.example` (also `mise run setup-db`) |
+| 02 | `test_02_run_sql_locally.py` | Run the SQL in `test_02_run_sql_locally.sql` against local SQLite |
+| 03 | `test_03_run_sql_locally_cli.py` | Same, but takes `--sql "..."` on the command line |
+| 04 | `test_04_print_database_schema.py` | Print the LLM-optimized schema string |
+| 05 | `test_05_connect_remote_database.py` | Smoke-test the NeonDB Postgres connection (`SELECT 1`) |
+| 06 | `test_06_sync_data_to_remote_db.py` | Drop, recreate, and repopulate the remote DB from local SQLite |
+| 07 | `test_07_verify_remote_data.py` | Confirm the remote DB really matches local, table by table (exit 1 on mismatch) |
+
+Steps 01-04 are local only. Steps 05-07 need the `DB_*` variables set (see `.env.example`).
+
+**When adding a script:** give it the next number for its stage, or insert it at the
+right position and renumber the ones after it — keep the sequence meaningful rather
+than append-only. Unnumbered scripts (`test_agent.py`, `test_ai_*.py`, …) are
+standalone experiments outside this setup workflow.

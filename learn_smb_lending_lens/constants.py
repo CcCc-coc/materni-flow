@@ -30,11 +30,23 @@ class LlmProviderEnum(BetterStrEnum):
 
 #: Model used when ``LLM_MODEL_ID`` is not set. One default per provider, since
 #: model ID formats are provider specific and not interchangeable.
+#:
+#: .. warning::
+#:
+#:     **These IDs go stale.** Vendors release new models, rename them, and retire
+#:     old ones on their own schedules, so this mapping is a snapshot of what was
+#:     current and cheap when it was written — not a permanent fact. Expect to
+#:     revisit it. If a request fails with an "unknown model" / "model not found"
+#:     error, check the provider's current model list before debugging anything
+#:     else, and override per-environment with ``LLM_MODEL_ID`` in ``.env`` rather
+#:     than editing this dict for a one-off.
 DEFAULT_MODEL_ID = {
-    LlmProviderEnum.BEDROCK.value: "us.amazon.nova-micro-v1:0",
-    LlmProviderEnum.ANTHROPIC.value: "claude-sonnet-5",
-    LlmProviderEnum.OPENAI.value: "gpt-4o",
-    LlmProviderEnum.GOOGLE.value: "gemini-2.5-flash",
+    # Nova Lite: cheap, fast, and good enough for the SQL-and-summarize work this
+    # agent does. Step up to us.amazon.nova-pro-v1:0 if answer quality is the issue.
+    LlmProviderEnum.BEDROCK.value: "us.amazon.nova-lite-v1:0",
+    LlmProviderEnum.ANTHROPIC.value: "claude-haiku-4-5-20251001",
+    LlmProviderEnum.OPENAI.value: "gpt-5.6-luna",
+    LlmProviderEnum.GOOGLE.value: "gemini-3.5-flash-lite",
 }
 # [endllmproviderenum]
 

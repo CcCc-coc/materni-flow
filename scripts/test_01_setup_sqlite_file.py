@@ -4,7 +4,7 @@
 Seed the local SQLite database from the committed example file.
 
 Usage:
-    python scripts/test_setup_sqlite_file.py
+    python scripts/test_01_setup_sqlite_file.py
 
 Copies (overwriting) data.sqlite.example -> tmp/data.sqlite.
 """
