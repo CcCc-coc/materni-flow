@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from learn_smb_lending_lens import api
+from agent_app import api
 
 
 def test_api():
@@ -8,10 +8,10 @@ def test_api():
 
 
 if __name__ == "__main__":
-    from learn_smb_lending_lens.tests import run_cov_test
+    from agent_app.tests import run_cov_test
 
     run_cov_test(
         __file__,
-        "learn_smb_lending_lens.api",
+        "agent_app.api",
         preview=False,
     )

@@ -9,7 +9,7 @@ the shape of what comes back. No environment mutation, no network, no I/O.
 
 import pytest
 
-from learn_smb_lending_lens.config.conf_00_def import Config
+from agent_app.config.conf_00_def import Config
 
 
 class TestConfig:
@@ -55,10 +55,10 @@ class TestConfig:
 
 
 if __name__ == "__main__":
-    from learn_smb_lending_lens.tests import run_cov_test
+    from agent_app.tests import run_cov_test
 
     run_cov_test(
         __file__,
-        "learn_smb_lending_lens.config.conf_00_def",
+        "agent_app.config.conf_00_def",
         preview=False,
     )

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from learn_smb_lending_lens.utils import match
+from agent_app.utils import match
 
 
 class TestMatch:
@@ -52,10 +52,10 @@ class TestMatch:
 
 
 if __name__ == "__main__":
-    from learn_smb_lending_lens.tests import run_cov_test
+    from agent_app.tests import run_cov_test
 
     run_cov_test(
         __file__,
-        "learn_smb_lending_lens.utils",
+        "agent_app.utils",
         preview=False,
     )

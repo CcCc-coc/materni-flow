@@ -12,8 +12,8 @@ The write-operation tools are not covered here: they are commented out of the
 agent's tool list and target tables that do not exist in this dataset.
 """
 
-from learn_smb_lending_lens.one.one_00_main import one
-from learn_smb_lending_lens.paths import path_enum
+from agent_app.one.one_00_main import one
+from agent_app.paths import path_enum
 
 
 class TestReadOnlyTools:
@@ -55,10 +55,10 @@ class TestReadOnlyTools:
 
 
 if __name__ == "__main__":
-    from learn_smb_lending_lens.tests import run_cov_test
+    from agent_app.tests import run_cov_test
 
     run_cov_test(
         __file__,
-        "learn_smb_lending_lens.one.one_04_agent",
+        "agent_app.one.one_04_agent",
         preview=False,
     )

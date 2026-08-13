@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from learn_smb_lending_lens.source_code import add_two
+from agent_app.source_code import add_two
 
 
 def test_add_two():
@@ -10,10 +10,10 @@ def test_add_two():
 
 
 if __name__ == "__main__":
-    from learn_smb_lending_lens.tests import run_cov_test
+    from agent_app.tests import run_cov_test
 
     run_cov_test(
         __file__,
-        "learn_smb_lending_lens.source_code",
+        "agent_app.source_code",
         preview=False,
     )
