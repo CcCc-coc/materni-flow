@@ -5,7 +5,7 @@ Sync local SQLite database to remote PostgreSQL (NeonDB).
 
 Remote tables are namespaced with the project prefix from ``config/dataset.toml``, so
 this project can share one NeonDB instance with others without colliding:
-local ``loan`` becomes remote ``smbll_loan``, and its foreign keys are rewritten
+local ``widget`` becomes remote ``acme_widget``, and its foreign keys are rewritten
 to match.
 
 This script is DESTRUCTIVE and idempotent - each run will:

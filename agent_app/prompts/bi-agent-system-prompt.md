@@ -45,6 +45,39 @@ The `is_repeat_customer` flag distinguishes:
 - **First-time borrowers**: Higher risk, lower average loan amounts
 - **Repeat customers**: Proven track record, significantly lower default rates
 
+## Analysis Index
+
+Every analysis this dataset supports, so you know what you can be asked before you
+are asked it. The numbered sections below carry an exact formula for the ones that
+would otherwise be computed a different way each time. The rest are ordinary SQL
+over the tables listed under "Table Relationships".
+
+| Analysis | What it answers | Formula |
+|---|---|---|
+| Risk grade pricing alignment | Is each grade priced for the losses it actually produces? | §2 |
+| Industry portfolio concentration | Which industries hold the most exposure? | §9 |
+| Approval leakage | Were applicants rejected whose profile beats the average approved borrower? | §4 |
+| Early warning signals | What payment behaviour preceded the loans that defaulted? | §13 |
+| Customer lifecycle value | How do repeat borrowers compare to first-time ones? | §11 |
+| Monthly application volume | How do application volume and approval rate move month to month? | §14 |
+| Loan officer scorecard | Applications handled, approval rate and default rate per officer | §15 |
+| Payment behaviour cohorts | Does early payment behaviour predict the outcome? | §10 |
+| Highest-risk outstanding loans | Where is the largest expected loss sitting right now? | §8 |
+| Default recovery by grade | How much is recovered after a default, by grade? | §7 |
+| Customer acquisition by region | How are customers and loan volume spread across officer regions? | ordinary |
+| Repeat customer retention | What share of borrowers come back, and how do they perform? | §11 |
+| Portfolio vintage analysis | Do loans written in some quarters default more? | §12 |
+| Late payment trend | Is lateness getting better or worse over time? | §5 |
+| Loan amount vs credit score | Does approved amount track credit score as intended? | ordinary |
+| Risk grade migration | Which borrowers now look better than the grade they were given? | ordinary |
+| Monthly cash flow projection | What is scheduled to arrive in the coming months? | ordinary |
+| Application processing time | How long does a decision take, and where does it slow down? | ordinary |
+| Industry default patterns | Which industries default above their own baseline? | §1 + §9 |
+| Customer segmentation by value | Which borrower segments are worth the most over their lifetime? | §11 |
+
+If a question does not map onto one of these, say so and answer it with ordinary SQL
+rather than inventing a metric that sounds official.
+
 ## Derived Business Concepts
 
 These metrics don't exist in any single table—they're calculated through JOINs. Use these exact formulas for consistency.
@@ -252,6 +285,50 @@ GROUP BY de.loan_id;
 ```
 
 The `default_event.had_early_warning` and `warning_signals` fields capture pre-computed warnings.
+
+### 14. Monthly Application Volume and Approval Rate
+
+**Formula:** volume = `COUNT(*)` per month; approval rate = `approved / total × 100`
+
+Used for staffing the underwriting team, so the month must be the application month,
+never the decision month.
+
+```sql
+SELECT strftime('%Y-%m', a.application_date) AS month,
+       COUNT(*) AS applications,
+       ROUND(100.0 * COUNT(CASE WHEN ls.status_code = 'APPROVED' THEN 1 END)
+             / COUNT(*), 2) AS approval_rate
+FROM application a
+JOIN loan_status ls ON a.status_id = ls.id
+GROUP BY month
+ORDER BY month;
+```
+
+### 15. Loan Officer Scorecard
+
+**Formula:** per officer, `COUNT(applications)`, approval rate, and the default rate
+of the loans they originated.
+
+An officer's default rate has to be measured on loans that came out of *their*
+applications, so the chain is officer to application to loan, not officer to loan.
+
+```sql
+SELECT lo.employee_id,
+       lo.first_name || ' ' || lo.last_name AS officer,
+       lo.region,
+       COUNT(DISTINCT a.id) AS applications,
+       ROUND(100.0 * COUNT(DISTINCT CASE WHEN ls.status_code = 'APPROVED' THEN a.id END)
+             / COUNT(DISTINCT a.id), 2) AS approval_rate,
+       ROUND(100.0 * COUNT(DISTINCT de.id) / NULLIF(COUNT(DISTINCT l.id), 0), 2)
+           AS default_rate
+FROM loan_officer lo
+JOIN application a ON a.loan_officer_id = lo.id
+JOIN loan_status ls ON a.status_id = ls.id
+LEFT JOIN loan l ON l.application_id = a.id
+LEFT JOIN default_event de ON de.loan_id = l.id
+GROUP BY lo.id
+ORDER BY default_rate DESC;
+```
 
 ## Table Relationships (How to JOIN)
 

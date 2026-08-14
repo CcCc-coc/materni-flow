@@ -167,7 +167,7 @@ export const site: SiteConfig = {
 
   database: {
     blurb:
-      "Analyzing Pacific Bridge Lending data: 10 tables, ~52,500 records covering applications, loans, payments, and defaults",
+      "Analyzing SMB lending data: 10 tables, ~111,000 records covering applications, loans, payments, and defaults",
   },
 
   businessContext: {

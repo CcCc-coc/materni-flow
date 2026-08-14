@@ -40,10 +40,10 @@ Example usage::
 
     from agent_app.project_config import project_config
 
-    project_config.project_name          # "smbll"
-    project_config.project_name_snake    # "smbll"
-    project_config.prefix_table_name("loan")  # "smbll_loan"
-    project_config.table_insert_order    # ["industry", "risk_grade", ...]
+    project_config.project_name          # "acme"
+    project_config.project_name_snake    # "acme"
+    project_config.prefix_table_name("widget")  # "acme_widget"
+    project_config.table_insert_order    # ["<parent>", "<child>", ...]
 """
 
 import re
@@ -75,7 +75,7 @@ class ProjectConfig:
     @property
     def project_name(self) -> str:
         """
-        Short identifier for this project, e.g. ``"smbll"``.
+        Short identifier for this project, e.g. ``"acme"``.
 
         This is what namespaces tables in the shared remote database. It lives
         here rather than in ``.env`` because it is not a secret and not
@@ -111,14 +111,14 @@ class ProjectConfig:
     @property
     def project_name_snake(self) -> str:
         """
-        The project name as a snake_case identifier, e.g. ``smb_lending_lens``.
+        The project name as a snake_case identifier, e.g. ``acme_data_lens``.
 
         Use this wherever the name has to be a valid SQL / Python identifier —
         most importantly as the prefix on remote database table names, which is
         how several projects share one NeonDB instance without colliding.
 
         Any run of characters that is not a letter or digit collapses to a single
-        underscore, so ``"SMB Lending-Lens"`` and ``"smb_lending_lens"`` normalize
+        underscore, so ``"Acme Data-Lens"`` and ``"acme_data_lens"`` normalize
         to the same value.
         """
         return re.sub(r"[^a-z0-9]+", "_", self.project_name.strip().lower()).strip("_")
@@ -126,7 +126,7 @@ class ProjectConfig:
     @property
     def project_name_slug(self) -> str:
         """
-        The project name as a hyphenated slug, e.g. ``smb-lending-lens``.
+        The project name as a hyphenated slug, e.g. ``acme-data-lens``.
 
         Same normalization as :attr:`project_name_snake`, but with hyphens — the
         form wanted by things that live in a URL or a hostname (deployment names,
@@ -139,10 +139,10 @@ class ProjectConfig:
         Namespace a table name for the shared remote database.
 
         Args:
-            table_name: The local, unprefixed table name, e.g. ``"loan"``.
+            table_name: The local, unprefixed table name, e.g. ``"widget"``.
 
         Returns:
-            The remote table name, e.g. ``"smbll_loan"``.
+            The remote table name, e.g. ``"acme_widget"``.
         """
         return f"{self.project_name_snake}_{table_name}"
 

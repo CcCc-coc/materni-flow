@@ -11,12 +11,12 @@ this project owns is namespaced with the project name::
 
     local SQLite          remote PostgreSQL
     ------------          -----------------
-    loan            ->    smbll_loan
-    customer        ->    smbll_customer
+    widget          ->    acme_widget
+    part            ->    acme_part
 
 The prefix comes from ``project_config.project_name_snake``. Foreign keys are rewritten
-to match, so ``loan.customer_id -> customer.id`` becomes
-``smbll_loan.customer_id -> smbll_customer.id``. Nothing in the remote database
+to match, so ``widget.part_id -> part.id`` becomes
+``acme_widget.part_id -> acme_part.id``. Nothing in the remote database
 refers to an unprefixed name.
 
 Ordering
@@ -51,7 +51,7 @@ from ..project_config import project_config
 #: fails loudly instead of silently vanishing from the remote database.
 TABLE_INSERT_ORDER = project_config.table_insert_order
 
-#: Rows per executemany round trip. Sending all 81k repayment_schedule rows in one
+#: Rows per executemany round trip. Sending a six-figure table in one
 #: statement risks exceeding the driver's parameter limit and buffers the whole
 #: table in memory; one row per round trip is unusably slow over a network.
 INSERT_BATCH_SIZE = 1000
@@ -62,12 +62,12 @@ def prefixed(table_prefix: str, table_name: str) -> str:
     Build the remote table name for a local table.
 
     Args:
-        table_prefix: Project prefix, e.g. ``"smbll"``. Empty string means no
+        table_prefix: Project prefix, e.g. ``"acme"``. Empty string means no
             prefixing, which is useful in tests.
-        table_name: Local table name, e.g. ``"loan"``.
+        table_name: Local table name, e.g. ``"widget"``.
 
     Returns:
-        The remote table name, e.g. ``"smbll_loan"``.
+        The remote table name, e.g. ``"acme_widget"``.
     """
     if not table_prefix:
         return table_name
@@ -126,7 +126,7 @@ def build_remote_metadata(
 
     Args:
         local_metadata: Metadata reflected from the local SQLite database.
-        table_prefix: Project prefix, e.g. ``"smbll"``.
+        table_prefix: Project prefix, e.g. ``"acme"``.
 
     Returns:
         A new MetaData holding the prefixed tables, ready for ``create_all()``.
@@ -196,7 +196,7 @@ def sync_sqlite_to_postgres(
     Args:
         local_engine: Engine connected to the local SQLite database.
         remote_engine: Engine connected to the remote PostgreSQL database.
-        table_prefix: Project prefix for remote table names, e.g. ``"smbll"``.
+        table_prefix: Project prefix for remote table names, e.g. ``"acme"``.
         verbose: If True, print progress messages.
         batch_size: Rows per executemany round trip.
 

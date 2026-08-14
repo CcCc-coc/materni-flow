@@ -54,17 +54,103 @@ disable-model-invocation: true
 - 这个领域有哪些**外行会猜错** 的术语和公式? (这些是提示词的核心, 通用 SQL 知识不是)
 - 用户最想问的 5 到 10 个业务问题是什么?
 
-### 2.2 建立映射关系
+### 2.2 推导链: 顺序本身就是质量保证
 
-这是完整清单. **每一行都要过一遍**, 确认是改了还是明确判断不用改.
+**这一节是整个 skill 最重要的部分, 比下面那张清单重要.**
 
-**A. 业务大脑.** 信息量最大, 最花时间的一块.
+换数据集要产出的东西 (提示词, kickstart 问题, 首页文案, tooltip, businessContext)
+描述的是**同一份领域知识**. 如果它们各自去读数据集文档、并行地写出来, 就一定会漂
+移 —— 不是可能, 是一定. 这不是假设, 仓库里就有现成的事故:
+
+> 借贷那版的提示词只保留了源文档 20 条 query 里的 13 条, 丢掉了第 6 条
+> "Monthly Application Volume Trends" 和第 7 条 "Loan Officer Performance
+> Scorecard". 而 12 个 kickstart 问题是**另起炉灶从数据集文档写的**, 于是又把这两
+> 条捡了回来. 结果: 首页有两个按钮, 问的分析提示词根本没教. 所有测试通过, 构建
+> 成功, 没有任何东西报错 —— 用户点下去, 模型只能即兴发挥.
+
+**根治办法不是加校验, 是改顺序.** 自然语言的一致性没法 lint, 那是模糊标准, 硬做
+只会得到一堆 warn 然后没人看. 但**串行推导可以让漂移根本无法发生**: 每一步只从上
+一步的产物推导, 不回头读原始文档.
+
+#### 铁律
+
+> **提示词定义能力边界. 下游只能换措辞, 不能新增一项提示词没教的能力.**
+
+kickstart 问题、能力卡、tooltip、businessContext 的"能问什么", 全部是提示词的**改写**,
+不是数据集文档的**再解读**. 想让首页出现某个分析, 唯一的合法路径是先把它写进提示词.
+
+#### 六步, 严格按顺序
+
+**第 1 步. 数据库落地.**
+复制 sqlite 覆盖 `data.sqlite.example`, 跑 `mise run setup-db`, 按 er_document 的外
+键依赖顺序填 `config/dataset.toml` 的 `tableInsertOrder`, 立刻 `mise run check`.
+
+*为什么必须第一:* 后面每一步的验证都要拿它当基准. 顺序错了当场就报.
+
+**第 2 步. 写提示词. 这是唯一允许通读数据集全部文档的一步.**
+输入: business_context + er_document + sql_queries 全文.
+
+- **必须覆盖 sql_queries 里的每一条 query.** 做法是先写一节 `## Analysis Index`,
+  20 条每条一行 (这条分析回答什么问题), 然后挑其中**外行会算错的**那些, 在
+  `## Derived Business Concepts` 里给出精确公式和 SQL. 覆盖靠索引, 篇幅靠取舍 ——
+  两者不要混为一谈.
+- 保留 `## Diagrams and Charts: The Fence Rule` / `## Diagrams` / `## Charts` 三节
+  的结构 (那是前端能力, 与数据集无关), 只换里面的例子.
+- 写完**把提示词里每一段 SQL 对着真库跑一遍**. 跑不通的例子比没有例子更糟, 模型会
+  照抄.
+
+*一个坑:* `mise run check` 会把 `FROM x` / `JOIN x` 当表名校验, 它分不清散文和 SQL.
+`drawn from a zero baseline` 里的 `from a` 会被判成表 `a`. 换个说法即可.
+
+**第 3 步. 写 kickstart 12 条.**
+输入: **只看第 2 步产出的提示词**, 不要回头翻 sql_queries.
+
+逐条对着 `## Analysis Index` 挑 11 条改写成用户口吻的问题 (第 1 条固定是
+"Introduction / What can you do?"). 挑不出来说明提示词覆盖不够, 回第 2 步补, 不要
+在这里现编.
+
+**第 4 步. 写 site.ts 的业务部分.**
+输入: 提示词 (定能力) + 数据库 (定数字) + business_context (定叙事口吻).
+
+- `home.capabilities` 四条 = 提示词里最重要的四条主线, tooltip 是它们的白话解释
+- `chat.insights` 四条 = 同样四条主线, 换成更短的措辞
+- `businessContext` 六节 = 见下面的 spec
+- **`database.blurb` 里的表数和行数, 此刻现场从数据库数出来.** 不要抄旧值, 不要
+  估. 借贷那版曾经写着 "~52,500 records" 而真实是 111,153, 差一倍多, 而它恰好摆在
+  读者判断"这 demo 有多真"的位置
+
+```bash
+.venv/bin/python -c "
+import sqlite3; db=sqlite3.connect('tmp/data.sqlite')
+ts=[r[0] for r in db.execute(\"SELECT name FROM sqlite_master WHERE type='table'\")]
+print(len(ts),'tables', sum(db.execute(f'SELECT COUNT(*) FROM {t}').fetchone()[0] for t in ts),'rows')"
+```
+
+**第 5 步. 改脚本和测试里的硬编码.**
+输入: 提示词 + 数据库. 见下面 D 组清单.
+
+**第 6 步. 重新生成 schema 参考文件.**
+`.venv/bin/python scripts/test_04_print_database_schema.py`
+
+#### 为什么不加 lint
+
+我评估过给这些一致性加检查 (前端词汇正向扫描、kickstart 与提示词的覆盖校验), 结论
+是**不值得**: 判据是自然语言语义, 只能做成模糊匹配, 必然产出一堆需要人工判断的
+warn, 最后没人看. **顺序是零成本的, 检查是有成本且不可靠的.**
+
+保留的检查只有机械可判的那几条: 表顺序对撞 sqlite、提示词 FROM/JOIN 的表名、内容
+文件存在性. 这些没有歧义, 所以值得自动化.
+
+---
+
+下面这张清单**不是执行顺序, 是完备性核对表**. 按上面六步做完之后, 逐行过一遍确认
+没有漏项.
+
+**A. 业务大脑.**
 
 | 文件 | 来源 | 说明 |
 | :--- | :--- | :--- |
-| `agent_app/prompts/bi-agent-system-prompt.md` | business_context + er_document + sql_queries | 整份重写. 保留 `## Diagrams` 和 `## Charts` 两段的结构 (那是前端能力, 与数据集无关), 只把里面的例子换成新领域的 |
-
-写提示词时注意一个坑: `mise run check` 会把提示词里的 `FROM x` 和 `JOIN x` 当表名校验, 它分不清散文和 SQL. `drawn from a zero baseline` 里的 `from a` 会被判成表 `a` 而让构建失败. 换个说法即可.
+| `agent_app/prompts/bi-agent-system-prompt.md` | 第 2 步 | 整份重写, 含 Analysis Index |
 
 **B. 配置.** 两个文件, 按读者分, 前端读 TS 后端读 TOML.
 
@@ -221,37 +307,81 @@ grep -n "—" config/site.ts | grep -vE ":\s*\*|:\s*//"
 不要浪费时间在这些上面:
 
 - `agent_app/` 下除提示词外的所有代码. 它是通用的, 包名 `agent_app` 就是为了换数据集时不用改
+
+**这条能成立, 靠的是一条纪律: 代码注释和 docstring 里的例子必须与数据集无关.**
+
+写 `prefix_table_name("loan") # "smbll_loan"` 这种例子, 等于把当前数据集焊进了通用
+代码. 换数据集之后它不报错、不失败, 只是变成谎话躺在那里 —— 和 skill 开头讲的那个
+"医院 docstring 躺在借贷仓库里几个月"是同一个形状, 只是规模小.
+
+正确写法是用永远虚构的占位领域:
+
+```python
+#   local SQLite          remote PostgreSQL
+#   widget          ->    acme_widget
+#   part            ->    acme_part
+```
+
+`acme` / `widget` / `part` 这类词不属于任何真实数据集, 所以永远不会过期, 也就永远
+不需要出现在换数据集的清单里. 已经明显虚构的例子 (比如 `db_schema/encoder.py` 里那
+段 `Schema ecommerce(...)` 的格式示例) 不用动, 它本来就不声称在描述本数据集.
+
+**新增通用代码时同样适用.** 只要你在 `agent_app/` 或 `scripts/` 里写下一个表名做
+例子, 先问一句: 换数据集之后这句话还对吗?
 - `components/chat/blocks/` 渲染层. Mermaid 和 chart 与数据集无关
 - `README.md`, `TICKET.md`, `README-cn.md`, `docs/`. 那是教学材料, 换数据集不等于改课程. **要改就单独问用户**
 
-### 2.3 执行
+### 2.3 验证
 
-顺序有讲究. 先数据库, 因为后面每一步的验证都依赖它.
+执行顺序在 2.2, 不要在这里再排一遍. 这一节只讲怎么验.
 
-1. 复制 sqlite, 跑 `mise run setup-db`
-2. 改 `config/dataset.toml` 的 `tableInsertOrder`, 立刻跑 `mise run check`. 它会拿配置和真实 sqlite 对撞, 顺序错了当场报
-3. 重写提示词
-4. 改 `config/site.ts` (需要新图标就先改 `lib/icons.ts`)
-5. 改 `data/suggested-actions.json`
-6. 改脚本和测试里的硬编码
-7. 重新生成 `database-schema.txt`
-
-每改完一块就验证, 不要攒到最后:
+**每做完一步就验一次, 不要攒到最后.** 攒到最后的问题是, 一次报出十个错时你分不清
+哪个是根因、哪个是连锁反应.
 
 ```bash
-mise run check
-mise run test
+mise run check     # 表顺序 / 提示词表名 / 内容文件
+mise run test      # Python + Node
+npx tsc --noEmit   # site.ts 的图标名、字段结构
 ```
 
-跑 `mise run dev` 起本地服务 (Next.js + FastAPI), 打开 `/` 和 `/chat` 看效果. 注意 `mise run dev` 会先杀掉旧进程再起, 不用手动清理.
+**第 2 步做完额外做一件事: 把提示词里每一段 SQL 对着真库跑一遍.**
 
-最后跑一次带旧领域词汇的检查. 这是专门用来抓 "改漏了" 的, 词表是一次性参数, 不提交进仓库:
+```bash
+.venv/bin/python - <<'EOF'
+import re, sqlite3, pathlib
+db = sqlite3.connect("tmp/data.sqlite")
+for i, b in enumerate(re.findall(r"```sql\n(.*?)```",
+        pathlib.Path("agent_app/prompts/bi-agent-system-prompt.md").read_text(), re.S), 1):
+    if not b.strip().upper().startswith(("SELECT", "WITH")): continue
+    try:
+        rows = db.execute(b).fetchall()
+        print(f"[{i}] OK  {len(rows)} rows | {rows[0] if rows else ''}")
+    except Exception as e:
+        print(f"[{i}] FAIL {e}")
+EOF
+```
+
+跑不通的 SQL 例子比没有例子更糟: 模型会照抄, 然后在用户面前失败. 顺便这一步还会
+暴露"公式写错了但语法没错"的情况 —— 结果数字明显不对就能看出来.
+
+**起本地服务看效果:**
+
+```bash
+mise run dev
+```
+
+Next.js + FastAPI 一起起, 会先杀掉旧进程, 不用手动清理. 打开 `/` 和 `/chat`.
+
+**最后跑一次旧领域词汇扫描.** 词表是一次性参数, 不提交进仓库:
 
 ```bash
 mise run check -- --retired "loan,lending,borrower,default_event,risk_grade"
 ```
 
-把上一个数据集**最有辨识度的名词** 填进去. 有残留它会精确报出文件和行号.
+把上一个数据集**最有辨识度的名词**填进去. 有残留它会精确报出文件和行号.
+
+**一个环境坑:** `tmp/data.sqlite` 不进 git, 切分支不会跟着变. 如果测试报了一堆表
+不存在, 先 `mise run setup-db` 再说, 别急着改代码.
 
 ### 2.4 停下来让用户验收, 然后做视觉
 
