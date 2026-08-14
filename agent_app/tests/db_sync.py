@@ -133,6 +133,21 @@ def build_remote_metadata(
     """
     remote_metadata = sa.MetaData()
 
+    # The local file and `config/dataset.toml` can disagree — most often because
+    # `tmp/data.sqlite` is left over from a different dataset and nobody re-ran
+    # `mise run setup-db` after a swap. Reported as a bare KeyError on whichever
+    # table happened to be missing, that costs a real debugging session before
+    # anyone suspects the seed file. Name the actual problem instead.
+    missing = [t for t in TABLE_INSERT_ORDER if t not in local_metadata.tables]
+    if missing:
+        raise ValueError(
+            f"Local database is missing {len(missing)} table(s) named in "
+            f"config/dataset.toml: {', '.join(missing)}. "
+            f"It holds {sorted(local_metadata.tables)} instead. "
+            f"If this file is left over from another dataset, re-seed it with "
+            f"`mise run setup-db`; otherwise fix `database.tableInsertOrder`."
+        )
+
     for table_name in TABLE_INSERT_ORDER:
         local_table = local_metadata.tables[table_name]
         new_columns = []

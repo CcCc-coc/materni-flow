@@ -84,6 +84,53 @@ disable-model-invocation: true
 
 `capabilities` 和 `insights` 里的 `icon` 必须是 `lib/icons.ts` 里已注册的名字, 否则**编译报错**. 需要新图标就在那个文件里 import 并加进 `ICONS`. 从 lucide-react 挑.
 
+#### 前端文案的写法规范 (所有 `config/site.ts` 字符串都适用)
+
+这一节管的是 `site.ts` 里每一个会显示给用户的字符串: seo, home, chat, tooltip,
+businessContext 全部在内. 不管 `data/suggested-actions.json`, 也不管代码注释和
+提示词.
+
+**第一条: 不要用破折号.**
+
+不要用 `—`, 也不要用 `--` 当停顿. 这是最容易暴露"AI 写的"的一个特征, 因为模型
+极其偏爱用它来塞入补充说明, 一段话里出现三四次是常态, 而人类文案很少这样写.
+
+破折号出现的地方, 通常说明这句话本来就该断开. 三种改法, 按优先级:
+
+| 原样 | 改成 |
+| :--- | :--- |
+| `... is underpriced — and because ...` | 断成两句. `... is underpriced. And because ...` |
+| `Each is structural — a consequence of X — and ...` | 换成逗号从句. `Each one is structural, a consequence of X, and ...` |
+| `term: "Interest — the main revenue line"` | 把补充说明挪进 detail. `term: "Interest"`, detail 以 `The main revenue line, ...` 开头 |
+
+标题里如果非要分隔, 用冒号: `"SMB Lending Lens: AI-Powered Fintech Analytics Agent"`.
+
+**第二条: 叙述性语言, 简单格式.**
+
+用完整的句子把事情讲清楚, 不要写成关键词罗列. 允许的格式只有三样: **加粗**, 标题,
+bullet. 不要用表格, 不要嵌套列表, 不要 emoji, 不要行内代码块 (那是给开发者看的,
+这里的读者不是).
+
+**第三条: businessContext 允许一张 mermaid 流程图.**
+
+`ContextSection` 有一个可选的 `mermaid` 字段, 整份说明里**最多用一次**, 十个节点
+以内. 它是留给"读者必须一次性装进脑子里的顺序或分支"的, 比如借贷那版画的是
+"申请 -> 批/拒 -> 放款 -> 还款 -> 结清/违约" 这条主线.
+
+判断标准很简单: **如果这张图只是把上一句话又说了一遍, 那就删掉图, 留那句话.**
+第二张图一定是装饰.
+
+渲染走 `components/chat/blocks/MermaidBlock.tsx` (已做懒加载和 `securityLevel:
+"strict"`), 组件与数据集无关, 不用改.
+
+**改完自查一遍:**
+
+```bash
+grep -n "—" config/site.ts | grep -vE ":\s*\*|:\s*//"
+```
+
+有输出就是还有破折号没清干净 (那两个 `grep -v` 是排除代码注释).
+
 #### capabilities[].tooltip: 把概念名翻译成人话
 
 首页那四张能力卡上写的是**概念名** —— "Sponsor Exposure Audit" 对内行精确, 对其他
@@ -213,6 +260,7 @@ mise run check -- --retired "loan,lending,borrower,default_event,risk_grade"
 - agent 回答得像不像这个领域的专家
 - 12 个 kickstart 问题点下去是否都能出结果
 - 首页文案和 chat 页文案有没有残留旧领域的说法
+- 所有前端文案里没有破折号, 且 businessContext 里最多一张 mermaid 图
 - 点开首页那个 business context 弹窗, 一个完全不懂这行的人读完能不能明白这个 App 解决什么问题
 - 四张能力卡 hover / Tab 聚焦 / 手机点按, tooltip 都能弹出, 窄屏下不跑出屏幕
 

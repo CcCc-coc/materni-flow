@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react"
 import { X } from "lucide-react"
 import { site } from "@/config/site"
+import { MermaidBlock } from "@/components/chat/blocks/MermaidBlock"
 
 /**
  * The long-form business explainer, as a dismissable overlay.
@@ -125,6 +126,14 @@ export default function BusinessContextModal({
                     </div>
                   ))}
                 </dl>
+              )}
+
+              {/* Reuses the chat renderer, which already lazy-loads the ~1MB
+                  mermaid bundle and runs it at securityLevel "strict". */}
+              {section.mermaid && (
+                <div className="my-5">
+                  <MermaidBlock source={section.mermaid} language="mermaid" />
+                </div>
               )}
 
               {section.closingParagraphs?.map((paragraph) => (

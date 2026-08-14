@@ -58,6 +58,15 @@ interface ContextSection {
   bullets?: { term: string; detail: string }[]
   /** Prose that reads *after* the bullets, for a takeaway that needs them first. */
   closingParagraphs?: string[]
+  /**
+   * One optional mermaid diagram, rendered after this section's prose.
+   *
+   * Reserved for the one thing prose is genuinely worse at: a sequence or a
+   * branch the reader has to hold in their head all at once. At most one in
+   * the whole explainer, kept under ten nodes. A second diagram, or one that
+   * merely restates a sentence, is decoration and should be a sentence.
+   */
+  mermaid?: string
 }
 
 export interface SiteConfig {
@@ -141,7 +150,7 @@ export const site: SiteConfig = {
 
   seo: {
     locale: "en_US",
-    title: "SMB Lending Lens — AI-Powered Fintech Analytics Agent",
+    title: "SMB Lending Lens: AI-Powered Fintech Analytics Agent",
     description:
       "An AI agent for fintech lending analytics. Query loan portfolios, analyze risk pricing, detect approval leakage, identify early warning signals, and understand customer lifecycle value through natural conversation.",
     keywords: [
@@ -165,7 +174,7 @@ export const site: SiteConfig = {
     triggerLabel: "What problem does this solve?",
     title: "The business behind the agent",
     subtitle:
-      "A small-business lender can grow its book, hold its rates, and still lose money — because the losses arrive quietly and late. This is where they come from, and what this agent does about them.",
+      "A small-business lender can grow its book, hold its rates, and still lose money, because the losses arrive quietly and late. This is where they come from, and what this agent does about them.",
     sections: [
       {
         heading: "How a small-business lender makes money",
@@ -175,9 +184,9 @@ export const site: SiteConfig = {
         ],
         bullets: [
           {
-            term: "Interest — the main revenue line",
+            term: "Interest",
             detail:
-              "Charged as an annual rate on the outstanding balance. The rate is set from the borrower's risk grade, which is assigned from their credit profile at the time of approval.",
+              "The main revenue line, charged as an annual rate on the outstanding balance. The rate is set from the borrower's risk grade, which is assigned from their credit profile at the time of approval.",
           },
           {
             term: "Origination fees",
@@ -185,37 +194,37 @@ export const site: SiteConfig = {
               "A one-time charge when the loan is funded. Smaller than interest, and earned whether or not the loan is repaid.",
           },
           {
-            term: "Defaults — the dominant cost",
+            term: "Defaults",
             detail:
-              "When a borrower stops paying, the lender pursues what it can recover and writes off the rest. One default can erase the interest earned on a dozen healthy loans.",
+              "The dominant cost. When a borrower stops paying, the lender pursues what it can recover and writes off the rest. One default can erase the interest earned on a dozen healthy loans.",
           },
         ],
       },
       {
         heading: "Where the money quietly leaks",
         paragraphs: [
-          "None of the following show up as a line item on a financial statement. Each is structural — a consequence of how lending is normally run — and each stays invisible unless somebody deliberately goes looking. That is what this agent is for.",
+          "None of the following show up as a line item on a financial statement. Each one is structural, a consequence of how lending is normally run, and each stays invisible unless somebody deliberately goes looking. That is what this agent is for.",
         ],
         bullets: [
           {
             term: "Pricing rests on an assumption nobody re-checks",
             detail:
-              "Each risk grade is priced against an assumed default rate, set when the grading system was designed. Reality drifts. If a grade was priced for six percent losses and is running near ten, every loan written in that grade is underpriced — and because the loans are performing when they are written, nothing signals the problem for a year or more.",
+              "Each risk grade is priced against an assumed default rate, set when the grading system was designed. Reality drifts. If a grade was priced for six percent losses and is running near ten, every loan written in that grade is underpriced. And because the loans are performing when they are written, nothing signals the problem for a year or more.",
           },
           {
             term: "Concentration accumulates without anyone choosing it",
             detail:
-              "No committee ever decides to put a sixth of the book into restaurants. It happens one approval at a time, each defensible on its own. The risk is that loans in one industry do not fail independently — a bad season hits all of them together, which is exactly the scenario a portfolio is supposed to be spread against.",
+              "No committee ever decides to put a sixth of the book into restaurants. It happens one approval at a time, each defensible on its own. The risk is that loans in one industry do not fail independently. A bad season hits all of them together, which is exactly the scenario a portfolio is supposed to be spread against.",
           },
           {
             term: "The warning arrives months before the loss",
             detail:
-              "Borrowers rarely stop paying without a run-up. Payments start landing a few days late, then short of the full amount. Most defaults are preceded by that pattern — but a monthly report that shows only what was collected against what was due will show a loan as current until the month it is not.",
+              "Borrowers rarely stop paying without a run-up. Payments start landing a few days late, then short of the full amount. Most defaults are preceded by that pattern. But a monthly report that shows only what was collected against what was due will show a loan as current until the month it is not.",
           },
           {
             term: "The best applicants look like the risky ones",
             detail:
-              "Approval rules are tuned to keep bad loans out, and they succeed partly by turning away good ones. A rejected applicant whose profile is stronger than the average borrower already on the books is revenue the lender declined — and the borrower who repays becomes a repeat customer who defaults at roughly half the rate of a first-timer, so the cost of that rejection compounds.",
+              "Approval rules are tuned to keep bad loans out, and they succeed partly by turning away good ones. A rejected applicant whose profile is stronger than the average borrower already on the books is revenue the lender declined. The borrower who repays goes on to become a repeat customer, who defaults at roughly half the rate of a first-timer, so the cost of that rejection compounds.",
           },
         ],
       },
@@ -225,13 +234,21 @@ export const site: SiteConfig = {
           "Every one of those leaks leaves a trace, but never in one place. Proving a grade is underpriced means putting the pricing assumption next to two years of outcomes. Proving a default was foreseeable means putting a loan's schedule next to the payments that actually arrived, in the right order, for the months before it failed.",
           "So the record covers the full lending lifecycle together: the businesses that applied, the applications that were approved and rejected and why, the loans that were funded and their terms, the repayment schedule each one was supposed to follow, every payment actually received, and the defaults with what was ultimately recovered.",
           "It is a fixed snapshot rather than a live feed, which is what makes the same question return the same answer whenever it is asked.",
+          "The whole record hangs off one path, and every question in this app is really a question about some step along it:",
         ],
+        mermaid: `flowchart LR
+    A[Business applies] --> B{Approved?}
+    B -- No --> R[Rejected]
+    B -- Yes --> L[Loan funded]
+    L --> P[Monthly payments]
+    P --> D[Paid off]
+    P --> F[Defaulted]`,
       },
       {
         heading: "What the agent does with it",
         paragraphs: [
           "You ask in plain English. The agent reads the database structure, works out which tables have to be joined and at what grain, writes the query, runs it, and then explains what came back in business terms rather than handing you a grid of numbers.",
-          "It picks its format to match the question. Exact values arrive as a table. When the shape of the numbers is the point — a ranking across grades, a trend across quarters, a gap between two measures — it draws a chart. When the answer is about how something flows rather than how much, it draws a diagram.",
+          "It picks its format to match the question. Exact values arrive as a table. When the shape of the numbers is the point, such as a ranking across grades, a trend across quarters, or a gap between two measures, it draws a chart. When the answer is about how something flows rather than how much, it draws a diagram.",
           "Every number it reports comes from a query it actually ran against the data, not from its own recollection. If you want to check it, ask it to show you the SQL and the reasoning; it keeps both.",
         ],
       },
@@ -270,9 +287,9 @@ export const site: SiteConfig = {
       {
         heading: "Beyond read-only",
         paragraphs: [
-          "This app only reads. It can query anything in the record and explain it, but it cannot change a single row — that is a deliberate choice for something anyone can open, not a limitation of what the approach can do.",
+          "This app only reads. It can query anything in the record and explain it, but it cannot change a single row. That is a deliberate choice for something anyone can open, not a limitation of what the approach can do.",
           "The same architecture supports the other half. An agent can be given tools that act rather than only report: flag a loan for collections review, queue a risk grade for repricing at the next committee, open a case on an applicant who looks wrongly rejected. The analysis and the action then live in one place, instead of ending in a slide deck that someone has to act on by hand a week later.",
-          "That step is only responsible with two things attached. Guardrails: an agent gets narrowly scoped permissions and the consequential actions need human approval, rather than a broad key and good intentions. And an auditable trail: every action it takes is attributable, reviewable, and reversible after the fact. An agent that can act without both is not a more capable product, it is an unaccountable one — which is why what you are looking at here stops at read-only.",
+          "That step is only responsible with two things attached. Guardrails: an agent gets narrowly scoped permissions, and the consequential actions need human approval rather than a broad key and good intentions. An auditable trail: every action it takes is attributable, reviewable, and reversible after the fact. An agent that can act without both is not a more capable product, it is an unaccountable one. That is why what you are looking at here stops at read-only.",
         ],
       },
     ],
@@ -288,13 +305,13 @@ export const site: SiteConfig = {
         icon: "BarChart3",
         label: "Risk Pricing Analysis",
         tooltip:
-          "Every loan is priced on an assumed default rate — the share of borrowers in that risk grade expected not to repay. Pricing analysis puts that assumption next to how many actually defaulted, because the gap between the two is margin the lender never charged for.",
+          "Every loan is priced on an assumed default rate, meaning the share of borrowers in that risk grade expected not to repay. Pricing analysis puts that assumption next to how many actually defaulted, because the gap between the two is margin the lender never charged for.",
       },
       {
         icon: "Shield",
         label: "Portfolio Concentration",
         tooltip:
-          "Concentration is how much of the money out on loan sits in one industry. It matters because loans in the same industry fail together — one bad year for restaurants hits every restaurant loan at once — and nobody ever decides to become concentrated, it simply accumulates one approval at a time.",
+          "Concentration is how much of the money out on loan sits in one industry. It matters because loans in the same industry fail together, so one bad year for restaurants hits every restaurant loan at once. Nobody ever decides to become concentrated. It accumulates one approval at a time.",
       },
       {
         icon: "AlertTriangle",
@@ -306,7 +323,7 @@ export const site: SiteConfig = {
         icon: "Users",
         label: "Customer Lifecycle Value",
         tooltip:
-          "A borrower who has already repaid a loan is a known quantity, and defaults at roughly half the rate of a first-time borrower. Lifecycle value is what that track record is worth — and what it costs to turn away a good applicant who would have become one.",
+          "A borrower who has already repaid a loan is a known quantity, and defaults at roughly half the rate of a first-time borrower. Lifecycle value is what that track record is worth, and what it costs to turn away a good applicant who would have become one.",
       },
     ],
     techStack: ["Strands SDK", "AWS Bedrock", "PostgreSQL", "Next.js"],
