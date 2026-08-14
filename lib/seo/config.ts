@@ -1,4 +1,4 @@
-import { dataset } from "@/lib/project"
+import { site } from "@/config/site"
 
 /**
  * Site-wide metadata defaults.
@@ -9,9 +9,9 @@ import { dataset } from "@/lib/project"
  * scaffolding came from, not something the app needs.
  */
 export const DEFAULT_SEO_CONFIG = {
-  siteName: dataset.project.displayName,
-  locale: dataset.seo.locale,
+  siteName: site.project.displayName,
+  locale: site.seo.locale,
   type: "website" as const,
 }
 
-export const COMMON_KEYWORDS = dataset.seo.keywords
+export const COMMON_KEYWORDS = site.seo.keywords

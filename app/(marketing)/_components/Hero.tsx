@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { ArrowRight } from "lucide-react"
-import { dataset } from "@/lib/project"
+import { site } from "@/config/site"
 import { getIcon } from "@/lib/icons"
 
 export default function Hero() {
@@ -13,7 +13,7 @@ export default function Hero() {
     setIsVisible(true)
   }, [])
 
-  const { home, project, database } = dataset
+  const { home, project, database } = site
 
   return (
     <section className="min-h-screen flex flex-col justify-center pt-24 pb-12 px-4 sm:px-6 lg:px-8 bg-white dark:bg-[#0A1628]">

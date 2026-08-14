@@ -26,18 +26,18 @@ class PathEnum:
     def dir_home(self) -> Path:
         return Path.home()
 
-    # Project configuration, committed to Git and read by BOTH runtimes:
-    # Next.js imports this file directly, `agent_app.project_config` parses it.
+    # Dataset configuration, committed to Git, read by Python only. The
+    # frontend's half lives in `config/site.ts` and is never parsed here.
     # Not to be confused with `agent_app/config/`, which holds secrets from `.env`.
     dir_config = dir_project_root / "config"
-    path_dataset_json = dir_config / "dataset.json"
+    path_dataset_toml = dir_config / "dataset.toml"
 
     dir_prompts = dir_package / "prompts"
     path_instruction_md = dir_prompts / "instruction.md"
     path_knowledge_base_md = dir_prompts / "knowledge-base.md"
 
     # The agent's system prompt. Which file this is comes from
-    # ``config/dataset.json`` (``agent.promptFile``) rather than being fixed here,
+    # ``config/dataset.toml`` (``agent.promptFile``) rather than being fixed here,
     # so a dataset swap can point at a differently named prompt without an edit.
     @cached_property
     def path_bi_agent_system_prompt_md(self) -> Path:

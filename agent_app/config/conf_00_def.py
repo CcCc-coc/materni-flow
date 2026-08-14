@@ -139,7 +139,7 @@ def get_env_int(name: str) -> int | None:  # pragma: no cover
 
 def default_project_name() -> str:
     """
-    The project name, from ``config/dataset.json``.
+    The project name, from ``config/dataset.toml``.
 
     It lives there rather than in ``.env`` because it is not a secret and not
     machine-specific: every deployment of this dataset wants the same prefix, so

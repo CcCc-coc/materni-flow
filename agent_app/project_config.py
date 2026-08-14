@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 """
-Project configuration: the Python half of the ``config/`` directory.
+Dataset configuration: the Python half of the ``config/`` directory.
 
 Two config layers, two jobs
 ---------------------------
@@ -13,21 +13,25 @@ same thing:
   environment-specific values** — API keys, database credentials, which LLM
   provider to talk to. Those come from ``.env`` and differ per *machine*.
 
-- This module holds **project identity** — what the project is called, what
-  database it describes, what the UI says. Those come from
-  ``config/dataset.json``, are committed to Git, and differ per *dataset*.
+- This module holds **dataset identity** — what the project is called, what
+  database it describes, which prompt it loads. Those come from
+  ``config/dataset.toml``, are committed to Git, and differ per *dataset*.
 
 The split matters because they change for different reasons. Rotating an API key
 should not touch the project's name; pointing the repo at a new dataset should
 not touch anyone's credentials.
 
-Why JSON, read at runtime
+Why this file is so small
 -------------------------
 
-``config/dataset.json`` is read directly by *both* runtimes: Next.js imports
-it, this module parses it. No code generation, no build step, no chance of the
-two halves drifting apart — there is exactly one copy of every string, and both
-languages point at it.
+``config/dataset.toml`` holds only what Python actually reads. Everything the UI
+says lives in ``config/site.ts`` instead, because it is consumed exclusively by
+TypeScript and gets type checking there that JSON could never provide. The two
+runtimes were found to read disjoint sets of keys, so a single shared config
+file was two unrelated files stapled together.
+
+TOML rather than JSON so the file can carry real comments explaining what each
+value is for. ``tomllib`` ships with Python 3.11+, so this costs no dependency.
 
 Example usage::
 
@@ -38,7 +42,7 @@ Example usage::
     project_config.table_insert_order  # ["industry", "risk_grade", ...]
 """
 
-import json
+import tomllib
 import typing as T
 import dataclasses
 from pathlib import Path
@@ -50,23 +54,18 @@ from .paths import path_enum
 @dataclasses.dataclass
 class ProjectConfig:
     """
-    Typed reader over ``config/dataset.json``.
-
-    Only the handful of values the Python side actually needs get named
-    properties. The rest of the file is UI copy that never reaches Python, so it
-    is left in :attr:`dataset` as a plain dict rather than mirrored into fields
-    that would have to be kept in sync by hand.
+    Typed reader over ``config/dataset.toml``.
 
     Attributes:
-        path_dataset_json: Location of the dataset config file.
+        path_dataset_toml: Location of the dataset config file.
     """
 
-    path_dataset_json: Path = dataclasses.field(default=path_enum.path_dataset_json)
+    path_dataset_toml: Path = dataclasses.field(default=path_enum.path_dataset_toml)
 
     @cached_property
     def dataset(self) -> dict[str, T.Any]:
-        """Parsed ``config/dataset.json``."""
-        return json.loads(self.path_dataset_json.read_text(encoding="utf-8"))
+        """Parsed ``config/dataset.toml``."""
+        return tomllib.loads(self.path_dataset_toml.read_text(encoding="utf-8"))
 
     @property
     def project_name(self) -> str:
@@ -74,7 +73,7 @@ class ProjectConfig:
         Short identifier for this project, e.g. ``"smbll"``.
 
         This is what namespaces tables in the shared remote database. It lives in
-        ``dataset.json`` rather than ``.env`` because it is not a secret and not
+        ``dataset.toml`` rather than ``.env`` because it is not a secret and not
         machine-specific: every deployment of *this* dataset wants the same
         value, so committing it removes one more thing to forget on a swap.
         ``PROJECT_NAME`` in the environment still wins if it is set, which keeps
@@ -104,19 +103,8 @@ class ProjectConfig:
         return list(self.dataset["database"]["tableInsertOrder"])
 
     @property
-    def retired_terms(self) -> list[str]:
-        """
-        Vocabulary from datasets this repo used to serve.
-
-        ``scripts/test_00_check_project_config.py`` fails the build if any of
-        these words survive anywhere in the code. See the ``checks`` section of
-        ``config/dataset.json``.
-        """
-        return list(self.dataset.get("checks", {}).get("retiredTerms", []))
-
-    @property
     def path_system_prompt(self) -> Path:
-        """The agent's system prompt file, as named by ``dataset.json``."""
+        """The agent's system prompt file, as named by ``dataset.toml``."""
         return path_enum.dir_project_root / self.dataset["agent"]["promptFile"]
 
 

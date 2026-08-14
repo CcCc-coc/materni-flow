@@ -1,9 +1,9 @@
 import { motion } from "framer-motion";
-import { dataset } from "@/lib/project";
+import { site } from "@/config/site";
 import { getIcon } from "@/lib/icons";
 
 export const Overview = () => {
-  const { agent, chat } = dataset;
+  const { agent, chat } = site;
 
   return (
     <motion.div

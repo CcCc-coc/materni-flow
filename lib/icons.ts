@@ -15,16 +15,16 @@ import {
 } from "lucide-react"
 
 /**
- * Icon names usable from `config/dataset.json`.
+ * Icon names usable from `config/site.ts`.
  *
- * JSON cannot hold a React component, so the config files name an icon and this
- * map resolves it. Keeping the map explicit (rather than indexing all of
- * `lucide-react`) means a typo in the config surfaces here as a visible fallback
- * instead of a blank card, and the bundle only carries icons we actually use.
+ * `config/site.ts` names an icon and this map resolves it. Keeping the map
+ * explicit, rather than indexing all of `lucide-react`, means the bundle only
+ * carries icons we actually use, and it gives `IconName` below something exact
+ * to be derived from.
  *
  * Need one that is not here? Import it above and add it to the map.
  */
-export const ICONS: Record<string, LucideIcon> = {
+export const ICONS = {
   AlertTriangle,
   BarChart3,
   Building2,
@@ -37,9 +37,18 @@ export const ICONS: Record<string, LucideIcon> = {
   Target,
   TrendingUp,
   Users,
-}
+} satisfies Record<string, LucideIcon>
 
-/** Resolve an icon name from config, falling back to a neutral icon. */
-export function getIcon(name: string): LucideIcon {
+/**
+ * Every icon name `config/site.ts` is allowed to use.
+ *
+ * This is what makes a typo a compile error instead of a silent fallback in the
+ * browser. It replaces a runtime check that used to live in the Python
+ * preflight script back when this config was JSON and therefore untyped.
+ */
+export type IconName = keyof typeof ICONS
+
+/** Resolve an icon name, falling back to a neutral icon. */
+export function getIcon(name: IconName): LucideIcon {
   return ICONS[name] ?? Sparkles
 }

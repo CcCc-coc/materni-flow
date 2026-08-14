@@ -24,7 +24,7 @@ Ordering
 
 ``TABLE_INSERT_ORDER`` is the single source of truth for dependency order:
 parents first, children after. It is not written here — it comes from
-``config/dataset.json``, so that swapping the dataset means editing one JSON file
+``config/dataset.toml``, so that swapping the dataset means editing one TOML file
 rather than hunting for a list buried in a sync module. Everything else is
 derived from it —
 
@@ -45,7 +45,7 @@ from ..project_config import project_config
 #: row's parents already exist by the time it is inserted. Drop order is the
 #: reverse — see the module docstring.
 #:
-#: Defined in ``config/dataset.json`` under ``database.tableInsertOrder``.
+#: Defined in ``config/dataset.toml`` under ``database.tableInsertOrder``.
 #: ``mise run check`` verifies it against the tables actually present in
 #: ``data.sqlite.example``, so a table added to the dataset but forgotten here
 #: fails loudly instead of silently vanishing from the remote database.

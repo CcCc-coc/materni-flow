@@ -8,8 +8,8 @@ Why this script exists
 
 This repo is a template. The same scaffolding — one prompt, one database, one
 website — gets pointed at a new dataset and a new business domain over and over.
-Most of what changes is now centralized in ``config/dataset.json``, but not all
-of it can be: the SQLite file, the system prompt, and the kickstart questions are
+Most of what changes is now centralized in ``config/dataset.toml`` and
+``config/site.ts``, but not all of it can be: the SQLite file, the system prompt, and the kickstart questions are
 content, not configuration, and they have to be rewritten by hand.
 
 Hand-rewriting is where things get forgotten. The evidence is in this repo's own
@@ -25,16 +25,18 @@ they disagree.
 What it checks
 --------------
 
-1. **Retired vocabulary** — words from datasets this repo used to serve must not
-   survive anywhere in the code. Seeded from ``checks.retiredTerms``.
-2. **Table order vs. reality** — ``database.tableInsertOrder`` must match the
+1. **Table order vs. reality** — ``database.tableInsertOrder`` must match the
    tables actually present in the SQLite file, in both directions.
-3. **Prompt vs. schema** — every table the system prompt writes ``FROM`` or
+2. **Prompt vs. schema** — every table the system prompt writes ``FROM`` or
    ``JOIN`` against must exist in the database.
-4. **Icon names** — every icon named in ``dataset.json`` must be registered in
-   ``lib/icons.ts``, since a typo there degrades silently in the browser.
-5. **Content files** — the system prompt and the kickstart questions must exist
+3. **Content files** — the system prompt and the kickstart questions must exist
    and be non-trivial.
+4. **Retired vocabulary** — opt in with ``--retired``, for the one run right
+   after a dataset swap.
+
+Icon names used to be checked here too. They no longer need to be: the UI config
+moved to ``config/site.ts``, where the ``IconName`` type makes a typo a compile
+error instead of a silent fallback in the browser.
 
 Usage::
 
@@ -42,6 +44,7 @@ Usage::
     .venv/bin/python scripts/test_00_check_project_config.py
 """
 
+import argparse
 import json
 import re
 import sys
@@ -77,7 +80,6 @@ SCAN_SUFFIXES = {".py", ".ts", ".tsx", ".js", ".jsx", ".json", ".md", ".sql"}
 #: Files exempt from the retired-vocabulary scan, because listing those words is
 #: precisely their job.
 SCAN_EXEMPT = {
-    "config/dataset.json",
     "scripts/test_00_check_project_config.py",
 }
 
@@ -139,22 +141,25 @@ def iter_scan_files() -> T.Iterator[Path]:
             yield path
 
 
-def check_retired_terms(report: Report) -> bool:
+def check_retired_terms(report: Report, terms: list[str]) -> bool:
     """
     Fail if vocabulary from a retired dataset still appears in the code.
+
+    Terms come from ``--retired``, not from a committed config file. That is
+    deliberate. This check is a *migration* tool: its value peaks the day you
+    swap datasets and drops to zero once the swap is clean. Storing the previous
+    domain's nouns in the repo forever meant every later reader found words from
+    a dead dataset sitting in the current one's config, and meant the list
+    silently rotted whenever someone forgot to update it.
+
+    Run it by hand right after a swap::
+
+        mise run check -- --retired "patient,bed,ward,nurse"
 
     Matching is whole-word and case-insensitive, so ``bed`` flags a stray
     hospital reference without flagging ``bedrock``.
     """
-    terms = project_config.retired_terms
     if not terms:
-        report.warn(
-            "retired-terms",
-            "checks.retiredTerms is empty. After a dataset swap, put the previous "
-            "domain's distinctive nouns here — that list is what makes a forgotten "
-            "file impossible to miss.",
-        )
-        report.section("retired vocabulary (nothing configured)", True)
         return True
 
     pattern = re.compile(
@@ -276,44 +281,6 @@ def check_prompt_tables(report: Report, db_tables: set[str]) -> bool:
     return ok
 
 
-def check_icon_names(report: Report) -> bool:
-    """
-    Fail if ``dataset.json`` names an icon that ``lib/icons.ts`` does not export.
-
-    JSON carries icon names as bare strings, so TypeScript cannot catch a typo
-    here. Unchecked, a misspelled name renders a silent fallback that nobody
-    notices until someone looks closely at the page.
-    """
-    icons_ts = path_enum.dir_project_root / "lib" / "icons.ts"
-    if not icons_ts.exists():
-        report.error("icons", "lib/icons.ts not found")
-        report.section("icon names", False)
-        return False
-
-    registered = set(
-        re.findall(r"^\s{2}([A-Z][A-Za-z0-9]*),", icons_ts.read_text(encoding="utf-8"), re.M)
-    )
-
-    dataset = project_config.dataset
-    used: list[tuple[str, str]] = []
-    for cap in dataset.get("home", {}).get("capabilities", []):
-        used.append(("home.capabilities", cap["icon"]))
-    for insight in dataset.get("chat", {}).get("insights", []):
-        used.append(("chat.insights", insight["icon"]))
-
-    unknown = [(where, name) for where, name in used if name not in registered]
-    for where, name in unknown:
-        report.error(
-            "icons",
-            f"{where} uses icon {name!r}, which is not registered in lib/icons.ts. "
-            f"Import it there and add it to the ICONS map.",
-        )
-
-    ok = not unknown
-    report.section(f"icon names ({len(used)} used, {len(registered)} registered)", ok)
-    return ok
-
-
 def check_content_files(report: Report) -> bool:
     """Fail if the hand-written content a swap must replace is missing or empty."""
     ok = True
@@ -349,7 +316,21 @@ def check_content_files(report: Report) -> bool:
     return ok
 
 
-def main() -> int:
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--retired",
+        default="",
+        metavar="WORDS",
+        help=(
+            "Comma-separated vocabulary from the dataset this repo used to "
+            "serve. Pass it right after a swap to prove none of it survives, "
+            "e.g. --retired \"patient,bed,ward\". Omitted by default."
+        ),
+    )
+    args = parser.parse_args(argv)
+    retired = [t.strip() for t in args.retired.split(",") if t.strip()]
+
     print()
     print("Project config consistency check")
     print("=" * 60)
@@ -357,10 +338,9 @@ def main() -> int:
     report = Report()
     db_tables = sqlite_table_names()
 
-    check_retired_terms(report)
+    check_retired_terms(report, retired)
     check_table_insert_order(report, db_tables)
     check_prompt_tables(report, db_tables)
-    check_icon_names(report)
     check_content_files(report)
 
     print("=" * 60)

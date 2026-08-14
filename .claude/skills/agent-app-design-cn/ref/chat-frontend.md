@@ -44,7 +44,7 @@ const BLOCK_RENDERERS: Record<string, ComponentType<BlockProps>> = {
 
 没在表里的语言 (包括 ```python 这种普通代码) 全部落到 `CodeBlock`.
 
-刻意**没有** 把这个开关放进 `config/dataset.json`. 那套 (JSON 写名字, TS 查表, checker 卡拼写) 是 `lib/icons.ts` 的做法, 值得抄的前提是 "换数据集时真的要改". 渲染能力不是这种东西: 一个数据集不需要图, 让 agent 不输出就行, 没必要为它多一层配置和一条校验. 真到了要按数据集裁剪 bundle 那天再加.
+刻意**没有** 把这个开关放进 `config/site.ts`. 那个文件装的是 "这个数据集说什么", 而渲染器开关是 "这个 app 能渲染什么", 两件事换的频率不一样. 何况一个数据集不需要图, 让 agent 不输出就行. 真到了要按数据集裁剪 bundle 那天再搬.
 
 ---
 

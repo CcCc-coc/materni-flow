@@ -5,7 +5,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Menu, X } from "lucide-react"
 import { NavItem, NavigationProps } from "@/types"
-import { dataset } from "@/lib/project"
+import { site } from "@/config/site"
 
 const DEFAULT_NAV_ITEMS: NavItem[] = [
   { label: "Home", href: "/" },
@@ -33,8 +33,8 @@ export default function Navigation({ items = DEFAULT_NAV_ITEMS }: NavigationProp
             className="flex items-center gap-3 text-white hover:opacity-90 transition-opacity"
           >
             <span className="font-display text-xl font-semibold tracking-tight">
-              {dataset.project.logo.prefix}
-              <span className="text-amber-500">{dataset.project.logo.accent}</span>
+              {site.project.logo.prefix}
+              <span className="text-amber-500">{site.project.logo.accent}</span>
             </span>
           </Link>
 

@@ -1,0 +1,50 @@
+# Everything the Python side needs to know about this dataset.
+#
+# This file is deliberately small. It holds only the four values the backend
+# actually reads at runtime; every user-visible string lives in `config/site.ts`
+# instead, where TypeScript can type-check it. Splitting them this way is not
+# cosmetic: the two runtimes read disjoint sets of keys, so a single shared file
+# was two unrelated files stapled together.
+#
+# TOML rather than JSON so these comments can exist at all. `tomllib` is in the
+# Python 3.11+ standard library, so this costs no dependency.
+#
+# Not here: secrets (`.env`), UI copy (`config/site.ts`), the SQLite file, the
+# system prompt, and the kickstart questions. The last three are content, and
+# content does not fit in a config file.
+
+[project]
+# Short identifier, prefixed onto every table in the shared remote Postgres so
+# several projects can live in one NeonDB without colliding. Keep it short:
+# PostgreSQL identifiers cap at 63 characters. `PROJECT_NAME` in the environment
+# overrides this for a one-off deployment.
+name = "smbll"
+
+[agent]
+# Which prompt file to load, relative to the repo root. Named here rather than
+# hardcoded so a dataset can ship its own prompt without a code change.
+promptFile = "agent_app/prompts/bi-agent-system-prompt.md"
+
+[database]
+# The database name shown to the LLM at the top of the encoded schema. Purely
+# descriptive: it labels the schema block the agent reads and does not have to
+# match any real database name.
+displayName = "fintech_smb_lending_pipeline_medium_data"
+
+# Tables in foreign-key dependency order, parents first. Single source of truth
+# for both directions of the remote sync: inserts walk it forwards, drops walk
+# it backwards. `mise run check` compares this against the SQLite file and fails
+# on a mismatch in either direction, so a new table must be added here in the
+# right position.
+tableInsertOrder = [
+    "industry",
+    "risk_grade",
+    "loan_status",
+    "loan_officer",
+    "customer",
+    "application",
+    "loan",
+    "repayment_schedule",
+    "payment",
+    "default_event",
+]

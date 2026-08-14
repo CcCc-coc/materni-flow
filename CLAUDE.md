@@ -15,8 +15,9 @@ from agent_app.api import one  # Main singleton instance
 ### Directory Structure
 
 ```
-config/                      # Project identity, committed to Git, read by BOTH runtimes
-└── dataset.json             #   Everything that changes when the dataset changes
+config/                      # Committed to Git. Split by CONSUMER, not by topic.
+├── site.ts                  #   Everything the frontend says. TypeScript, typed.
+└── dataset.toml             #   The 4 values Python reads. TOML, commented.
 
 agent_app/                   # Python package. Name is deliberately generic and
 ├── api.py                   #   never changes when the dataset changes.
@@ -44,9 +45,8 @@ agent_app/                   # Python package. Name is deliberately generic and
 └── db_schema/
 
 lib/
-├── project.ts               # Frontend entry point to config/dataset.json
-├── icons.ts                 # Icon-name -> component map used by config/dataset.json
-└── constants.ts             # Derived view of the above; authored nothing
+├── icons.ts                 # Icon-name -> component map; exports the IconName type
+└── constants.ts             # Derived view of config/site.ts; authored nothing
 ```
 
 ### The Two Kinds of "Config"
@@ -54,7 +54,7 @@ lib/
 Two things in this repo are called config. They change for different reasons and
 must not be mixed:
 
-| | `config/dataset.json` | `.env` → `agent_app/config/` |
+| | `config/site.ts` + `config/dataset.toml` | `.env` → `agent_app/config/` |
 |---|---|---|
 | Holds | Project identity, business copy, table order | API keys, DB credentials, LLM provider |
 | Differs per | **dataset** | **machine** |
@@ -63,6 +63,14 @@ must not be mixed:
 
 Rotating an API key must not touch the project's name; pointing the repo at a
 new dataset must not touch anyone's credentials.
+
+**`config/` is split by consumer, not by topic.** The frontend and the backend
+read disjoint sets of keys, so one shared file was two unrelated files stapled
+together. `site.ts` is TypeScript because only TypeScript reads it, which buys
+autocomplete and makes a bad icon name a compile error. `dataset.toml` is TOML
+because only Python reads it, and TOML has real comments. Before adding a value,
+ask which runtime consumes it; if the answer is "both", say so out loud, because
+today nothing does.
 
 **Comments and identifiers are English only.** Every comment, docstring, and
 name in the source tree (`.ts`, `.tsx`, `.py`) is written in English, even when
@@ -78,21 +86,30 @@ not need.
 
 ### Swapping the Dataset
 
-Everything that varies between datasets is either in `config/dataset.json` or in
-one of three content files. When adding UI copy, a brand string, or a business
-term, put it in `config/dataset.json` — never inline it in a component.
+Everything that varies between datasets is either in `config/` or in one of
+three content files. When adding UI copy, a brand string, or a business term,
+put it in `config/site.ts` — never inline it in a component.
 
 | What | Where |
 |---|---|
-| Identity, copy, DB display name, table order | `config/dataset.json` |
+| Product name, all UI copy, SEO, icons | `config/site.ts` |
+| Table prefix, DB display name, table order, prompt file | `config/dataset.toml` |
 | Agent's domain knowledge | `agent_app/prompts/bi-agent-system-prompt.md` |
 | Kickstart questions | `data/suggested-actions.json` |
 | The data itself | `data.sqlite.example` |
 | Dataset-specific write tools | `@tool` methods in `one_04_agent.py` |
 
-Run `mise run check` afterwards. It fails on retired vocabulary left in code, a
-`tableInsertOrder` that disagrees with the SQLite file, a prompt that queries a
-nonexistent table, and unregistered icon names.
+Run `mise run check` afterwards. It fails on a `tableInsertOrder` that
+disagrees with the SQLite file, a prompt that queries a nonexistent table, and
+missing content files. Right after a swap also run it with the outgoing
+domain's vocabulary, which is a one-off argument rather than committed state:
+
+```bash
+mise run check -- --retired "patient,bed,ward,nurse"
+```
+
+Icon names need no check: `config/site.ts` types them against `lib/icons.ts`, so
+a typo is a compile error.
 
 ### When to Modify Each File
 
@@ -104,7 +121,7 @@ nonexistent table, and unregistered icon names.
 | `paths.py` | Defines all file/directory paths as `PathEnum` | When adding new files (prompts, data files, output paths). Add path here first, then use `path_enum.your_new_path` everywhere. |
 | `runtime.py` | Detects runtime environment (local vs vercel) | When adding a new deployment target (e.g., AWS Lambda). Add new enum value and detection logic. |
 | `constants.py` | Enums and constants | When adding new enum types or magic values that need to be shared across modules. |
-| `project_config.py` | Typed reader over `config/dataset.json` | When Python needs a new value from the project config. Add a property; do not duplicate the value into a second file. |
+| `project_config.py` | Typed reader over `config/dataset.toml` | When Python needs a new value from the dataset config. If the frontend is the only consumer, it belongs in `config/site.ts` and never reaches Python. |
 | `sql_utils.py` | Pure functions for SQL execution and formatting | When changing how SQL results are formatted or adding new query validation rules. |
 | `ai_sdk_adapter.py` | Converts Vercel AI SDK format <-> Bedrock format | When frontend message format changes or when switching to a different LLM provider. |
 
@@ -188,7 +205,7 @@ does.
 from agent_app.api import one           # Main app instance
 from agent_app.paths import path_enum   # All paths
 from agent_app.runtime import runtime   # Runtime detection
-from agent_app.project_config import project_config  # config/dataset.json
+from agent_app.project_config import project_config  # config/dataset.toml
 ```
 
 ### Agent Framework
@@ -207,7 +224,8 @@ from agent_app.project_config import project_config  # config/dataset.json
 - Node.js: pnpm (via mise)
 
 **Core Configuration Files:**
-- `config/dataset.json` - Project identity, business copy, DB metadata (swapped per dataset)
+- `config/site.ts` - All frontend copy and identity (swapped per dataset)
+- `config/dataset.toml` - The 4 values Python reads (swapped per dataset)
 - `mise.toml` - Project tasks and tool versions (Python 3.12, Node 24, uv, pnpm)
 - `pyproject.toml` - Python dependencies and project metadata
 - `package.json` - Node.js dependencies
@@ -227,7 +245,7 @@ exactly one LLM backend is active per process, and only *that* provider's creden
 is required.
 
 ```bash
-# NOTE: the table prefix now lives in config/dataset.json (project.name).
+# NOTE: the table prefix now lives in config/dataset.toml (project.name).
 # Uncomment here only to override it for a one-off deployment.
 # PROJECT_NAME=smbll
 
@@ -298,7 +316,7 @@ tests_python/
 - `mise run export` - Export Python requirements to requirements.txt
 - `mise run dev` - Start all development servers (Next.js + FastAPI, auto-kills old instances first)
 - `mise run kill` - Kill all running development servers
-- `mise run check` - Verify the repo agrees with `config/dataset.json` (run after a dataset swap)
+- `mise run check` - Verify the repo agrees with its config (run after a dataset swap)
 
 ---
 
@@ -314,13 +332,13 @@ tests_python/
 
 The remote instance is **shared with other projects**, so every table this project
 owns is prefixed with `config.project_name_snake` (from `project.name` in
-`config/dataset.json`, overridable with `PROJECT_NAME` in `.env`). Foreign
+`config/dataset.toml`, overridable with `PROJECT_NAME` in `.env`). Foreign
 keys are rewritten to match, and the sync script only ever touches prefixed
 tables — other projects' tables are never dropped. `database_schema_str` likewise
 reflects only prefixed tables when running remotely, so the agent never sees
 another project's schema.
 
-Dependency order lives in `config/dataset.json` under
+Dependency order lives in `config/dataset.toml` under
 `database.tableInsertOrder`, exposed to Python as `TABLE_INSERT_ORDER` in
 `agent_app/tests/db_sync.py`: inserts walk it forwards, drops walk it backwards.
 Add a new table there, in the right position, or the sync breaks —
@@ -350,7 +368,7 @@ them in sequence the first time, then individually as needed.
 
 | # | Script | What it does |
 |---|--------|--------------|
-| 00 | `test_00_check_project_config.py` | Verify the repo agrees with `config/dataset.json` (also `mise run check`) |
+| 00 | `test_00_check_project_config.py` | Verify the repo agrees with its config (also `mise run check`) |
 | 01 | `test_01_setup_sqlite_file.py` | Seed `tmp/data.sqlite` from `data.sqlite.example` (also `mise run setup-db`) |
 | 02 | `test_02_run_sql_locally.py` | Run the SQL in `test_02_run_sql_locally.sql` against local SQLite |
 | 03 | `test_03_run_sql_locally_cli.py` | Same, but takes `--sql "..."` on the command line |
