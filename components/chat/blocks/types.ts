@@ -1,12 +1,12 @@
 /**
- * 围栏代码块渲染器的统一入参。
+ * The single shape every fenced-block renderer receives.
  *
- * Markdown 里每个 ```lang 块都会被解析成这个形状, 然后交给 `index.tsx` 里
- * 按 language 查出来的组件。
+ * Each ```lang block in the agent's Markdown is parsed into this, then handed
+ * to whichever component `index.ts` resolves for that language.
  */
 export interface BlockProps {
-  /** 围栏之间的原始文本, 模型输出什么就是什么, 已去掉结尾换行。 */
+  /** Raw text between the fences, exactly as the model emitted it, minus the trailing newline. */
   source: string
-  /** 围栏上的语言标记, 例如 "mermaid"。没写语言时是空字符串。 */
+  /** The language tag on the opening fence, such as "mermaid". Empty string when none was given. */
   language: string
 }

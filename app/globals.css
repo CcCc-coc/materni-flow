@@ -263,3 +263,44 @@
 .dark ::-webkit-scrollbar-thumb:hover {
   background: #60A5FA;
 }
+
+/* ---------------------------------------------------------------------------
+ * Chart tokens for ```chart blocks (components/chat/blocks/chart/).
+ *
+ * Values come from the data-viz reference palette. The slot ORDER of the
+ * categorical hues is the colorblind-safety mechanism, not a cosmetic choice,
+ * so assign them in order and never cycle past the last one.
+ * ------------------------------------------------------------------------ */
+.viz-root {
+  color-scheme: light;
+  --viz-surface: #fcfcfb;
+  --viz-ink: #0b0b0b;
+  --viz-ink-muted: #898781;
+  --viz-grid: #e1e0d9;
+  --viz-axis: #c3c2b7;
+  /* Single-series bars and lines use one hue (sequential), never one hue per bar. */
+  --viz-seq: #2a78d6;
+  --viz-series-1: #2a78d6;
+  --viz-series-2: #eb6834;
+  --viz-series-3: #1baf7a;
+  --viz-series-4: #eda100;
+}
+
+/* Dark steps are gated on the `dark` class only, never on
+ * prefers-color-scheme. Tailwind here is darkMode: ["class"], so the rest of
+ * the app ignores the OS setting; a chart that honoured it would render dark
+ * inside an otherwise light page for every user whose OS is in dark mode. */
+:root[data-theme="dark"] .viz-root,
+.dark .viz-root {
+  color-scheme: dark;
+  --viz-surface: #1a1a19;
+  --viz-ink: #ffffff;
+  --viz-ink-muted: #898781;
+  --viz-grid: #2c2c2a;
+  --viz-axis: #383835;
+  --viz-seq: #3987e5;
+  --viz-series-1: #3987e5;
+  --viz-series-2: #d95926;
+  --viz-series-3: #199e70;
+  --viz-series-4: #c98500;
+}

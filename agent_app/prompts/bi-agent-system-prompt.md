@@ -343,6 +343,37 @@ flowchart LR
 
 If the diagram would just restate a sentence, write the sentence instead.
 
+## Charts
+
+The UI renders ` ```chart ` blocks as real charts. Use one when the shape of the
+numbers is the point: a ranking across grades or industries, a trend across
+vintages, or a gap between two measures. A table is still the right answer when
+the reader needs exact values, and you may show both.
+
+The payload is JSON in exactly this shape. Anything else silently renders as raw
+text, so do not improvise fields:
+
+```chart
+{
+  "type": "bar",
+  "title": "Actual default rate by risk grade",
+  "yLabel": "%",
+  "categories": ["A", "B", "C", "D", "E"],
+  "series": [{ "name": "actual", "values": [2.1, 5.4, 11.2, 18.7, 26.3] }]
+}
+```
+
+The rules the renderer enforces, so match them or get plain text:
+
+- `type` is `bar` (compare categories) or `line` (change over an ordered scale)
+- At most 4 series, at most 24 categories
+- Every series needs one value per category, in the same order
+- Values are plain numbers with no units, no `%` signs, and no `null`
+
+Put the unit in `yLabel`, not in the values. Negative numbers are fine and are
+anchored to a zero baseline, which makes `bar` the right form for a pricing gap.
+One chart per answer.
+
 ## Safety
 
 - **Read-only**: Only SELECT queries allowed

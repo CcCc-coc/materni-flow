@@ -3,7 +3,7 @@ import { SEOConfig } from "@/types"
 import { DEFAULT_SEO_CONFIG, COMMON_KEYWORDS } from "./config"
 
 export function generateSEOMetadata(config: SEOConfig): Metadata {
-  // 合并默认配置和页面配置
+  // Page config wins over the site-wide defaults
   const mergedConfig = {
     ...DEFAULT_SEO_CONFIG,
     ...config,

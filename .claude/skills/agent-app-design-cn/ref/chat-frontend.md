@@ -27,6 +27,10 @@
 | `types.ts` | `BlockProps`, 所有渲染器的统一入参 (`source` 和 `language`) |
 | `CodeBlock.tsx` | 普通代码块, 同时是整层的兜底 |
 | `MermaidBlock.tsx` | 把 ```mermaid 渲染成图 |
+| `ChartBlock.tsx` | 解析 ```chart 的 JSON, 交给 `chart/` |
+| `chart/schema.ts` | 严格校验, 任何不合规状一律返回 null |
+| `chart/scale.ts` | 坐标轴数学, 与组件分开以便单独推敲 |
+| `chart/ChartFigure.tsx` | 手写 SVG 的柱状图和折线图 |
 | `index.ts` | `BLOCK_RENDERERS` 查找表和 `getBlockRenderer()` |
 
 开关就是 `index.ts` 里那张表, 加一行支持一种块, 删一行关掉一种:
@@ -34,6 +38,7 @@
 ```typescript
 const BLOCK_RENDERERS: Record<string, ComponentType<BlockProps>> = {
   mermaid: MermaidBlock,
+  chart: ChartBlock,
 }
 ```
 
@@ -45,7 +50,7 @@ const BLOCK_RENDERERS: Record<string, ComponentType<BlockProps>> = {
 
 ## 3. 兜底是常态, 不是异常
 
-`CodeBlock` 是整层站着的地板. 语言不认识, 渲染器被删掉, Mermaid 语法错, 流式还没写完, 这四种情况全都落到它. 所以它不做任何可能抛异常的事.
+`CodeBlock` 是整层站着的地板. 语言不认识, 渲染器被删掉, Mermaid 语法错, chart 的 JSON 不合规, 流式还没写完, 这些情况全都落到它. 所以它不做任何可能抛异常的事.
 
 这条规则的实际后果是: 用户永远看得到内容, 最差也是一段可读的代码文本, 不会白屏, 不会看到报错.
 
@@ -61,7 +66,21 @@ const BLOCK_RENDERERS: Record<string, ComponentType<BlockProps>> = {
 
 ---
 
-## 5. 三个实现上的坑
+## 5. Chart 的取舍
+
+**没用图表库.** recharts 之类要 500KB 以上, 而 bar 和 line 手写各几十行. 更重要的是 dataviz 规范要求的 mark 规格 (4px 圆角柱顶, 2px 柱间隙, 克制的网格) 用库反而要一路对抗默认样式. 所以 `chart/` 下面零新增依赖, 纯 SVG.
+
+**没做饼图.** dataviz 的 job 到 form 对照表里根本没有饼图: 单个比值该用 meter, 部分对整体该用 stacked bar, 超过 7 类该用表格. 想加之前先回去读那张表.
+
+**单序列用单色, 不是一根柱一个颜色.** 一根柱一个颜色是在用颜色编码排名, 会让读者看出数据里并不存在的分组. 只有多序列时才启用分类色板, 且按固定槽位顺序取, 不循环.
+
+**颜色跑过 validator, 不是靠眼睛选的.** 四个槽位在明暗两种模式下都跑了 `dataviz/scripts/validate_palette.js`, 全部 PASS. 光色模式有一条 WARN: aqua 和 yellow 对浅背景对比度低于 3:1, 规范说这条不可忽略, 必须配 "可见标签或表格视图". 图表右下角那个 "Show data" 切换就是为了满足它, 别把它删掉.
+
+**深色只认 `.dark` class, 不认系统偏好.** 全站 Tailwind 是 `darkMode: ["class"]`, 如果图表去听 `prefers-color-scheme`, 系统设成暗色的用户会在白色聊天页里看到一张深色图. token 定义在 `app/globals.css` 的 `.viz-root` 里.
+
+---
+
+## 6. 三个实现上的坑
 
 `mermaid` 整包接近 1MB, 而大多数对话一张图都没有, 所以它是**动态 import**, 页面上真的出现第一个 ```mermaid 块时才加载, 之后整页共用一个 promise. 别把它改成顶层 import.
 
@@ -71,7 +90,7 @@ const BLOCK_RENDERERS: Record<string, ComponentType<BlockProps>> = {
 
 ---
 
-## 6. 加一种新块渲染器
+## 7. 加一种新块渲染器
 
 按这个顺序做, 最后一步是最常被忘掉的.
 
@@ -81,4 +100,6 @@ const BLOCK_RENDERERS: Record<string, ComponentType<BlockProps>> = {
 
 第三步是分界线: 前端认得一个格式, 不等于模型会输出它. 跳过这步的结果是渲染器一行代码都跑不到, 而前端测试全绿, 你会以为功能做完了.
 
-Mermaid 的这一段写在提示词的 `## Diagrams` 里, 约束了三件事: 只在讲结构和流程时用, 数字一律走 Markdown 表格, 一次回答最多一张图. 加 chart 时照这个粒度写.
+提示词里现在有 `## Diagrams` 和 `## Charts` 两段, 都约束到了 "什么时候用" 和 "确切格式" 这个粒度. 加新块时照这个粒度写.
+
+写提示词时注意一个坑: `mise run check` 会扫提示词里的 `FROM x` 和 `JOIN x` 当表名校验, 而它认不出这是散文还是 SQL. `drawn from a zero baseline` 里的 `from a` 会被判成表 `a` 而让构建失败. 换个说法即可.

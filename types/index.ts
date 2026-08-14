@@ -3,34 +3,34 @@
 // ============================================================================
 
 export interface SEOConfig {
-  // 基础信息
+  // Basics
   title: string
   description: string
   keywords?: string[]
 
-  // URL 和站点信息
+  // URL and site identity
   url?: string
   siteName?: string
 
-  // 图片
+  // Image
   image?: string
   imageWidth?: number
   imageHeight?: number
   imageAlt?: string
 
-  // Open Graph 自定义
+  // Open Graph overrides
   ogTitle?: string
   ogDescription?: string
 
-  // Twitter 自定义
+  // Twitter overrides
   twitterTitle?: string
   twitterDescription?: string
 
-  // 其他
+  // Misc
   locale?: string
   type?: "website" | "article"
 
-  // 索引控制
+  // Indexing control
   noIndex?: boolean
   noFollow?: boolean
 }

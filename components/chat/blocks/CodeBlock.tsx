@@ -3,11 +3,11 @@ import { cn } from "@/lib/utils"
 import type { BlockProps } from "./types"
 
 /**
- * 普通围栏代码块。
+ * A plain fenced code block.
  *
- * 它同时是整个 block 层的**兜底**: 语言不认识、渲染器被摘掉、Mermaid 解析失败、
- * 流式输出还没写完, 这四种情况最后都落到这里。所以它必须永远能渲染, 不做任何
- * 可能抛异常的事。
+ * It is also the fallback for the whole block layer. An unknown language, a
+ * renderer that was removed, a Mermaid syntax error, and a block that is still
+ * streaming all end up here. That is why it does nothing that could throw.
  */
 export function CodeBlock({ source, language }: BlockProps) {
   return (

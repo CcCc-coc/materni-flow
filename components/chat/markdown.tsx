@@ -48,8 +48,9 @@ export const Markdown = ({ children, onQuestionClick }: MarkdownProps) => {
               </a>
             );
           },
-          // 围栏块的唯一分发点。行内代码没有 className, 围栏块有 `language-*`,
-          // 后者按语言查 blocks/ 目录里的渲染器 (Mermaid 走这里)。
+          // The one dispatch point for fenced blocks. Inline code has no
+          // className; a fenced block carries `language-*`, and that language
+          // selects a renderer from blocks/ (this is where Mermaid enters).
           code: ({ className, children }) => {
             if (!className) {
               return (
@@ -63,8 +64,9 @@ export const Markdown = ({ children, onQuestionClick }: MarkdownProps) => {
             const Block = getBlockRenderer(language);
             return <Block source={source} language={language} />;
           },
-          // 围栏块自带外层容器 (见 blocks/CodeBlock.tsx), 所以 pre 只透传,
-          // 否则会套出 <pre> 里嵌 <pre> 或者 <pre> 里嵌 <div> 的非法结构。
+          // Fenced blocks render their own outer container (see
+          // blocks/CodeBlock.tsx), so pre only passes through. Wrapping again
+          // would nest <pre> inside <pre>, or a <div> inside a <pre>.
           pre: ({ children }) => <>{children}</>,
           ul: ({ children }) => <ul className="list-disc pl-6 mb-3 space-y-1">{children}</ul>,
           ol: ({ children }) => <ol className="list-decimal pl-6 mb-3 space-y-1">{children}</ol>,

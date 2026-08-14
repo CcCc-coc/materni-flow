@@ -64,6 +64,13 @@ must not be mixed:
 Rotating an API key must not touch the project's name; pointing the repo at a
 new dataset must not touch anyone's credentials.
 
+**Comments and identifiers are English only.** Every comment, docstring, and
+name in the source tree (`.ts`, `.tsx`, `.py`) is written in English, even when
+the conversation that produced it was in Chinese. Chinese belongs in
+`.claude/skills/*-cn/` docs and in chat, never in code. Mixed-language comments
+make the codebase unreadable for anyone who joins later and unsearchable by
+keyword.
+
 **No author identity anywhere.** This site presents a product, not a person.
 There is no name, photo, contact link, or `author`/`creator` page metadata, and
 none should be added — that was portfolio scaffolding the app inherited and does

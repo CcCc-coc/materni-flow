@@ -1,23 +1,28 @@
 import type { ComponentType } from "react"
 
+import { ChartBlock } from "./ChartBlock"
 import { CodeBlock } from "./CodeBlock"
 import { MermaidBlock } from "./MermaidBlock"
 import type { BlockProps } from "./types"
 
 /**
- * 围栏代码块渲染器目录, 按 ```后面的语言标记查表。
+ * Fenced-block renderers, keyed by the language tag on the opening fence.
  *
- * 这里就是开关: 加一行支持一种新块, 删一行关掉一种。没在表里的语言 (包括
- * ```python 这种普通代码) 全部落到 CodeBlock。
+ * This table is the switch: add a line to support a new kind of block, delete a
+ * line to turn one off. Any language not listed here (```python and friends
+ * included) falls through to CodeBlock.
  *
- * 加新渲染器时别忘了最容易漏的一步: 前端认得这个格式不等于模型会输出它,
- * 得同时在 agent_app/prompts/bi-agent-system-prompt.md 里告诉 agent 什么时候产出。
+ * When adding one, do not stop at the frontend. The UI understanding a format
+ * does not make the model produce it, so
+ * `agent_app/prompts/bi-agent-system-prompt.md` has to say when to emit the
+ * block. That step is invisible from here and is the one people forget.
  */
 const BLOCK_RENDERERS: Record<string, ComponentType<BlockProps>> = {
   mermaid: MermaidBlock,
+  chart: ChartBlock,
 }
 
-/** 按语言查渲染器, 查不到就用兜底的 CodeBlock。 */
+/** Resolve a renderer for a language, falling back to plain code. */
 export function getBlockRenderer(language: string): ComponentType<BlockProps> {
   return BLOCK_RENDERERS[language] ?? CodeBlock
 }
