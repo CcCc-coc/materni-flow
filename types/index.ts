@@ -1,45 +1,4 @@
 import { IconType } from "react-icons"
-import { LucideIcon } from "lucide-react"
-
-// ============================================================================
-// Project Types
-// ============================================================================
-
-export interface Project {
-  id: string
-  title: string
-  description: string
-  status: string
-  image: string
-  href: string
-  color: string
-}
-
-// ============================================================================
-// Achievement Stats Types
-// ============================================================================
-
-export interface AchievementStat {
-  number: string
-  description: string
-  color: string
-  borderColor: string
-  glowColor: string
-  icon: IconType
-  href: string
-}
-
-// ============================================================================
-// Project Section Types (30 Voice AI Challenge)
-// ============================================================================
-
-export interface ProjectSection {
-  id: string
-  title: string
-  description: string
-  icon: LucideIcon
-  content: string
-}
 
 // ============================================================================
 // SEO Types
@@ -109,10 +68,4 @@ export interface MarkdownModalProps {
   description?: string
   content: string
   icon?: IconType
-}
-
-export interface SolutionCardProps {
-  section: ProjectSection
-  index: number
-  onCardClick: (id: string) => void
 }
