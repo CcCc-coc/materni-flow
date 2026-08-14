@@ -114,7 +114,6 @@ export const PreviewMessage = ({
                       )}
                     >
                       <Markdown
-                        variant="chat"
                         onQuestionClick={(question) => {
                           append?.({
                             role: 'user',

@@ -321,6 +321,28 @@ SUM(value) * 1.0 / (SELECT SUM(value) FROM table) * 100
 - Lead with the business insight, then show supporting data
 - Highlight anomalies (e.g., "Grade C is underpriced by 5.2 percentage points")
 
+## Diagrams
+
+The UI renders ` ```mermaid ` blocks as real diagrams. Use one only when the
+answer is about **structure or flow** and a table would hide it: a lifecycle the
+data moves through, how two tables relate in a query you just explained, or the
+stages of a funnel.
+
+Never use a diagram for numbers. Rates, rankings, and any comparison of
+magnitudes belong in a Markdown table, which the UI also renders.
+
+Keep it to one diagram per answer, under ten nodes, and always `flowchart LR` or
+`flowchart TD`. Write it as a plain fenced block:
+
+```mermaid
+flowchart LR
+    A[Application] --> B[Approved]
+    A --> C[Rejected]
+    B --> D[Loan Funded]
+```
+
+If the diagram would just restate a sentence, write the sentence instead.
+
 ## Safety
 
 - **Read-only**: Only SELECT queries allowed

@@ -3,15 +3,15 @@
 import React from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { cn } from '@/lib/utils';
+
+import { getBlockRenderer } from './blocks';
 
 interface MarkdownProps {
   children: string;
-  variant?: 'chat' | 'card';
   onQuestionClick?: (question: string) => void;
 }
 
-export const Markdown = ({ children, variant = 'chat', onQuestionClick }: MarkdownProps) => {
+export const Markdown = ({ children, onQuestionClick }: MarkdownProps) => {
   // Preprocess markdown to handle #ask: links with spaces
   const preprocessedChildren = children.replace(
     /\[([^\]]+)\]\(#ask:([^)]+)\)/g,
@@ -48,27 +48,24 @@ export const Markdown = ({ children, variant = 'chat', onQuestionClick }: Markdo
               </a>
             );
           },
-          code: ({ className, children, ...props }) => {
-            // Inline code doesn't have a className (language-*), code blocks do
-            const isInline = !className;
-            if (isInline) {
+          // 围栏块的唯一分发点。行内代码没有 className, 围栏块有 `language-*`,
+          // 后者按语言查 blocks/ 目录里的渲染器 (Mermaid 走这里)。
+          code: ({ className, children }) => {
+            if (!className) {
               return (
                 <code className="bg-slate-100 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 px-1.5 py-0.5 rounded text-sm font-mono text-[#0A1628] dark:text-slate-100">
                   {children}
                 </code>
               );
             }
-            return (
-              <code className={cn("block bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-3 rounded-lg my-3 overflow-x-auto text-sm font-mono text-[#0A1628] dark:text-slate-100", className)}>
-                {children}
-              </code>
-            );
+            const language = /language-(\w+)/.exec(className)?.[1] ?? '';
+            const source = String(children).replace(/\n$/, '');
+            const Block = getBlockRenderer(language);
+            return <Block source={source} language={language} />;
           },
-          pre: ({ children }) => (
-            <pre className="bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-4 rounded-lg my-3 overflow-x-auto">
-              {children}
-            </pre>
-          ),
+          // 围栏块自带外层容器 (见 blocks/CodeBlock.tsx), 所以 pre 只透传,
+          // 否则会套出 <pre> 里嵌 <pre> 或者 <pre> 里嵌 <div> 的非法结构。
+          pre: ({ children }) => <>{children}</>,
           ul: ({ children }) => <ul className="list-disc pl-6 mb-3 space-y-1">{children}</ul>,
           ol: ({ children }) => <ol className="list-decimal pl-6 mb-3 space-y-1">{children}</ol>,
           li: ({ children }) => <li className="leading-relaxed">{children}</li>,
