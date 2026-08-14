@@ -1,24 +1,17 @@
+import { brand } from "@/lib/project"
+
 export const DEFAULT_SEO_CONFIG = {
-  siteName: "John Doe Portfolio",
+  siteName: brand.siteName,
   author: {
-    name: "John Doe",
-    url: "https://johndoe.me",
+    name: brand.author.name,
+    url: brand.author.url,
   },
-  creator: "John Doe",
-  locale: "en_US",
-  image: "/images/profile.png",
-  imageWidth: 192,
-  imageHeight: 192,
+  creator: brand.author.name,
+  locale: brand.locale,
+  image: brand.avatar.src,
+  imageWidth: brand.avatar.width,
+  imageHeight: brand.avatar.height,
   type: "website" as const,
 }
 
-export const COMMON_KEYWORDS = [
-  "John Doe",
-  "Solution Architect",
-  "Full Stack Developer",
-  "AWS",
-  "Python",
-  "TypeScript",
-  "Next.js",
-  "System Design",
-]
+export const COMMON_KEYWORDS = brand.keywords

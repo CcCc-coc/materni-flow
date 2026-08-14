@@ -56,7 +56,7 @@ AI 会阅读工具的 docstring 来理解：这个工具做什么、需要什么
 
 ### Tool 定义示例
 
-**文件位置：** `learn_smb_lending_lens/one/one_04_agent.py`
+**文件位置：** `agent_app/one/one_04_agent.py`
 
 ```python
 from strands import tool
@@ -93,7 +93,7 @@ def tool_execute_sql_query(self, sql: str) -> str:
 ### 代码组织
 
 ```
-learn_smb_lending_lens/
+agent_app/
 ├── write_operations.py     # 纯函数：assign_bed(), create_order() 等
 │
 └── one/
@@ -153,7 +153,7 @@ def tool_assign_bed(self, admission_id: str, bed_id: str) -> str:
 
 **System Prompt** 是给 AI 的「工作手册」，定义它的角色、能力、行为规则。
 
-**文件位置：** `learn_smb_lending_lens/prompts/bi-agent-system-prompt.md`
+**文件位置：** `agent_app/prompts/bi-agent-system-prompt.md`
 
 ### Prompt 的关键组成部分
 
@@ -301,9 +301,9 @@ The database contains 11 tables for managing an OB/GYN ward:
 
 | 文件 | 内容 |
 |------|------|
-| `learn_smb_lending_lens/one/one_04_agent.py` | Tool 定义和 Agent 创建 |
-| `learn_smb_lending_lens/prompts/bi-agent-system-prompt.md` | System Prompt |
-| `learn_smb_lending_lens/write_operations.py` | 写操作纯函数 |
+| `agent_app/one/one_04_agent.py` | Tool 定义和 Agent 创建 |
+| `agent_app/prompts/bi-agent-system-prompt.md` | System Prompt |
+| `agent_app/write_operations.py` | 写操作纯函数 |
 | `data/database-exploration/database-schema.txt` | 数据库结构参考 |
 
 ---

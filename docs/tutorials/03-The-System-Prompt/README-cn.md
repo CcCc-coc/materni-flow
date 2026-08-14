@@ -204,7 +204,7 @@ LEFT JOIN default_event de ON l.id = de.loan_id
 
 现在打开实际的系统提示词，带着这些概念去阅读：
 
-**文件：** [`learn_smb_lending_lens/prompts/bi-agent-system-prompt.md`](learn_smb_lending_lens/prompts/bi-agent-system-prompt.md)
+**文件：** [`agent_app/prompts/bi-agent-system-prompt.md`](agent_app/prompts/bi-agent-system-prompt.md)
 
 阅读时问自己：
 

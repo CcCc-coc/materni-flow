@@ -37,7 +37,7 @@
 ├── api/                    # FastAPI 入口 (Vercel Serverless)
 │   └── index.py            # 所有 API 路由定义
 │
-├── learn_smb_lending_lens/   # 后端核心逻辑
+├── agent_app/   # 后端核心逻辑
 │   ├── config.py                  # 配置管理
 │   ├── multi_round_bedrock_runtime_chat_manager.py  # Bedrock 调用
 │   ├── ai_sdk_adapter.py          # AI SDK 协议适配
@@ -77,7 +77,7 @@
 ```bash
 # 1. 克隆项目
 git clone <repo-url>
-cd learn_smb_lending_lens-project
+cd agent_app-project
 
 # 2. 让 mise 安装工具链 (Python 3.12, Node 24, pnpm, uv)
 mise install

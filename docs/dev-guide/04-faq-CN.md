@@ -73,7 +73,7 @@ export const METADATA = {
 
 **需求：** 调整 Agent 的行为、工具使用指南或工作流程
 
-**修改位置：** `learn_smb_lending_lens/prompts/bi-agent-system-prompt.md`
+**修改位置：** `agent_app/prompts/bi-agent-system-prompt.md`
 
 ```markdown
 You are a helpful AI assistant for OB/GYN ward scheduling.
@@ -88,7 +88,7 @@ Your role is to help nurses query ward status, manage beds...
 
 **需求：** 切换到其他模型
 
-**修改位置：** `learn_smb_lending_lens/config/conf_00_def.py`
+**修改位置：** `agent_app/config/conf_00_def.py`
 
 ```python
 @dataclasses.dataclass
@@ -252,9 +252,9 @@ Vercel Dashboard → Deployments → 选择部署 → View Build Logs / Function
 | 网站标题/描述 | `lib/constants.ts` |
 | Landing Page 内容 | `app/(marketing)/_components/` |
 | Chat UI | `components/chat/` |
-| Agent System Prompt | `learn_smb_lending_lens/prompts/bi-agent-system-prompt.md` |
-| AI 模型 | `learn_smb_lending_lens/config/conf_00_def.py` |
-| Agent 工具 | `learn_smb_lending_lens/one/one_04_agent.py` |
+| Agent System Prompt | `agent_app/prompts/bi-agent-system-prompt.md` |
+| AI 模型 | `agent_app/config/conf_00_def.py` |
+| Agent 工具 | `agent_app/one/one_04_agent.py` |
 | API 端点 | `api/index.py` |
 | 全局样式 | `app/globals.css` |
 | Tailwind 配置 | `tailwind.config.ts` |

@@ -19,6 +19,7 @@ import { ArrowUpIcon, StopIcon } from "./icons";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import suggestedActionsData from "@/data/suggested-actions.json";
+import { dataset } from "@/lib/project";
 
 const suggestedActions = suggestedActionsData;
 
@@ -108,7 +109,7 @@ export function MultimodalInput({
         <div className="flex flex-col gap-3">
           <div className="border border-slate-200 dark:border-slate-700 p-3 bg-white dark:bg-slate-900 rounded-xl">
             <p className="font-display text-sm text-slate-500 dark:text-slate-400 text-center">
-              Ask me directly or click a suggestion
+              {dataset.chat.suggestionsHint}
             </p>
           </div>
 
@@ -150,7 +151,7 @@ export function MultimodalInput({
       <div className="relative">
         <Textarea
           ref={textareaRef}
-          placeholder="Enter your question..."
+          placeholder={dataset.chat.inputPlaceholder}
           value={input}
           onChange={handleInput}
           className={cn(

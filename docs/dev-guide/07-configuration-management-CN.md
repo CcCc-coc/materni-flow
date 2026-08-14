@@ -40,7 +40,7 @@
 首先，我们需要知道代码"跑在哪里"。这是 `runtime.py` 的工作：
 
 ```python
-# learn_smb_lending_lens/runtime.py
+# agent_app/runtime.py
 
 class Runtime:
     def is_local(self) -> bool:
@@ -62,7 +62,7 @@ Vercel 的服务器会自动设置一个环境变量 `VERCEL=1`。如果这个�
 **使用方式：**
 
 ```python
-from learn_smb_lending_lens.runtime import runtime
+from agent_app.runtime import runtime
 
 if runtime.is_local():
     print("我在本地电脑上")
@@ -79,7 +79,7 @@ elif runtime.is_vercel():
 ### Config 类的结构
 
 ```python
-# learn_smb_lending_lens/config/conf_00_def.py
+# agent_app/config/conf_00_def.py
 
 @dataclasses.dataclass
 class Config:
@@ -244,7 +244,7 @@ cp .env.example .env
 这个项目用 `ConfigMixin` 实现：
 
 ```python
-# learn_smb_lending_lens/one/one_01_config.py
+# agent_app/one/one_01_config.py
 
 from functools import cached_property
 from ..config.conf_00_def import Config
@@ -289,7 +289,7 @@ class One(ConfigMixin, DbMixin, Boto3Mixin, AgentMixin):
 配置系统设计好了，使用起来非常简单：
 
 ```python
-from learn_smb_lending_lens.api import one
+from agent_app.api import one
 
 # 通过 one 单例访问配置
 print(one.config.aws_region)    # us-east-1
@@ -337,7 +337,7 @@ def new_in_vercel_runtime(cls):
 ### 3. 在代码里使用
 
 ```python
-from learn_smb_lending_lens.config import config
+from agent_app.config import config
 
 print(config.my_new_setting)
 ```

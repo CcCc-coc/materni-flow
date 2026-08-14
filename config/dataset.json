@@ -1,0 +1,97 @@
+{
+  "_comment": "WHAT this app is about. Everything that changes when you point the repo at a new dataset / business domain. This is the ONE file to edit for a swap; see .claude/skills/swap-dataset for the full procedure and for the handful of things that cannot live here (the sqlite file, the system prompt, the kickstart questions).",
+
+  "project": {
+    "name": "smbll",
+    "displayName": "SMB Lending Lens",
+    "tagline": "Fintech Lending Analytics Agent",
+    "logo": {
+      "prefix": "lending",
+      "accent": "lens"
+    },
+    "footerName": "LendingLens"
+  },
+
+  "agent": {
+    "name": "Lending Lens",
+    "domainLabel": "SMB lending analytics",
+    "promptFile": "agent_app/prompts/bi-agent-system-prompt.md"
+  },
+
+  "seo": {
+    "title": "SMB Lending Lens — AI-Powered Fintech Analytics Agent",
+    "description": "An AI agent for fintech lending analytics. Query loan portfolios, analyze risk pricing, detect approval leakage, identify early warning signals, and understand customer lifecycle value through natural conversation.",
+    "keywords": [
+      "Fintech",
+      "SMB Lending",
+      "Loan Analytics",
+      "Risk Pricing",
+      "AI Agent",
+      "Portfolio Analysis",
+      "Credit Risk",
+      "Lending Intelligence"
+    ]
+  },
+
+  "database": {
+    "displayName": "fintech_smb_lending_pipeline_medium_data",
+    "blurb": "Analyzing Pacific Bridge Lending data: 10 tables, ~52,500 records covering applications, loans, payments, and defaults",
+    "tableInsertOrder": [
+      "industry",
+      "risk_grade",
+      "loan_status",
+      "loan_officer",
+      "customer",
+      "application",
+      "loan",
+      "repayment_schedule",
+      "payment",
+      "default_event"
+    ]
+  },
+
+  "home": {
+    "headline": {
+      "prefix": "SMB Lending ",
+      "accent": "Lens"
+    },
+    "description": "An AI agent that helps fintech lending teams analyze loan portfolios through natural conversation. Query risk metrics, identify mispriced segments, detect early warning signals, and surface actionable insights from your lending data.",
+    "capabilities": [
+      { "icon": "BarChart3", "label": "Risk Pricing Analysis" },
+      { "icon": "Shield", "label": "Portfolio Concentration" },
+      { "icon": "AlertTriangle", "label": "Early Warning Signals" },
+      { "icon": "Users", "label": "Customer Lifecycle Value" }
+    ],
+    "techStack": ["Strands SDK", "AWS Bedrock", "PostgreSQL", "Next.js"],
+    "cta": {
+      "title": "Start Analyzing",
+      "subtitle": "Ask questions about your lending portfolio in plain English"
+    }
+  },
+
+  "chat": {
+    "welcomeSubtitle": "Ask questions about the SMB lending portfolio in plain English.",
+    "insights": [
+      { "icon": "BarChart3", "title": "Risk Pricing", "description": "Compare implied vs actual default rates" },
+      { "icon": "TrendingUp", "title": "Portfolio Health", "description": "Industry concentration & exposure" },
+      { "icon": "AlertTriangle", "title": "Early Warnings", "description": "Payment patterns before defaults" },
+      { "icon": "Users", "title": "Customer Value", "description": "Repeat vs first-time borrowers" }
+    ],
+    "tryExamples": "Try: \"What's the default rate by risk grade?\" or \"Which industries have the highest concentration?\"",
+    "suggestionsHint": "Ask me directly or click a suggestion",
+    "inputPlaceholder": "Enter your question..."
+  },
+
+  "checks": {
+    "_comment": "Vocabulary from datasets this repo USED to serve. `mise run check` fails if any of these words survive in code. When you swap datasets, move the outgoing domain's distinctive nouns into this list -- that is what makes a forgotten file impossible to miss.",
+    "retiredTerms": [
+      "patient",
+      "bed",
+      "ward",
+      "obstetric",
+      "nurse",
+      "admission",
+      "discharge"
+    ]
+  }
+}

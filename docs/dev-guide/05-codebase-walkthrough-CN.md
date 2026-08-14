@@ -7,9 +7,9 @@
 ## 项目结构
 
 ```
-learn_smb_lending_lens-project/
+agent_app-project/
 │
-├── learn_smb_lending_lens/      # Python 后端核心代码，包含 AI Agent、数据库连接、配置管理等所有业务逻辑
+├── agent_app/      # Python 后端核心代码，包含 AI Agent、数据库连接、配置管理等所有业务逻辑
 ├── tests_python/           # Python 测试文件，用 pytest 框架运行，验证后端代码是否正常工作
 ├── api/                    # FastAPI 入口文件，部署到 Vercel 时作为 Serverless Function 运行
 ├── app/                    # Next.js 前端页面，用户看到的聊天界面就在这里
@@ -21,14 +21,14 @@ learn_smb_lending_lens-project/
 
 ---
 
-## learn_smb_lending_lens 模块结构
+## agent_app 模块结构
 
 这是整个项目的「大脑」，所有后端逻辑都在这里。
 
 ```
-learn_smb_lending_lens/
+agent_app/
 │
-├── api.py                  # 对外暴露的入口文件，其他代码通过 `from learn_smb_lending_lens.api import one` 获取主对象
+├── api.py                  # 对外暴露的入口文件，其他代码通过 `from agent_app.api import one` 获取主对象
 ├── paths.py                # 路径管理器，把项目里所有重要的文件路径集中定义在一起，避免到处写死路径字符串
 ├── runtime.py              # 运行环境检测器，自动判断代码是跑在你的电脑上（local）还是云端服务器上（vercel）
 ├── constants.py            # 常量和枚举定义，比如数据库表名、状态码等不会变的值，集中放在这里方便维护
@@ -162,9 +162,9 @@ tests_python/
 整个程序中有三个重要的「单例」对象，它们在程序启动时创建一次，之后到处使用同一个实例：
 
 ```python
-from learn_smb_lending_lens.api import one           # 主对象，包含 Agent、数据库、配置等所有能力
-from learn_smb_lending_lens.paths import path_enum   # 路径对象，通过它获取项目中各种文件的路径
-from learn_smb_lending_lens.runtime import runtime   # 运行时对象，用于判断当前是本地开发还是云端部署
+from agent_app.api import one           # 主对象，包含 Agent、数据库、配置等所有能力
+from agent_app.paths import path_enum   # 路径对象，通过它获取项目中各种文件的路径
+from agent_app.runtime import runtime   # 运行时对象，用于判断当前是本地开发还是云端部署
 ```
 
 ---

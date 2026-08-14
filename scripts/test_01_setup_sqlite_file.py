@@ -9,7 +9,7 @@ Usage:
 Copies (overwriting) data.sqlite.example -> tmp/data.sqlite.
 """
 
-from learn_smb_lending_lens.tests.db_helper import setup_sqlite_db
+from agent_app.tests.db_helper import setup_sqlite_db
 
 if __name__ == "__main__":
     setup_sqlite_db(

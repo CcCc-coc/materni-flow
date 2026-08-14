@@ -21,7 +21,7 @@
 
 ```toml
 [project]
-name = "learn_smb_lending_lens"       # 项目名称
+name = "agent_app"       # 项目名称
 version = "0.1.1"                # 项目版本
 requires-python = ">=3.12,<4.0"  # 需要 Python 3.12 或更高版本
 

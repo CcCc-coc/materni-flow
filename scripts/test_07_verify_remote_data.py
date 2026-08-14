@@ -32,8 +32,8 @@ import sys
 
 import sqlalchemy as sa
 
-from learn_smb_lending_lens.api import one
-from learn_smb_lending_lens.tests.db_sync import TABLE_INSERT_ORDER, prefixed
+from agent_app.api import one
+from agent_app.tests.db_sync import TABLE_INSERT_ORDER, prefixed
 
 
 def count_rows(engine: sa.Engine, table_name: str) -> int:

@@ -99,7 +99,7 @@ SQLite 和 PostgreSQL 的数据类型表示方式不同：
 
 ## 代码实现：db_sync.py
 
-同步逻辑在 `learn_smb_lending_lens/tests/db_sync.py`。
+同步逻辑在 `agent_app/tests/db_sync.py`。
 
 ### 插入顺序
 
@@ -264,7 +264,7 @@ Sync completed successfully!
 ### 方法 2：在 Python 代码中调用
 
 ```python
-from learn_smb_lending_lens.tests.db_sync import reset_remote_database
+from agent_app.tests.db_sync import reset_remote_database
 
 # 重置远程数据库
 result = reset_remote_database(verbose=True)

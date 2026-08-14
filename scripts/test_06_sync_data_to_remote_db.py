@@ -22,8 +22,8 @@ Verify the result afterwards with:
     .venv/bin/python scripts/test_07_verify_remote_data.py
 """
 
-from learn_smb_lending_lens.api import one
-from learn_smb_lending_lens.tests.db_sync import reset_remote_database
+from agent_app.api import one
+from agent_app.tests.db_sync import reset_remote_database
 
 
 def main():

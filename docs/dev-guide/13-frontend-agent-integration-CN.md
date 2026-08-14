@@ -51,12 +51,12 @@ from fastapi import FastAPI, Request, Query
 from fastapi.responses import JSONResponse, StreamingResponse
 from vercel_ai_sdk_mate.api import RequestBody
 
-from learn_smb_lending_lens.ai_sdk_adapter import ai_sdk_message_with_reasoning_generator
-from learn_smb_lending_lens.ai_sdk_adapter import get_last_user_message_text
-from learn_smb_lending_lens.ai_sdk_adapter import request_body_to_agent_history
-from learn_smb_lending_lens.one.api import one
-from learn_smb_lending_lens.agent_debugger import extract_text_from_messages
-from learn_smb_lending_lens.agent_debugger import parse_response_text
+from agent_app.ai_sdk_adapter import ai_sdk_message_with_reasoning_generator
+from agent_app.ai_sdk_adapter import get_last_user_message_text
+from agent_app.ai_sdk_adapter import request_body_to_agent_history
+from agent_app.one.api import one
+from agent_app.agent_debugger import extract_text_from_messages
+from agent_app.agent_debugger import parse_response_text
 ```
 
 **关键模块说明：**
@@ -400,8 +400,8 @@ Markdown renders answer
 | 文件 | 作用 |
 |------|------|
 | `api/index.py` | FastAPI 后端入口，处理 `/api/chat` 请求 |
-| `learn_smb_lending_lens/ai_sdk_adapter.py` | 格式转换：AI SDK ↔ Agent 消息格式 |
-| `learn_smb_lending_lens/agent_debugger.py` | 从 Agent 消息提取 thinking 和 answer |
+| `agent_app/ai_sdk_adapter.py` | 格式转换：AI SDK ↔ Agent 消息格式 |
+| `agent_app/agent_debugger.py` | 从 Agent 消息提取 thinking 和 answer |
 | `components/chat/message.tsx` | 前端消息组件，渲染 ReasoningBlock |
 
 ---

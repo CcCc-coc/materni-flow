@@ -9,7 +9,7 @@ Usage:
 Change the `request` variable at the bottom to test different queries.
 """
 
-from learn_smb_lending_lens.one.api import one
+from agent_app.one.api import one
 
 # =============================================================================
 # Test Requests - Onboarding & System Understanding (1-3)

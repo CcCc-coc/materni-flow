@@ -4,7 +4,7 @@
 
 Explore the lending database systematically and build a deep understanding of the business data model.
 
-Read the tutorial: [SMB Lending Lens - Data Exploration](https://github.com/easyscale-academy/learn_smb_lending_lens-project/tree/02-Data-Exploration/)
+Read the tutorial: [SMB Lending Lens - Data Exploration](https://github.com/easyscale-academy/agent_app-project/tree/02-Data-Exploration/)
 
 ---
 

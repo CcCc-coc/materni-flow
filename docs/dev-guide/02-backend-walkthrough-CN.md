@@ -10,7 +10,7 @@
 ├── api/                           # FastAPI 入口（Vercel Serverless）
 │   └── index.py                   # 所有 API 路由定义
 │
-└── learn_smb_lending_lens/             # 核心业务逻辑
+└── agent_app/             # 核心业务逻辑
     ├── __init__.py
     ├── config.py                  # 配置管理（环境检测、AWS credentials）
     ├── runtime.py                 # 运行时检测（local vs Vercel）
@@ -71,7 +71,7 @@ async def handle_chat_data(request: Request):
 
 ---
 
-### `learn_smb_lending_lens/config.py` - 配置管理
+### `agent_app/config.py` - 配置管理
 
 **设计模式：** Config Pattern
 
@@ -107,7 +107,7 @@ config = Config.new()
 
 ---
 
-### `learn_smb_lending_lens/runtime.py` - 运行时检测
+### `agent_app/runtime.py` - 运行时检测
 
 检测当前是本地开发还是 Vercel 环境：
 
@@ -124,7 +124,7 @@ runtime = Runtime()
 
 ---
 
-### `learn_smb_lending_lens/multi_round_bedrock_runtime_chat_manager.py` - 对话管理
+### `agent_app/multi_round_bedrock_runtime_chat_manager.py` - 对话管理
 
 封装 AWS Bedrock Converse API，管理多轮对话：
 
@@ -153,7 +153,7 @@ class ChatSession:
 
 ---
 
-### `learn_smb_lending_lens/ai_sdk_adapter.py` - 格式转换
+### `agent_app/ai_sdk_adapter.py` - 格式转换
 
 AI SDK（前端）和 Bedrock（后端）使用不同的消息格式，这个模块负责转换：
 
@@ -181,7 +181,7 @@ AI SDK（前端）和 Bedrock（后端）使用不同的消息格式，这个模
 
 ---
 
-### `learn_smb_lending_lens/boto_ses.py` - AWS Client 初始化
+### `agent_app/boto_ses.py` - AWS Client 初始化
 
 根据配置创建 boto3 Session 和 Bedrock Runtime Client：
 
@@ -198,7 +198,7 @@ bedrock_runtime_client = session.client("bedrock-runtime")
 
 ---
 
-### `learn_smb_lending_lens/prompts/` - Prompt 模板
+### `agent_app/prompts/` - Prompt 模板
 
 | 文件 | 用途 |
 |------|------|

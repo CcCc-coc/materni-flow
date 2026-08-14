@@ -38,6 +38,10 @@ run = ".venv/bin/python scripts/test_01_setup_sqlite_file.py"
 description = "💾 Export Core Python dependencies to requirements.txt via uv"
 run = "uv export --format requirements-txt --no-dev --no-emit-project --no-hashes --no-annotate --no-emit-package pywin32 --no-emit-package colorama --no-emit-package tzdata | sed 's/ ; platform_machine ==.*or.*//' > requirements.txt"
 
+[tasks.check]
+description = "🔍 Check the repo agrees with config/dataset.json (run after a dataset swap)"
+run = ".venv/bin/python scripts/test_00_check_project_config.py"
+
 [tasks.test-python]
 description = "🧪 Run Python tests with pytest"
 run = ".venv/bin/pytest tests_python"
@@ -47,12 +51,12 @@ description = "🧪 Run Node.js tests"
 run = "node --test tests_node/*.test.js"
 
 [tasks.test]
-description = "🧪 Run all tests (Python + Node.js)"
-depends = ["test-python", "test-node"]
+description = "🧪 Run all checks and tests (config consistency + Python + Node.js)"
+depends = ["check", "test-python", "test-node"]
 
 [tasks.cov-python]
 description = "🧪 Run Python code coverage tests with pytest"
-run = ".venv/bin/pytest tests_python -s --tb=native --cov=learn_smb_lending_lens --cov-report term-missing --cov-report html:htmlcov"
+run = ".venv/bin/pytest tests_python -s --tb=native --cov=agent_app --cov-report term-missing --cov-report html:htmlcov"
 
 [tasks.cov]
 description = "🧪 Run all code coverage tests (Python + Node.js)"

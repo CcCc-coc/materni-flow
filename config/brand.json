@@ -1,0 +1,37 @@
+{
+  "_comment": "WHO ships this app. Author identity, links, avatar. This file is stable across dataset swaps -- change it once when a new person forks the repo, then never again. Business copy lives in dataset.json, secrets live in .env.",
+
+  "author": {
+    "name": "John Doe",
+    "url": "https://johndoe.me",
+    "email": "sanhe@johndoe.me",
+    "github": "https://github.com/johndoe",
+    "linkedin": "https://linkedin.com/in/johndoe"
+  },
+
+  "siteName": "John Doe Portfolio",
+  "locale": "en_US",
+
+  "avatar": {
+    "src": "/images/profile.png",
+    "width": 192,
+    "height": 192
+  },
+
+  "keywords": [
+    "John Doe",
+    "Solution Architect",
+    "Full Stack Developer",
+    "AWS",
+    "Python",
+    "TypeScript",
+    "Next.js",
+    "System Design"
+  ],
+
+  "imageHosts": [
+    "cdn.johndoe.me",
+    "sh-img-cdn.johndoe.me",
+    "*.johndoe.me"
+  ]
+}

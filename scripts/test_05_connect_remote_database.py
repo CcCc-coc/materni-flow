@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import sqlalchemy as sa
-from learn_smb_lending_lens.api import one
+from agent_app.api import one
 
 engine = one.remote_postgres_engine
 stmt = sa.text("SELECT 1;")

@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 
 import fire
-from learn_smb_lending_lens.sql_utils import execute_and_print_result
-from learn_smb_lending_lens.one.api import one
+from agent_app.sql_utils import execute_and_print_result
+from agent_app.one.api import one
 
 
 def main(sql: str):

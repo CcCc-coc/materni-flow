@@ -8,7 +8,7 @@ import { useChat } from "@ai-sdk/react";
 import { toast } from "sonner";
 import { useState, useEffect, useRef } from "react";
 import FingerprintJS from '@fingerprintjs/fingerprintjs';
-import { METADATA } from "@/lib/constants";
+import { dataset } from "@/lib/project";
 
 export function Chat() {
   const chatId = "001";
@@ -123,9 +123,13 @@ export function Chat() {
                     <span className="font-display text-sm text-white">AI</span>
                   </div>
                   <div className="flex-1">
-                    <h3 className="font-display text-sm text-[#0A1628] dark:text-white">{METADATA.AI_ASSISTANT_NAME}</h3>
+                    <h3 className="font-display text-sm text-[#0A1628] dark:text-white">{dataset.agent.name}</h3>
                     <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                      I'm here to help you with <span className="font-semibold text-blue-600 dark:text-blue-400">SMB lending analytics</span> and portfolio insights.
+                      I'm here to help you with{" "}
+                      <span className="font-semibold text-blue-600 dark:text-blue-400">
+                        {dataset.agent.domainLabel}
+                      </span>
+                      .
                     </p>
                   </div>
                 </div>

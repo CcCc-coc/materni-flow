@@ -4,7 +4,7 @@
 
 Study how to write an effective AI Agent system prompt by comparing a production prompt against its source materials. Understand what to include, what to omit, and why.
 
-Read the tutorial: [SMB Lending Lens - The System Prompt](https://github.com/easyscale-academy/learn_smb_lending_lens-project/tree/03-The-System-Prompt/)
+Read the tutorial: [SMB Lending Lens - The System Prompt](https://github.com/easyscale-academy/agent_app-project/tree/03-The-System-Prompt/)
 
 ---
 
@@ -14,7 +14,7 @@ Read the tutorial: [SMB Lending Lens - The System Prompt](https://github.com/eas
 
 Study the actual system prompt used by the BI Agent:
 
-**File:** [`learn_smb_lending_lens/prompts/bi-agent-system-prompt.md`](learn_smb_lending_lens/prompts/bi-agent-system-prompt.md)
+**File:** [`agent_app/prompts/bi-agent-system-prompt.md`](agent_app/prompts/bi-agent-system-prompt.md)
 
 As you read, identify:
 - Identity and scope (who is the agent?)

@@ -63,7 +63,7 @@
 
 ### 这是什么？
 
-`learn_smb_lending_lens/agent_debugger.py` 是一个调试工具模块，帮你：
+`agent_app/agent_debugger.py` 是一个调试工具模块，帮你：
 
 1. **格式化输出** — 把 Agent 的响应整理成易读的格式
 2. **分离思考与回答** — 把 `<thinking>` 标签里的思考过程和最终回答分开显示
@@ -83,7 +83,7 @@
 这是你最常用的函数：
 
 ```python
-from learn_smb_lending_lens.agent_debugger import chat
+from agent_app.agent_debugger import chat
 
 # 发送消息给 Agent
 thinking, answer = chat(
@@ -243,9 +243,9 @@ Turn 3: 验证 (Verify)
 以床位分配测试为例，看看代码是怎么写的：
 
 ```python
-from learn_smb_lending_lens.one.api import one
-from learn_smb_lending_lens.tests.db_sync import reset_remote_database
-from learn_smb_lending_lens.agent_debugger import chat, print_summary
+from agent_app.one.api import one
+from agent_app.tests.db_sync import reset_remote_database
+from agent_app.agent_debugger import chat, print_summary
 
 def test_assign_bed_full(debug: bool = False):
     # 获取 Agent 实例，清空历史消息
@@ -436,8 +436,8 @@ cat tmp/debug_report.md
 如果 Agent 调用 Tool 时出错，可以单独测试底层的纯函数：
 
 ```python
-from learn_smb_lending_lens.write_operations import assign_bed
-from learn_smb_lending_lens.one.api import one
+from agent_app.write_operations import assign_bed
+from agent_app.one.api import one
 
 # 直接调用纯函数，跳过 Agent
 result = assign_bed(

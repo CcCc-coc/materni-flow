@@ -9,22 +9,26 @@
 ### Entry Point
 
 ```python
-from learn_smb_lending_lens.api import one  # Main singleton instance
+from agent_app.api import one  # Main singleton instance
 ```
 
 ### Directory Structure
 
 ```
-learn_smb_lending_lens/
-├── api.py
+config/                      # Project identity, committed to Git, read by BOTH runtimes
+├── brand.json               #   WHO ships this (author, links, avatar) -- stable
+└── dataset.json             #   WHAT it is about (business copy, DB, agent) -- swapped per dataset
+
+agent_app/                   # Python package. Name is deliberately generic and
+├── api.py                   #   never changes when the dataset changes.
 ├── paths.py
+├── project_config.py        # Typed reader over config/*.json
 ├── runtime.py
 ├── constants.py
-├── write_operations.py
 ├── sql_utils.py
 ├── ai_sdk_adapter.py
 │
-├── config/
+├── config/                  # NOTE: secrets from .env -- NOT config/*.json
 │   └── conf_00_def.py
 │
 ├── one/
@@ -39,7 +43,45 @@ learn_smb_lending_lens/
 │   └── bi-agent-system-prompt.md
 │
 └── db_schema/
+
+lib/
+├── project.ts               # Frontend entry point to config/*.json
+├── icons.ts                 # Icon-name -> component map used by config/dataset.json
+└── constants.ts             # Derived view of the above; authored nothing
 ```
+
+### The Two Kinds of "Config"
+
+Two things in this repo are called config. They change for different reasons and
+must not be mixed:
+
+| | `config/*.json` | `.env` → `agent_app/config/` |
+|---|---|---|
+| Holds | Project identity, business copy, table order | API keys, DB credentials, LLM provider |
+| Differs per | **dataset** | **machine** |
+| In Git | Yes | No |
+| Read by | Next.js *and* Python | Python only |
+
+Rotating an API key must not touch the project's name; pointing the repo at a
+new dataset must not touch anyone's credentials.
+
+### Swapping the Dataset
+
+Everything that varies between datasets is either in `config/dataset.json` or in
+one of three content files. When adding UI copy, a brand string, or a business
+term, put it in `config/dataset.json` — never inline it in a component.
+
+| What | Where |
+|---|---|
+| Identity, copy, DB display name, table order | `config/dataset.json` |
+| Agent's domain knowledge | `agent_app/prompts/bi-agent-system-prompt.md` |
+| Kickstart questions | `data/suggested-actions.json` |
+| The data itself | `data.sqlite.example` |
+| Dataset-specific write tools | `@tool` methods in `one_04_agent.py` |
+
+Run `mise run check` afterwards. It fails on retired vocabulary left in code, a
+`tableInsertOrder` that disagrees with the SQLite file, a prompt that queries a
+nonexistent table, and unregistered icon names.
 
 ### When to Modify Each File
 
@@ -51,7 +93,7 @@ learn_smb_lending_lens/
 | `paths.py` | Defines all file/directory paths as `PathEnum` | When adding new files (prompts, data files, output paths). Add path here first, then use `path_enum.your_new_path` everywhere. |
 | `runtime.py` | Detects runtime environment (local vs vercel) | When adding a new deployment target (e.g., AWS Lambda). Add new enum value and detection logic. |
 | `constants.py` | Enums and constants | When adding new enum types or magic values that need to be shared across modules. |
-| `write_operations.py` | Pure functions for DB writes (4 functions) | When adding new database write operations. Keep functions pure: take `engine` as first param, return dict. |
+| `project_config.py` | Typed reader over `config/brand.json` and `config/dataset.json` | When Python needs a new value from the project config. Add a property; do not duplicate the value into a second file. |
 | `sql_utils.py` | Pure functions for SQL execution and formatting | When changing how SQL results are formatted or adding new query validation rules. |
 | `ai_sdk_adapter.py` | Converts Vercel AI SDK format <-> Bedrock format | When frontend message format changes or when switching to a different LLM provider. |
 
@@ -115,14 +157,14 @@ One (one_00_main.py)
 
 | Type | Location | Characteristics |
 |------|----------|-----------------|
-| **Pure Functions** | `write_operations.py`, `sql_utils.py` | Take `engine` as first param, no class dependency |
+| **Pure Functions** | `sql_utils.py` | Take `engine` as first param, no class dependency |
 | **Bound Methods** | `one/one_*.py` | Use `self.config`, `self.engine`, etc. |
 
-**Pure Functions (write_operations.py):**
-- `assign_bed(engine, admission_id, bed_id)` - Assign patient to bed
-- `update_prediction(engine, admission_id, predicted_los_hours, predicted_discharge_time)` - Update LOS prediction
-- `create_alert(engine, admission_id, alert_type, severity, message)` - Create high-risk alert
-- `create_order(engine, admission_id, order_type, scheduled_time, assigned_provider_id, ...)` - Create medical order
+**Write operations:** none ship by default. They are inherently dataset
+specific, so a dataset that needs them adds `@tool` methods in `one_04_agent.py`
+and registers them in the agent's `tools=[]` list. Keep the underlying helpers
+pure — `engine` as the first parameter, returning a dict — the way `sql_utils.py`
+does.
 
 **Pure Functions (sql_utils.py):**
 - `format_result(result)` - Format SQL result as Markdown table
@@ -132,9 +174,10 @@ One (one_00_main.py)
 ### Key Singletons
 
 ```python
-from learn_smb_lending_lens.api import one           # Main app instance
-from learn_smb_lending_lens.paths import path_enum   # All paths
-from learn_smb_lending_lens.runtime import runtime   # Runtime detection
+from agent_app.api import one           # Main app instance
+from agent_app.paths import path_enum   # All paths
+from agent_app.runtime import runtime   # Runtime detection
+from agent_app.project_config import project_config  # config/*.json
 ```
 
 ### Agent Framework
@@ -142,7 +185,7 @@ from learn_smb_lending_lens.runtime import runtime   # Runtime detection
 - **Library**: `strands` (Strands Agents SDK)
 - **Model**: AWS Bedrock (configurable via `config.model_id`)
 - **Tools**: Defined with `@tool` decorator in `one_04_agent.py`
-- **System Prompt**: `learn_smb_lending_lens/prompts/bi-agent-system-prompt.md`
+- **System Prompt**: `agent_app/prompts/bi-agent-system-prompt.md`
 
 ---
 
@@ -153,6 +196,8 @@ from learn_smb_lending_lens.runtime import runtime   # Runtime detection
 - Node.js: pnpm (via mise)
 
 **Core Configuration Files:**
+- `config/brand.json` - Author identity (stable across dataset swaps)
+- `config/dataset.json` - Business identity and copy (swapped per dataset)
 - `mise.toml` - Project tasks and tool versions (Python 3.12, Node 24, uv, pnpm)
 - `pyproject.toml` - Python dependencies and project metadata
 - `package.json` - Node.js dependencies
@@ -172,8 +217,9 @@ exactly one LLM backend is active per process, and only *that* provider's creden
 is required.
 
 ```bash
-# Prefixed onto every remote table name so several projects can share one NeonDB
-PROJECT_NAME=smbll
+# NOTE: the table prefix now lives in config/dataset.json (project.name).
+# Uncomment here only to override it for a one-off deployment.
+# PROJECT_NAME=smbll
 
 # bedrock (default) | anthropic | openai | google
 LLM_PROVIDER=bedrock
@@ -218,7 +264,6 @@ tests_python/
 │   ├── test_one_one_01_config.py   # Tests for ConfigMixin
 │   └── test_one_one_02_db.py       # Tests for DbMixin
 ├── test_api.py                     # Tests for api.py
-├── test_write_operations.py        # Tests for write operations
 └── test_utils.py                   # Tests for utilities
 ```
 
@@ -243,6 +288,7 @@ tests_python/
 - `mise run export` - Export Python requirements to requirements.txt
 - `mise run dev` - Start all development servers (Next.js + FastAPI, auto-kills old instances first)
 - `mise run kill` - Kill all running development servers
+- `mise run check` - Verify the repo agrees with `config/dataset.json` (run after a dataset swap)
 
 ---
 
@@ -257,15 +303,19 @@ tests_python/
 | Used by | local dev + tests | Vercel deployment |
 
 The remote instance is **shared with other projects**, so every table this project
-owns is prefixed with `config.project_name_snake` (from `PROJECT_NAME`). Foreign
+owns is prefixed with `config.project_name_snake` (from `project.name` in
+`config/dataset.json`, overridable with `PROJECT_NAME` in `.env`). Foreign
 keys are rewritten to match, and the sync script only ever touches prefixed
 tables — other projects' tables are never dropped. `database_schema_str` likewise
 reflects only prefixed tables when running remotely, so the agent never sees
 another project's schema.
 
-`TABLE_INSERT_ORDER` in `learn_smb_lending_lens/tests/db_sync.py` is the single
-source of truth for dependency order: inserts walk it forwards, drops walk it
-backwards. Add a new table there, in the right position, or the sync breaks.
+Dependency order lives in `config/dataset.json` under
+`database.tableInsertOrder`, exposed to Python as `TABLE_INSERT_ORDER` in
+`agent_app/tests/db_sync.py`: inserts walk it forwards, drops walk it backwards.
+Add a new table there, in the right position, or the sync breaks —
+`mise run check` compares the list against the SQLite file and fails on a
+mismatch in either direction.
 
 **Schema Reference:**
 - `data/database-exploration/database-schema.txt` - Database schema (read only when needed)
@@ -290,6 +340,7 @@ them in sequence the first time, then individually as needed.
 
 | # | Script | What it does |
 |---|--------|--------------|
+| 00 | `test_00_check_project_config.py` | Verify the repo agrees with `config/dataset.json` (also `mise run check`) |
 | 01 | `test_01_setup_sqlite_file.py` | Seed `tmp/data.sqlite` from `data.sqlite.example` (also `mise run setup-db`) |
 | 02 | `test_02_run_sql_locally.py` | Run the SQL in `test_02_run_sql_locally.sql` against local SQLite |
 | 03 | `test_03_run_sql_locally_cli.py` | Same, but takes `--sql "..."` on the command line |

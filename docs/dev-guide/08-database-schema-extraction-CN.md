@@ -21,7 +21,7 @@
 ```
 
 **相关文件：**
-- `learn_smb_lending_lens/tests/db_helper.py` — 数据库下载工具函数
+- `agent_app/tests/db_helper.py` — 数据库下载工具函数
 - `scripts/test_download_sqlite_file.py` — 下载脚本入口
 
 数据源 URL：`https://github.com/easyscale-academy/public-dataset/releases/download/data/healthcare_obstetrics_ward_scheduling_medium.sqlite`
@@ -60,7 +60,7 @@ Agent 需要知道：
 | PostgreSQL | 远程生产用，云端数据库 | `remote_postgres_engine` |
 
 ```python
-# learn_smb_lending_lens/one/one_02_db.py
+# agent_app/one/one_02_db.py
 
 class DbMixin:
     @cached_property
@@ -150,7 +150,7 @@ LLM 友好的紧凑字符串
 **作用：** 定义用来**存放** Schema 信息的数据结构。
 
 ```python
-# learn_smb_lending_lens/db_schema/model.py
+# agent_app/db_schema/model.py
 
 class ColumnInfo(BaseColumnInfo):
     """列信息"""

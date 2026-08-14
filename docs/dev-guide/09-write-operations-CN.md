@@ -394,7 +394,7 @@ mise run test-python
 这些函数最终会被包装成 Agent 工具：
 
 ```python
-# learn_smb_lending_lens/one/one_04_agent.py
+# agent_app/one/one_04_agent.py
 
 @tool
 def tool_assign_bed(admission_id: str, bed_id: str) -> str:
