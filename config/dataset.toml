@@ -1,6 +1,6 @@
 # Everything the Python side needs to know about this dataset.
 #
-# This file is deliberately small. It holds only the four values the backend
+# This file is deliberately small. It holds only the three values the backend
 # actually reads at runtime; every user-visible string lives in `config/site.ts`
 # instead, where TypeScript can type-check it. Splitting them this way is not
 # cosmetic: the two runtimes read disjoint sets of keys, so a single shared file
@@ -11,19 +11,16 @@
 #
 # Not here: secrets (`.env`), UI copy (`config/site.ts`), the SQLite file, the
 # system prompt, and the kickstart questions. The last three are content, and
-# content does not fit in a config file.
+# content does not fit in a config file. The system prompt's *path* is not here
+# either: it is a fixed part of the source tree, so `agent_app/paths.py` owns it.
+# A dataset swap rewrites that file's contents, never its name.
 
 [project]
 # Short identifier, prefixed onto every table in the shared remote Postgres so
 # several projects can live in one NeonDB without colliding. Keep it short:
-# PostgreSQL identifiers cap at 63 characters. `PROJECT_NAME` in the environment
-# overrides this for a one-off deployment.
+# PostgreSQL identifiers cap at 63 characters. There is no environment override:
+# this is a property of the dataset, identical in every deployment of it.
 name = "smbll"
-
-[agent]
-# Which prompt file to load, relative to the repo root. Named here rather than
-# hardcoded so a dataset can ship its own prompt without a code change.
-promptFile = "agent_app/prompts/bi-agent-system-prompt.md"
 
 [database]
 # The database name shown to the LLM at the top of the encoded schema. Purely

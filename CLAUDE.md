@@ -64,6 +64,15 @@ must not be mixed:
 Rotating an API key must not touch the project's name; pointing the repo at a
 new dataset must not touch anyone's credentials.
 
+**The test for which layer a value belongs to: does it vary by environment?**
+`agent_app/project_config.py` reads `config/dataset.toml` and nothing in it
+varies by environment. Local, Vercel, and CI all serve the same dataset, so they
+all get the same answer. `agent_app/config/conf_00_def.py` holds everything that
+*does* differ per machine. A value must not appear in both, not even with an
+environment variable as an "escape hatch": that gives it two homes and
+eventually two answers. `project_name` used to be duplicated that way and is
+now only in `project_config`.
+
 **`config/` is split by consumer, not by topic.** The frontend and the backend
 read disjoint sets of keys, so one shared file was two unrelated files stapled
 together. `site.ts` is TypeScript because only TypeScript reads it, which buys
@@ -118,10 +127,10 @@ a typo is a compile error.
 | File | What It Does | When to Modify |
 |------|--------------|----------------|
 | `api.py` | Re-exports `one` singleton | Rarely. Only if you need to expose additional top-level imports. |
-| `paths.py` | Defines all file/directory paths as `PathEnum` | When adding new files (prompts, data files, output paths). Add path here first, then use `path_enum.your_new_path` everywhere. |
+| `paths.py` | Defines all file/directory paths as `PathEnum`, including the system prompt | When adding new files (prompts, data files, output paths). Add path here first, then use `path_enum.your_new_path` everywhere. Paths are source-tree facts, so they are never named in config. |
 | `runtime.py` | Detects runtime environment (local vs vercel) | When adding a new deployment target (e.g., AWS Lambda). Add new enum value and detection logic. |
 | `constants.py` | Enums and constants | When adding new enum types or magic values that need to be shared across modules. |
-| `project_config.py` | Typed reader over `config/dataset.toml` | When Python needs a new value from the dataset config. If the frontend is the only consumer, it belongs in `config/site.ts` and never reaches Python. |
+| `project_config.py` | Typed reader over `config/dataset.toml`; also owns the `project_name` derivations (`_snake`, `_slug`, `prefix_table_name`) | When Python needs a new dataset value. If it varies by environment it belongs in `config/conf_00_def.py`; if only the frontend reads it, `config/site.ts`. |
 | `sql_utils.py` | Pure functions for SQL execution and formatting | When changing how SQL results are formatted or adding new query validation rules. |
 | `ai_sdk_adapter.py` | Converts Vercel AI SDK format <-> Bedrock format | When frontend message format changes or when switching to a different LLM provider. |
 
@@ -245,10 +254,6 @@ exactly one LLM backend is active per process, and only *that* provider's creden
 is required.
 
 ```bash
-# NOTE: the table prefix now lives in config/dataset.toml (project.name).
-# Uncomment here only to override it for a one-off deployment.
-# PROJECT_NAME=smbll
-
 # bedrock (default) | anthropic | openai | google
 LLM_PROVIDER=bedrock
 AWS_REGION=us-east-1
@@ -332,7 +337,7 @@ tests_python/
 
 The remote instance is **shared with other projects**, so every table this project
 owns is prefixed with `config.project_name_snake` (from `project.name` in
-`config/dataset.toml`, overridable with `PROJECT_NAME` in `.env`). Foreign
+`config/dataset.toml`). Foreign
 keys are rewritten to match, and the sync script only ever touches prefixed
 tables — other projects' tables are never dropped. `database_schema_str` likewise
 reflects only prefixed tables when running remotely, so the agent never sees

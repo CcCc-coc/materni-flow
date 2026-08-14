@@ -7,7 +7,7 @@ This is the confirmation step after ``test_06_sync_data_to_remote_db.py``. That
 script reports what it *believes* it wrote; this one goes back to the remote
 database and checks what is actually there.
 
-Remote tables carry the project prefix from ``PROJECT_NAME`` (local ``loan`` ->
+Remote tables carry the project prefix from ``config/dataset.toml`` (local ``loan`` ->
 remote ``smbll_loan``), so each local table is compared against its prefixed
 counterpart. Tables belonging to other projects are ignored.
 
@@ -33,6 +33,7 @@ import sys
 import sqlalchemy as sa
 
 from agent_app.api import one
+from agent_app.project_config import project_config
 from agent_app.tests.db_sync import TABLE_INSERT_ORDER, prefixed
 
 
@@ -64,7 +65,7 @@ def main() -> int:
     """
     local_engine = one.local_sqlite_engine
     remote_engine = one.remote_postgres_engine
-    table_prefix = one.config.project_name_snake
+    table_prefix = project_config.project_name_snake
 
     print("=" * 76)
     print("Verifying remote PostgreSQL data against local SQLite")

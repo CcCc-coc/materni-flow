@@ -25,6 +25,15 @@ This leads to:
 The Config Pattern solves this by **centralizing all environment-specific logic
 in one place**.
 
+What does NOT belong here
+-------------------------
+
+Anything that is the same in every environment. The project's name, the tables
+it owns, and the database it describes are properties of the *dataset*, not of
+the machine, so they live in :mod:`agent_app.project_config` and are read from
+``config/dataset.toml``. Duplicating such a value here, even with an environment
+variable as an escape hatch, gives it two homes and eventually two answers.
+
 How it works
 ------------
 
@@ -86,7 +95,6 @@ selected provider's credential is missing.
 """
 
 import os
-import re
 import dataclasses
 
 from ..runtime import runtime
@@ -137,24 +145,6 @@ def get_env_int(name: str) -> int | None:  # pragma: no cover
         return None
 
 
-def default_project_name() -> str:
-    """
-    The project name, from ``config/dataset.toml``.
-
-    It lives there rather than in ``.env`` because it is not a secret and not
-    machine-specific: every deployment of this dataset wants the same prefix, so
-    committing it removes one more thing to forget when swapping datasets.
-    ``PROJECT_NAME`` in the environment still overrides it, which keeps the
-    escape hatch open for a one-off deployment against a shared database.
-
-    Keep it short: it is prefixed onto every remote table name, and PostgreSQL
-    identifiers cap at 63 characters.
-    """
-    from ..project_config import project_config
-
-    return project_config.project_name
-
-
 #: Environment variable holding the credential for each API-key based provider.
 #: Bedrock is absent on purpose: it authenticates with AWS credentials, not a key.
 PROVIDER_API_KEY_ENV_VAR = {
@@ -174,8 +164,6 @@ class Config:
     ``config`` singleton for normal application code.
 
     Attributes:
-        project_name: Short identifier for this project, used to namespace shared
-            infrastructure. See :attr:`project_name_snake`.
         llm_provider: Which LLM backend to talk to. One of :class:`LlmProviderEnum`.
             Defaults to ``bedrock``.
         model_id: Model identifier for the selected provider. When None, the
@@ -196,8 +184,6 @@ class Config:
         db_name: PostgreSQL database name.
     """
 
-    # --- Project identity ---
-    project_name: str = dataclasses.field(default_factory=default_project_name)
     # --- LLM ---
     llm_provider: str = dataclasses.field(default=LlmProviderEnum.BEDROCK.value)
     model_id: str | None = dataclasses.field(default=None)
@@ -232,44 +218,6 @@ class Config:
             )
         if self.model_id is None:
             self.model_id = DEFAULT_MODEL_ID[self.llm_provider]
-
-    @property
-    def project_name_snake(self) -> str:
-        """
-        The project name as a snake_case identifier, e.g. ``smb_lending_lens``.
-
-        Use this wherever the name has to be a valid SQL / Python identifier —
-        most importantly as the prefix on remote database table names, which is
-        how several projects share one NeonDB instance without colliding.
-
-        Any run of characters that is not a letter or digit collapses to a single
-        underscore, so ``"SMB Lending-Lens"`` and ``"smb_lending_lens"`` normalize
-        to the same value.
-        """
-        return re.sub(r"[^a-z0-9]+", "_", self.project_name.strip().lower()).strip("_")
-
-    @property
-    def project_name_slug(self) -> str:
-        """
-        The project name as a hyphenated slug, e.g. ``smb-lending-lens``.
-
-        Same normalization as :attr:`project_name_snake`, but with hyphens — the
-        form wanted by things that live in a URL or a hostname (deployment names,
-        S3 buckets, DNS labels), where underscores are awkward or illegal.
-        """
-        return re.sub(r"[^a-z0-9]+", "-", self.project_name.strip().lower()).strip("-")
-
-    def prefix_table_name(self, table_name: str) -> str:
-        """
-        Namespace a table name for the shared remote database.
-
-        Args:
-            table_name: The local, unprefixed table name, e.g. ``"loan"``.
-
-        Returns:
-            The remote table name, e.g. ``"smbll_loan"``.
-        """
-        return f"{self.project_name_snake}_{table_name}"
 
     @property
     def llm_api_key(self) -> str | None:
@@ -326,7 +274,6 @@ class Config:
         load_dotenv()
 
         return cls(
-            project_name=get_env("PROJECT_NAME") or default_project_name(),
             llm_provider=get_env("LLM_PROVIDER") or LlmProviderEnum.BEDROCK.value,
             model_id=get_env("LLM_MODEL_ID"),
             aws_region=get_env("AWS_REGION") or "us-east-1",
@@ -349,7 +296,6 @@ class Config:
         variables. The database is always the remote Postgres instance here.
         """
         return cls(
-            project_name=get_env("PROJECT_NAME") or default_project_name(),
             llm_provider=get_env("LLM_PROVIDER") or LlmProviderEnum.BEDROCK.value,
             model_id=get_env("LLM_MODEL_ID"),
             aws_region=get_env("AWS_REGION") or "us-east-1",

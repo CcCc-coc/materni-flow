@@ -239,7 +239,7 @@ def check_prompt_tables(report: Report, db_tables: set[str]) -> bool:
     are resolved and excluded — they read exactly like table references but are
     local to the query, so flagging them would be pure noise.
     """
-    path = project_config.path_system_prompt
+    path = path_enum.path_bi_agent_system_prompt_md
     if not path.exists():
         report.error("prompt-tables", f"system prompt not found at {path}")
         report.section("prompt table references", False)
@@ -285,7 +285,7 @@ def check_content_files(report: Report) -> bool:
     """Fail if the hand-written content a swap must replace is missing or empty."""
     ok = True
 
-    prompt = project_config.path_system_prompt
+    prompt = path_enum.path_bi_agent_system_prompt_md
     if not prompt.exists():
         report.error("content", f"system prompt missing: {prompt}")
         ok = False

@@ -3,7 +3,7 @@
 """
 Sync local SQLite database to remote PostgreSQL (NeonDB).
 
-Remote tables are namespaced with the project prefix from ``PROJECT_NAME``, so
+Remote tables are namespaced with the project prefix from ``config/dataset.toml``, so
 this project can share one NeonDB instance with others without colliding:
 local ``loan`` becomes remote ``smbll_loan``, and its foreign keys are rewritten
 to match.
@@ -23,6 +23,7 @@ Verify the result afterwards with:
 """
 
 from agent_app.api import one
+from agent_app.project_config import project_config
 from agent_app.tests.db_sync import reset_remote_database
 
 
@@ -30,7 +31,7 @@ def main():
     """Run the sync operation."""
     print("=" * 68)
     print("Syncing local SQLite to remote PostgreSQL (NeonDB)")
-    print(f"Project prefix: {one.config.project_name_snake}_")
+    print(f"Project prefix: {project_config.project_name_snake}_")
     print("=" * 68)
 
     result = reset_remote_database(verbose=True)

@@ -70,7 +70,7 @@ class DbMixin:
             metadata.reflect(bind=self.engine)
             db_type = DbTypeEnum.SQLITE
         else:
-            table_prefix = f"{self.config.project_name_snake}_"
+            table_prefix = f"{project_config.project_name_snake}_"
             metadata.reflect(
                 bind=self.engine,
                 only=lambda table_name, _meta: table_name.startswith(table_prefix),

@@ -24,13 +24,6 @@ class TestConfig:
         with pytest.raises(ValueError):
             Config(llm_provider="llama")
 
-    def test_project_name(self):
-        """project_name normalizes into snake, slug, and table-prefix forms."""
-        config = Config(project_name="SMB Lending-Lens")
-        assert config.project_name_snake == "smb_lending_lens"
-        assert config.project_name_slug == "smb-lending-lens"
-        assert config.prefix_table_name("loan") == "smb_lending_lens_loan"
-
     def test_llm_api_key(self):
         """llm_api_key returns the selected provider's key; bedrock has none."""
         assert Config(llm_provider="anthropic", anthropic_api_key="k").llm_api_key == "k"

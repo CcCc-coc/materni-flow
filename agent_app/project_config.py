@@ -17,9 +17,12 @@ same thing:
   database it describes, which prompt it loads. Those come from
   ``config/dataset.toml``, are committed to Git, and differ per *dataset*.
 
-The split matters because they change for different reasons. Rotating an API key
-should not touch the project's name; pointing the repo at a new dataset should
-not touch anyone's credentials.
+The dividing line is sharp, and worth stating as a rule: **nothing in this
+module varies by environment.** Local, Vercel, and CI all read the same values,
+because they all serve the same dataset. Anything that could legitimately differ
+between two deployments belongs in :mod:`agent_app.config` instead. If you find
+yourself wanting an environment variable to override something here, the value
+is in the wrong module.
 
 Why this file is so small
 -------------------------
@@ -37,11 +40,13 @@ Example usage::
 
     from agent_app.project_config import project_config
 
-    project_config.project_name        # "smbll"
-    project_config.database_display_name
-    project_config.table_insert_order  # ["industry", "risk_grade", ...]
+    project_config.project_name          # "smbll"
+    project_config.project_name_snake    # "smbll"
+    project_config.prefix_table_name("loan")  # "smbll_loan"
+    project_config.table_insert_order    # ["industry", "risk_grade", ...]
 """
 
+import re
 import tomllib
 import typing as T
 import dataclasses
@@ -72,12 +77,13 @@ class ProjectConfig:
         """
         Short identifier for this project, e.g. ``"smbll"``.
 
-        This is what namespaces tables in the shared remote database. It lives in
-        ``dataset.toml`` rather than ``.env`` because it is not a secret and not
+        This is what namespaces tables in the shared remote database. It lives
+        here rather than in ``.env`` because it is not a secret and not
         machine-specific: every deployment of *this* dataset wants the same
         value, so committing it removes one more thing to forget on a swap.
-        ``PROJECT_NAME`` in the environment still wins if it is set, which keeps
-        the escape hatch open for a one-off deployment.
+
+        Keep it short: it is prefixed onto every remote table name, and
+        PostgreSQL identifiers cap at 63 characters.
         """
         return self.dataset["project"]["name"]
 
@@ -103,9 +109,42 @@ class ProjectConfig:
         return list(self.dataset["database"]["tableInsertOrder"])
 
     @property
-    def path_system_prompt(self) -> Path:
-        """The agent's system prompt file, as named by ``dataset.toml``."""
-        return path_enum.dir_project_root / self.dataset["agent"]["promptFile"]
+    def project_name_snake(self) -> str:
+        """
+        The project name as a snake_case identifier, e.g. ``smb_lending_lens``.
+
+        Use this wherever the name has to be a valid SQL / Python identifier —
+        most importantly as the prefix on remote database table names, which is
+        how several projects share one NeonDB instance without colliding.
+
+        Any run of characters that is not a letter or digit collapses to a single
+        underscore, so ``"SMB Lending-Lens"`` and ``"smb_lending_lens"`` normalize
+        to the same value.
+        """
+        return re.sub(r"[^a-z0-9]+", "_", self.project_name.strip().lower()).strip("_")
+
+    @property
+    def project_name_slug(self) -> str:
+        """
+        The project name as a hyphenated slug, e.g. ``smb-lending-lens``.
+
+        Same normalization as :attr:`project_name_snake`, but with hyphens — the
+        form wanted by things that live in a URL or a hostname (deployment names,
+        S3 buckets, DNS labels), where underscores are awkward or illegal.
+        """
+        return re.sub(r"[^a-z0-9]+", "-", self.project_name.strip().lower()).strip("-")
+
+    def prefix_table_name(self, table_name: str) -> str:
+        """
+        Namespace a table name for the shared remote database.
+
+        Args:
+            table_name: The local, unprefixed table name, e.g. ``"loan"``.
+
+        Returns:
+            The remote table name, e.g. ``"smbll_loan"``.
+        """
+        return f"{self.project_name_snake}_{table_name}"
 
 
 project_config = ProjectConfig()

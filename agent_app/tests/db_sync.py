@@ -14,7 +14,7 @@ this project owns is namespaced with the project name::
     loan            ->    smbll_loan
     customer        ->    smbll_customer
 
-The prefix comes from ``config.project_name_snake``. Foreign keys are rewritten
+The prefix comes from ``project_config.project_name_snake``. Foreign keys are rewritten
 to match, so ``loan.customer_id -> customer.id`` becomes
 ``smbll_loan.customer_id -> smbll_customer.id``. Nothing in the remote database
 refers to an unprefixed name.
@@ -295,7 +295,7 @@ def reset_remote_database(verbose: bool = True) -> dict:
     return sync_sqlite_to_postgres(
         local_engine=one.local_sqlite_engine,
         remote_engine=one.remote_postgres_engine,
-        table_prefix=one.config.project_name_snake,
+        table_prefix=project_config.project_name_snake,
         verbose=verbose,
     )
 

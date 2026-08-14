@@ -36,14 +36,11 @@ class PathEnum:
     path_instruction_md = dir_prompts / "instruction.md"
     path_knowledge_base_md = dir_prompts / "knowledge-base.md"
 
-    # The agent's system prompt. Which file this is comes from
-    # ``config/dataset.toml`` (``agent.promptFile``) rather than being fixed here,
-    # so a dataset swap can point at a differently named prompt without an edit.
-    @cached_property
-    def path_bi_agent_system_prompt_md(self) -> Path:
-        from .project_config import project_config
-
-        return project_config.path_system_prompt
+    # The agent's system prompt. Fixed here rather than named in config: it is
+    # part of the source tree, and a dataset swap rewrites its contents, not its
+    # filename. Routing it through config bought nothing and forced a circular
+    # import between this module and ``project_config``.
+    path_bi_agent_system_prompt_md = dir_prompts / "bi-agent-system-prompt.md"
 
     @cached_property
     def instruction_content(self) -> str:
