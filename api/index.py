@@ -29,6 +29,7 @@ from agent_app.ai_sdk_adapter import get_last_user_message_text
 from agent_app.ai_sdk_adapter import request_body_to_agent_history
 from agent_app.one.api import one  # Main singleton with agent
 from agent_app.agent_debugger import extract_text_from_messages
+from agent_app.agent_debugger import normalize_render_blocks
 from agent_app.agent_debugger import parse_response_text
 # fmt: on
 
@@ -125,8 +126,22 @@ async def handle_chat_data(request: Request, protocol: str = Query("data")):
     full_text = extract_text_from_messages(agent.messages, msg_count_before)
     thinking, answer = parse_response_text(full_text)
 
+    # Re-fence any chart/diagram the model wrapped in angle-bracket tags, which
+    # markdown would otherwise drop on the floor.
+    answer = normalize_render_blocks(answer)
+
     debug(f"[Agent] Thinking: {len(thinking)} chars")
     debug(f"[Agent] Answer: {len(answer)} chars")
+
+    # An empty answer streams an empty text block, so the UI shows a reasoning
+    # block with nothing under it and the turn reads as a hang. Say so instead:
+    # a visible non-answer is debuggable, silence is not.
+    if not answer:
+        answer = (
+            "I worked through this but did not produce a final message. "
+            "The reasoning above has what I found — ask me to restate it."
+        )
+        debug("[Agent] Empty answer, sent fallback text")
 
     # --- Return SSE response with reasoning and text ---
     response = StreamingResponse(

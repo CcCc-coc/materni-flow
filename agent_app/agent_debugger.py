@@ -28,7 +28,7 @@ def extract_text_from_messages(
     debug: bool = False,
 ) -> str:
     """
-    Extract <thinking> tags from ALL assistant messages, but other text only from the LAST one.
+    Extract <thinking> tags from ALL assistant messages, plus the last real answer text.
 
     Strands Agent embeds thinking content as <thinking>...</thinking> tags directly in the
     text field of each assistant message. When an agent calls multiple tools, it produces
@@ -36,7 +36,14 @@ def extract_text_from_messages(
 
     To get the complete reasoning chain:
     - Collect <thinking> content from ALL assistant messages
-    - Only take non-thinking text from the LAST assistant message (final answer)
+    - Take the answer from the last assistant message that actually *has* non-thinking
+      text, which is not always the last assistant message overall
+
+    That last distinction is load-bearing. An agent that answers, then calls
+    ``write_debug_report``, will often sign off with a message consisting of nothing
+    but ``<thinking>`` ("the final answer has been provided to the user"). Reading the
+    final message unconditionally yields an empty answer, and the chat UI renders a
+    reasoning block with no reply under it, which looks to the user like a hang.
 
     Args:
         messages: List of message dicts from agent.messages
@@ -56,8 +63,8 @@ def extract_text_from_messages(
 
     # Collect ALL thinking content from all assistant messages
     all_thinking = []
-    # Track the last assistant message for final text
-    last_assistant_text = None
+    # Track the most recent assistant text that survives thinking removal
+    last_answer_text = None
 
     for i, msg in enumerate(messages[start_index:], start=start_index):
         if debug:
@@ -84,8 +91,14 @@ def extract_text_from_messages(
                         if match.strip():
                             all_thinking.append(match.strip())
 
-                    # Keep track of the last assistant's text (will use for final answer)
-                    last_assistant_text = text
+                    # Keep this as the answer only if something remains once the
+                    # thinking is stripped out; a pure-thinking sign-off must not
+                    # displace the real answer produced a couple of turns earlier.
+                    stripped = re.sub(
+                        thinking_pattern, "", text, flags=re.DOTALL
+                    ).strip()
+                    if stripped:
+                        last_answer_text = stripped
 
     if debug:
         print(f"\n[DEBUG] Collected {len(all_thinking)} thinking blocks from all messages")
@@ -98,13 +111,9 @@ def extract_text_from_messages(
         combined_thinking = "\n\n".join(all_thinking)
         texts.append(f"<thinking>{combined_thinking}</thinking>")
 
-    # Add text from the LAST assistant message, but remove its <thinking> tags
-    # (since we already collected all thinking above)
-    if last_assistant_text:
-        final_answer = re.sub(thinking_pattern, "", last_assistant_text, flags=re.DOTALL)
-        final_answer = final_answer.strip()
-        if final_answer:
-            texts.append(final_answer)
+    # Add the answer text, already stripped of its <thinking> tags above
+    if last_answer_text:
+        texts.append(last_answer_text)
 
     return "\n".join(texts)
 
@@ -151,6 +160,42 @@ def parse_response_text(
     final_answer = final_answer.strip()
 
     return thinking_process, final_answer
+
+
+#: Fenced-block languages the chat UI renders as something other than code.
+#: Each is also the tag name a model reaches for when it drifts from the fence.
+RENDERABLE_BLOCKS = ("chart", "mermaid")
+
+
+def normalize_render_blocks(text: str) -> str:
+    """
+    Rewrite ``<chart>``/``<mermaid>`` tag pairs into the fenced blocks the UI renders.
+
+    The prompt asks for fenced blocks, but smaller models -- Nova Lite in
+    particular -- already emit ``<thinking>`` tags and generalize the habit,
+    wrapping a perfectly good chart payload in ``<chart>`` instead. Markdown
+    then treats that as an unknown HTML tag and drops it, so the reply says
+    "here is the chart" above nothing at all.
+
+    Prompt wording alone does not survive a model that small, and the mapping is
+    unambiguous, so it is done mechanically here. Content already inside a fence
+    is left alone: the tag pattern requires the tag to sit on its own line.
+
+    Args:
+        text: The agent's answer text.
+
+    Returns:
+        str: The same text with any tag-wrapped renderable block re-fenced.
+    """
+    for name in RENDERABLE_BLOCKS:
+        pattern = rf"^[ \t]*<{name}>[ \t]*\n(.*?)\n[ \t]*</{name}>[ \t]*$"
+        text = re.sub(
+            pattern,
+            lambda m, n=name: f"```{n}\n{m.group(1).strip()}\n```",
+            text,
+            flags=re.DOTALL | re.MULTILINE,
+        )
+    return text
 
 
 def chat(

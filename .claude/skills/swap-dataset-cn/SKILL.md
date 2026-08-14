@@ -79,8 +79,68 @@ disable-model-invocation: true
 | | `database.blurb` | summary 里的表数和行数 |
 | | `home.*` (headline, description, capabilities × 4, techStack, cta) | summary + business_context |
 | | `chat.*` (welcomeSubtitle, insights × 4, tryExamples, suggestionsHint, inputPlaceholder) | sql_queries 的主题分类 |
+| | `home.capabilities[].tooltip` × 4 | business_context 的术语表, 见下 |
+| | `businessContext.*` (triggerLabel, title, subtitle, sections × 6) | **business_context 全文** + sql_queries 的主题分类. 见下面的 spec |
 
 `capabilities` 和 `insights` 里的 `icon` 必须是 `lib/icons.ts` 里已注册的名字, 否则**编译报错**. 需要新图标就在那个文件里 import 并加进 `ICONS`. 从 lucide-react 挑.
+
+#### capabilities[].tooltip: 把概念名翻译成人话
+
+首页那四张能力卡上写的是**概念名** —— "Sponsor Exposure Audit" 对内行精确, 对其他
+所有人等于没写. 每张卡 hover / 聚焦 / 点按时弹出的这段 tooltip 就是用来补这一刀的,
+组件是 `app/(marketing)/_components/ConceptTooltip.tsx` (与数据集无关, 不用改).
+
+写法:
+
+- **两到三句白话.** 先定义这个词, 再说这个数为什么会动.
+- **解释里不能再有黑话.** 这是最容易犯的错 —— 用一个内行词去解释另一个内行词.
+- 来源是 business_context 的术语表和关键指标公式, 但要重写成口语, 不要直接抄公式.
+
+四条要和 `capabilities` 一一对应, 也就是和四条业务主线一一对应.
+
+#### businessContext 的 spec
+
+这是整个 `site.ts` 里最花笔墨的一项, 也最容易做砸, 所以单独定一份 spec. 它是首页
+那个按钮打开的弹窗, 2 到 3 屏可滚动内容, 由
+`app/(marketing)/_components/BusinessContextModal.tsx` 渲染 (组件与数据集无关, 换
+数据集时不用动).
+
+**它讲的是这个 agentic App, 不是这个数据集.**
+
+这条决定了全篇的取景. 对外展示时露出去的是"一个数据集加一个能查它的 agent", 但读
+者真正需要知道的是**这个 App 是干什么的** —— 它替谁解决什么问题, 凭什么解决, 以及
+它今天做到哪一步. 所以标题走 "The business behind the agentic App" 这个调子, 不要
+写成 "The business behind the data". 一字之差, 前者在介绍产品, 后者在介绍附件.
+
+**两条硬要求:**
+
+- **写给完全不懂这行的陌生人看, 只靠常识就能读完.** 内行缩写和黑话要用就当场解释.
+- **讲行业, 不讲雇主; 讲问题, 不讲项目.** 不出现实习, 公司名, 个人经历, 课程, 作业
+  这类痕迹 —— 和仓库"不放作者身份"是同一条规矩 (见 CLAUDE.md).
+
+**六节结构, 按顺序填. 前三节讲世界, 后三节讲这个 App 在这个世界里干什么:**
+
+| # | 节 | 必须回答 | 来源 |
+| :--- | :--- | :--- | :--- |
+| 1 | 这门生意怎么赚钱 | 收入几条线各占多少, 最大的成本是什么 | business_context 商业模式段 |
+| 2 | 钱从哪里悄悄漏掉 | 每条都要回答"**为什么它不会自己暴露**" | business_context 的四个 Q |
+| 3 | 这些事在数据里长什么样 | **先说清楚为什么这些线索必须放在一起看**, 再说记录了什么, 覆盖多长时间, 并点明 REFERENCE_DATE 是固定的 | er_document + summary |
+| 4 | agent 拿这些数据做什么 | 读 schema, 写 SQL, 解读结果; 该出图时出 diagram 和 chart | 通用能力, 不来自数据集 |
+| 5 | 你可以问什么, 以及怎么读答案 | 按四条主线分组的问题清单, 末尾补这个领域特有的解读陷阱 (比如平均值会稀释掉结论) | sql_queries 的主题分类 + er_document 的 Embedded Business Traps |
+| 6 | 只读之外 (本 App 不含) | 同一套架构可以做真写操作, 前提是权限护栏加可审计轨迹 | 通用, 见下 |
+
+**第 2 节是全篇的重心.** 每一条都要回答"为什么这个亏损在财报上看不出来" —— 那才是
+这个 App 存在的理由. 只罗列"我们能查 X"没有说服力, 因为读者不知道为什么需要查.
+
+**第 6 节的分寸.** 这一节讲产品边界和方向, 必须同时说清三件事, 少一件就变成吹牛:
+
+1. 这个 App 是**故意**只读的 —— 它是给外部看的演示;
+2. 同一套 agent 架构可以挂上写操作的 tool, 真正改后端状态 (这不是设想, 仓库本来就
+   支持: 写操作是 dataset-specific 的 `@tool`, 见 `one_04_agent.py`);
+3. 真要上写操作, 前提是**权限护栏**和**可审计轨迹** —— 谁在什么时候改了什么, 每一
+   笔都要留痕, 而不是让模型直接对生产库动手.
+
+第 3 点不能省. 少了它, 这一节读起来就是"我们还能让 AI 乱改数据", 反而减分.
 
 **C. 内容.** 无法配置化, 只能手写.
 
@@ -153,6 +213,8 @@ mise run check -- --retired "loan,lending,borrower,default_event,risk_grade"
 - agent 回答得像不像这个领域的专家
 - 12 个 kickstart 问题点下去是否都能出结果
 - 首页文案和 chat 页文案有没有残留旧领域的说法
+- 点开首页那个 business context 弹窗, 一个完全不懂这行的人读完能不能明白这个 App 解决什么问题
+- 四张能力卡 hover / Tab 聚焦 / 手机点按, tooltip 都能弹出, 窄屏下不跑出屏幕
 
 用户满意之后再进入视觉改造, 这一步**加载 `frontend-design:frontend-design` skill** 来做 (注意是带 plugin 前缀的全名).
 
@@ -165,6 +227,7 @@ mise run check -- --retired "loan,lending,borrower,default_event,risk_grade"
 | favicon | `app/icon.png` |
 | 导航栏 | `app/_components/layouts/Navigation.tsx` (logo 的两段式着色在这里) |
 | 首页 | `app/(marketing)/_components/Hero.tsx`, `app/(marketing)/HomePageContent.tsx` |
+| **business context 弹窗** | `app/(marketing)/_components/BusinessContextModal.tsx` (遮罩, 面板, 滚动条, 分节排版), `ConceptTooltip.tsx` (气泡与小尖角) |
 | **chat 空状态** | `components/chat/overview.tsx` (标题, 4 张洞察卡) |
 | **chat 输入区** | `components/chat/multimodal-input.tsx` (12 张 kickstart 卡片的排布) |
 | **chat 对话气泡** | `components/chat/message.tsx` (AI 头像那个方块, 用户头像, 气泡配色) |

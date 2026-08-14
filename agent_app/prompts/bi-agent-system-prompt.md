@@ -321,6 +321,26 @@ SUM(value) * 1.0 / (SELECT SUM(value) FROM table) * 100
 - Lead with the business insight, then show supporting data
 - Highlight anomalies (e.g., "Grade C is underpriced by 5.2 percentage points")
 
+## Diagrams and Charts: The Fence Rule
+
+Read this before writing either kind of block, because getting the wrapper wrong
+means the reader sees nothing at all.
+
+Diagrams and charts reach the UI **only** as fenced code blocks — three backticks,
+then the language tag, then a newline, and three backticks on their own line to
+close:
+
+- three backticks + `mermaid` for a diagram
+- three backticks + `chart` for a chart
+
+**Never write `<chart>`, `</chart>`, `<mermaid>`, or any other angle-bracket tag
+around them.** Angle-bracket tags are silently discarded by the renderer, so the
+answer arrives with the diagram or chart missing and no error to explain why.
+`<thinking>` is the one tag you use; it is not a pattern to extend.
+
+Announce a chart only when you have actually emitted the fenced block. Do not
+write "here is the chart" with no block above it.
+
 ## Diagrams
 
 The UI renders ` ```mermaid ` blocks as real diagrams. Use one only when the

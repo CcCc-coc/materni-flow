@@ -2,18 +2,21 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
-import { ArrowRight } from "lucide-react"
+import { ArrowRight, BookOpen } from "lucide-react"
 import { site } from "@/config/site"
 import { getIcon } from "@/lib/icons"
+import BusinessContextModal from "./BusinessContextModal"
+import ConceptTooltip from "./ConceptTooltip"
 
 export default function Hero() {
   const [isVisible, setIsVisible] = useState(false)
+  const [contextOpen, setContextOpen] = useState(false)
 
   useEffect(() => {
     setIsVisible(true)
   }, [])
 
-  const { home, project, database } = site
+  const { home, project, database, businessContext } = site
 
   return (
     <section className="min-h-screen flex flex-col justify-center pt-24 pb-12 px-4 sm:px-6 lg:px-8 bg-white dark:bg-[#0A1628]">
@@ -38,23 +41,43 @@ export default function Hero() {
         <div
           className={`transition-all duration-700 delay-300 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
         >
-          <p className="text-lg sm:text-xl text-slate-600 dark:text-slate-300 mb-10 leading-relaxed max-w-3xl">
+          <p className="text-lg sm:text-xl text-slate-600 dark:text-slate-300 mb-5 leading-relaxed max-w-3xl">
             {home.description}
           </p>
+
+          {/* One paragraph cannot carry a whole business domain; this opens the
+              two or three screens that can. */}
+          <button
+            type="button"
+            onClick={() => setContextOpen(true)}
+            className="group inline-flex items-center gap-2 mb-10 px-4 py-2 rounded-full text-sm font-medium bg-slate-50 dark:bg-slate-800/50 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:border-blue-500 dark:hover:border-blue-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer"
+          >
+            <BookOpen className="w-4 h-4" aria-hidden="true" />
+            {businessContext.triggerLabel}
+          </button>
 
           {/* Capability Cards */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
             {home.capabilities.map((cap, index) => {
               const Icon = getIcon(cap.icon)
               return (
-                <div
+                <ConceptTooltip
                   key={cap.label}
-                  className={`p-5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 transition-all duration-500 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
-                  style={{ transitionDelay: `${400 + index * 100}ms` }}
+                  text={cap.tooltip}
+                  // Two columns on a phone: outer cards hang the bubble from
+                  // their outer edge so it cannot run off screen.
+                  align={index % 2 === 0 ? "start" : "end"}
+                  className={`p-5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 cursor-help hover:border-blue-400 dark:hover:border-blue-500 transition-all duration-500 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
                 >
-                  <Icon className="w-6 h-6 text-blue-600 dark:text-blue-400 mb-3" />
+                  <Icon className="w-6 h-6 text-blue-600 dark:text-blue-400 mb-3" aria-hidden="true" />
                   <p className="text-sm font-medium text-[#0A1628] dark:text-white">{cap.label}</p>
-                </div>
+                  {/* The dashed rule is the only thing telling a reader there is
+                      something to hover over. Without it the hint is invisible. */}
+                  <span
+                    aria-hidden="true"
+                    className="mt-3 block w-8 border-b border-dashed border-slate-300 dark:border-slate-600 group-hover:border-blue-500 transition-colors"
+                  />
+                </ConceptTooltip>
               )
             })}
           </div>
@@ -103,6 +126,8 @@ export default function Hero() {
           </p>
         </div>
       </div>
+
+      <BusinessContextModal open={contextOpen} onClose={() => setContextOpen(false)} />
     </section>
   )
 }

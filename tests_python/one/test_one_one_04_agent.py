@@ -35,10 +35,32 @@ class TestReadOnlyTools:
         result = one.tool_execute_sql_query(sql="SELECT 1 WHERE 1 = 0")
         assert result == "No result"
 
+    def test_execute_sql_query_accepts_cte(self):
+        """A CTE opens with WITH, not SELECT, and must still be allowed."""
+        result = one.tool_execute_sql_query(
+            sql="WITH d AS (SELECT id FROM loan) SELECT COUNT(*) AS n FROM d"
+        )
+        assert "|" in result
+        assert "n" in result
+
     def test_execute_sql_query_rejects_non_select(self):
         """Write statements are refused: this agent is read-only."""
         result = one.tool_execute_sql_query(sql="DROP TABLE loan")
         assert "Invalid query" in result
+
+    def test_write_hidden_behind_a_cte_does_not_land(self):
+        """
+        SQLite accepts ``WITH x AS (...) DELETE FROM ...``, so the opening
+        keyword alone cannot decide this. What protects the data is that every
+        agent query runs in a transaction that is always rolled back -- so the
+        assertion is on the row count, not on an error string.
+        """
+        before = one.tool_execute_sql_query(sql="SELECT COUNT(*) AS n FROM loan")
+        one.tool_execute_sql_query(
+            sql="WITH d AS (SELECT id FROM loan) DELETE FROM loan"
+        )
+        after = one.tool_execute_sql_query(sql="SELECT COUNT(*) AS n FROM loan")
+        assert before == after
 
     def test_execute_sql_query_reports_bad_sql(self):
         """A broken query returns an error string rather than raising."""
