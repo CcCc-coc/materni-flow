@@ -2,12 +2,11 @@
 
 import type { UIMessage } from "ai";
 import { motion } from "framer-motion";
-import Image from "next/image";
+import { User } from "lucide-react";
 import { useState } from "react";
 
 import { Markdown } from "./markdown";
 import { cn } from "@/lib/utils";
-import { CDN_ASSETS } from "@/lib/constants";
 
 /**
  * Collapsible component for displaying reasoning/thinking content.
@@ -136,14 +135,8 @@ export const PreviewMessage = ({
 
         {/* User Avatar - Right side */}
         {message.role === "user" && (
-          <div className="w-8 h-8 overflow-hidden border border-slate-200 dark:border-slate-700 shrink-0 rounded-lg">
-            <Image
-              src={CDN_ASSETS.PROFILE_PHOTO}
-              alt="User Profile"
-              width={32}
-              height={32}
-              className="w-full h-full object-cover"
-            />
+          <div className="w-8 h-8 flex items-center justify-center border border-slate-200 dark:border-slate-700 shrink-0 rounded-lg bg-slate-100 dark:bg-slate-800">
+            <User className="w-4 h-4 text-slate-500 dark:text-slate-400" aria-label="You" />
           </div>
         )}
       </div>

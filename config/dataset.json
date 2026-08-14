@@ -1,5 +1,5 @@
 {
-  "_comment": "WHAT this app is about. Everything that changes when you point the repo at a new dataset / business domain. This is the ONE file to edit for a swap; see .claude/skills/swap-dataset for the full procedure and for the handful of things that cannot live here (the sqlite file, the system prompt, the kickstart questions).",
+  "_comment": "The single config file for this app. Everything that changes when you point the repo at a new dataset / business domain lives here. Three things deliberately do NOT: the sqlite file, the system prompt, and the kickstart questions -- those are content, not configuration. Secrets live in .env. There is no author/personal identity anywhere in this app: it is a product showcase, not a portfolio.",
 
   "project": {
     "name": "smbll",
@@ -19,6 +19,7 @@
   },
 
   "seo": {
+    "locale": "en_US",
     "title": "SMB Lending Lens — AI-Powered Fintech Analytics Agent",
     "description": "An AI agent for fintech lending analytics. Query loan portfolios, analyze risk pricing, detect approval leakage, identify early warning signals, and understand customer lifecycle value through natural conversation.",
     "keywords": [

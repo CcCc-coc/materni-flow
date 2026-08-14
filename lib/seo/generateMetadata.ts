@@ -22,8 +22,6 @@ export function generateSEOMetadata(config: SEOConfig): Metadata {
     imageWidth,
     imageHeight,
     imageAlt,
-    author,
-    creator,
     ogTitle,
     ogDescription,
     twitterTitle,
@@ -38,13 +36,11 @@ export function generateSEOMetadata(config: SEOConfig): Metadata {
     title,
     description,
     keywords,
-    authors: author ? [author] : undefined,
-    creator,
 
     openGraph: {
       title: ogTitle || title,
       description: ogDescription || description,
-      url: url || author?.url,
+      url,
       siteName,
       images: image
         ? [{
@@ -59,7 +55,10 @@ export function generateSEOMetadata(config: SEOConfig): Metadata {
     },
 
     twitter: {
-      card: "summary_large_image",
+      // No profile photo to preview any more, so a large-image card would render
+      // as an empty box. Upgrade to "summary_large_image" if a product OG image
+      // is ever added.
+      card: image ? "summary_large_image" : "summary",
       title: twitterTitle || title,
       description: twitterDescription || description,
       images: image ? [image] : undefined,

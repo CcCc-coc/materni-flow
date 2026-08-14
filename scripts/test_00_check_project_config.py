@@ -36,10 +36,6 @@ What it checks
 5. **Content files** — the system prompt and the kickstart questions must exist
    and be non-trivial.
 
-Placeholder identity in ``config/brand.json`` is reported as a warning rather
-than a failure: the template legitimately ships with ``John Doe`` in place, and
-failing on it would mean the check never passes out of the box.
-
 Usage::
 
     mise run check
@@ -84,9 +80,6 @@ SCAN_EXEMPT = {
     "config/dataset.json",
     "scripts/test_00_check_project_config.py",
 }
-
-#: Placeholder identity shipped with the template. Warned about, never fatal.
-BRAND_PLACEHOLDERS = ["John Doe", "johndoe.me"]
 
 #: Identifiers that can follow FROM/JOIN in the system prompt without naming a
 #: real table: SQL keywords, and the generic stand-ins a prompt uses when it is
@@ -356,19 +349,6 @@ def check_content_files(report: Report) -> bool:
     return ok
 
 
-def check_brand_placeholders(report: Report):
-    """Warn (never fail) when the template's placeholder identity is still in place."""
-    brand_text = path_enum.path_brand_json.read_text(encoding="utf-8")
-    found = [p for p in BRAND_PLACEHOLDERS if p in brand_text]
-    if found:
-        report.warn(
-            "brand",
-            f"config/brand.json still carries template placeholders: "
-            f"{', '.join(found)}. Fine while prototyping; fix before publishing.",
-        )
-    report.section("brand identity", True)
-
-
 def main() -> int:
     print()
     print("Project config consistency check")
@@ -382,7 +362,6 @@ def main() -> int:
     check_prompt_tables(report, db_tables)
     check_icon_names(report)
     check_content_files(report)
-    check_brand_placeholders(report)
 
     print("=" * 60)
 

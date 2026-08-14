@@ -1,5 +1,3 @@
-const brand = require("./config/brand.json")
-
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // Performance optimizations
@@ -7,15 +5,8 @@ const nextConfig = {
     removeConsole: process.env.NODE_ENV === 'production', // Remove console.log in production
   },
 
-  // Image CDN hosts come from config/brand.json so that forking the repo means
-  // editing one file, not hunting for hostnames buried in the build config.
-  images: {
-    remotePatterns: brand.imageHosts.map((hostname) => ({
-      protocol: 'https',
-      hostname,
-      pathname: '/**',
-    })),
-  },
+  // No `images.remotePatterns`: every image this app renders is local. Add the
+  // host here if that ever stops being true.
 
   rewrites: async () => {
     return [

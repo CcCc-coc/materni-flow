@@ -1,5 +1,3 @@
-import { IconType } from "react-icons"
-
 // ============================================================================
 // SEO Types
 // ============================================================================
@@ -19,13 +17,6 @@ export interface SEOConfig {
   imageWidth?: number
   imageHeight?: number
   imageAlt?: string
-
-  // 作者和创建者
-  author?: {
-    name: string
-    url: string
-  }
-  creator?: string
 
   // Open Graph 自定义
   ogTitle?: string
@@ -55,17 +46,4 @@ export interface NavItem {
 
 export interface NavigationProps {
   items?: NavItem[]
-}
-
-// ============================================================================
-// Component Props Types
-// ============================================================================
-
-export interface MarkdownModalProps {
-  isOpen: boolean
-  onClose: () => void
-  title: string
-  description?: string
-  content: string
-  icon?: IconType
 }

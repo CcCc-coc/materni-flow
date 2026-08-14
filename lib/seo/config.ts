@@ -1,17 +1,17 @@
-import { brand } from "@/lib/project"
+import { dataset } from "@/lib/project"
 
+/**
+ * Site-wide metadata defaults.
+ *
+ * No `author`, `creator`, or profile image: this site presents a product, not a
+ * person. Page metadata that names an individual (or uses their photo as the
+ * social preview) is a leftover from the personal-portfolio template this
+ * scaffolding came from, not something the app needs.
+ */
 export const DEFAULT_SEO_CONFIG = {
-  siteName: brand.siteName,
-  author: {
-    name: brand.author.name,
-    url: brand.author.url,
-  },
-  creator: brand.author.name,
-  locale: brand.locale,
-  image: brand.avatar.src,
-  imageWidth: brand.avatar.width,
-  imageHeight: brand.avatar.height,
+  siteName: dataset.project.displayName,
+  locale: dataset.seo.locale,
   type: "website" as const,
 }
 
-export const COMMON_KEYWORDS = brand.keywords
+export const COMMON_KEYWORDS = dataset.seo.keywords

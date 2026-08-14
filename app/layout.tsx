@@ -23,7 +23,6 @@ export const metadata: Metadata = {
     description: METADATA.DESCRIPTION,
     keywords: [...METADATA.KEYWORDS],
   }),
-  generator: 'v0.dev',
   icons: {
     icon: [
       { url: '/icon.png', type: 'image/png' },

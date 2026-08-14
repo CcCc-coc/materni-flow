@@ -16,8 +16,7 @@ from agent_app.api import one  # Main singleton instance
 
 ```
 config/                      # Project identity, committed to Git, read by BOTH runtimes
-├── brand.json               #   WHO ships this (author, links, avatar) -- stable
-└── dataset.json             #   WHAT it is about (business copy, DB, agent) -- swapped per dataset
+└── dataset.json             #   Everything that changes when the dataset changes
 
 agent_app/                   # Python package. Name is deliberately generic and
 ├── api.py                   #   never changes when the dataset changes.
@@ -45,7 +44,7 @@ agent_app/                   # Python package. Name is deliberately generic and
 └── db_schema/
 
 lib/
-├── project.ts               # Frontend entry point to config/*.json
+├── project.ts               # Frontend entry point to config/dataset.json
 ├── icons.ts                 # Icon-name -> component map used by config/dataset.json
 └── constants.ts             # Derived view of the above; authored nothing
 ```
@@ -55,7 +54,7 @@ lib/
 Two things in this repo are called config. They change for different reasons and
 must not be mixed:
 
-| | `config/*.json` | `.env` → `agent_app/config/` |
+| | `config/dataset.json` | `.env` → `agent_app/config/` |
 |---|---|---|
 | Holds | Project identity, business copy, table order | API keys, DB credentials, LLM provider |
 | Differs per | **dataset** | **machine** |
@@ -64,6 +63,11 @@ must not be mixed:
 
 Rotating an API key must not touch the project's name; pointing the repo at a
 new dataset must not touch anyone's credentials.
+
+**No author identity anywhere.** This site presents a product, not a person.
+There is no name, photo, contact link, or `author`/`creator` page metadata, and
+none should be added — that was portfolio scaffolding the app inherited and does
+not need.
 
 ### Swapping the Dataset
 
@@ -93,7 +97,7 @@ nonexistent table, and unregistered icon names.
 | `paths.py` | Defines all file/directory paths as `PathEnum` | When adding new files (prompts, data files, output paths). Add path here first, then use `path_enum.your_new_path` everywhere. |
 | `runtime.py` | Detects runtime environment (local vs vercel) | When adding a new deployment target (e.g., AWS Lambda). Add new enum value and detection logic. |
 | `constants.py` | Enums and constants | When adding new enum types or magic values that need to be shared across modules. |
-| `project_config.py` | Typed reader over `config/brand.json` and `config/dataset.json` | When Python needs a new value from the project config. Add a property; do not duplicate the value into a second file. |
+| `project_config.py` | Typed reader over `config/dataset.json` | When Python needs a new value from the project config. Add a property; do not duplicate the value into a second file. |
 | `sql_utils.py` | Pure functions for SQL execution and formatting | When changing how SQL results are formatted or adding new query validation rules. |
 | `ai_sdk_adapter.py` | Converts Vercel AI SDK format <-> Bedrock format | When frontend message format changes or when switching to a different LLM provider. |
 
@@ -177,7 +181,7 @@ does.
 from agent_app.api import one           # Main app instance
 from agent_app.paths import path_enum   # All paths
 from agent_app.runtime import runtime   # Runtime detection
-from agent_app.project_config import project_config  # config/*.json
+from agent_app.project_config import project_config  # config/dataset.json
 ```
 
 ### Agent Framework
@@ -196,8 +200,7 @@ from agent_app.project_config import project_config  # config/*.json
 - Node.js: pnpm (via mise)
 
 **Core Configuration Files:**
-- `config/brand.json` - Author identity (stable across dataset swaps)
-- `config/dataset.json` - Business identity and copy (swapped per dataset)
+- `config/dataset.json` - Project identity, business copy, DB metadata (swapped per dataset)
 - `mise.toml` - Project tasks and tool versions (Python 3.12, Node 24, uv, pnpm)
 - `pyproject.toml` - Python dependencies and project metadata
 - `package.json` - Node.js dependencies

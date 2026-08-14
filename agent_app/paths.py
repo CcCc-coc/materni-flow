@@ -27,10 +27,9 @@ class PathEnum:
         return Path.home()
 
     # Project configuration, committed to Git and read by BOTH runtimes:
-    # Next.js imports these files directly, `agent_app.project_config` parses them.
+    # Next.js imports this file directly, `agent_app.project_config` parses it.
     # Not to be confused with `agent_app/config/`, which holds secrets from `.env`.
     dir_config = dir_project_root / "config"
-    path_brand_json = dir_config / "brand.json"
     path_dataset_json = dir_config / "dataset.json"
 
     dir_prompts = dir_package / "prompts"
