@@ -125,6 +125,29 @@ def get_env(name: str) -> str | None:  # pragma: no cover
     return value
 
 
+def get_env_bool(name: str, default: bool = False) -> bool:  # pragma: no cover
+    """
+    Read an environment variable as a boolean.
+
+    Accepts the spellings people actually type in a ``.env``: ``1/0``,
+    ``true/false``, ``yes/no``, ``on/off``, any case. Anything else falls back to
+    ``default`` rather than raising, because a malformed flag should not stop the
+    app from booting -- it should just leave the feature in its default state.
+
+    Returns:
+        The parsed boolean, or ``default`` if unset or unrecognized.
+    """
+    value = get_env(name)
+    if value is None:
+        return default
+    normalized = value.strip().lower()
+    if normalized in {"1", "true", "yes", "on"}:
+        return True
+    if normalized in {"0", "false", "no", "off"}:
+        return False
+    return default
+
+
 def get_env_int(name: str) -> int | None:  # pragma: no cover
     """
     Read an environment variable as an int, or None if unset / not a number.
@@ -182,6 +205,15 @@ class Config:
         db_user: PostgreSQL user.
         db_pass: PostgreSQL password.
         db_name: PostgreSQL database name.
+        quota_enabled: Whether to meter and cap monthly LLM spend. **Off by
+            default**: a student running this locally is spending their own
+            Bedrock allowance and needs no cap, and turning it on requires a
+            DynamoDB table that does not exist until someone creates it.
+        dynamodb_table_name_quota: DynamoDB table holding the counters. Only
+            read when ``quota_enabled`` is true.
+        quota_max_invoke_per_month: Cap on agent invocations per calendar month.
+        quota_max_input_token_per_month: Cap on input tokens per calendar month.
+        quota_max_output_token_per_month: Cap on output tokens per calendar month.
     """
 
     # --- LLM ---
@@ -202,6 +234,12 @@ class Config:
     db_user: str | None = dataclasses.field(default=None)
     db_pass: str | None = dataclasses.field(default=None)
     db_name: str | None = dataclasses.field(default=None)
+    # --- Monthly LLM spend cap (see agent_app/quota.py) ---
+    quota_enabled: bool = dataclasses.field(default=False)
+    dynamodb_table_name_quota: str | None = dataclasses.field(default=None)
+    quota_max_invoke_per_month: int = dataclasses.field(default=1000)
+    quota_max_input_token_per_month: int = dataclasses.field(default=50_000_000)
+    quota_max_output_token_per_month: int = dataclasses.field(default=10_000_000)
 
     def __post_init__(self):
         """
@@ -285,6 +323,15 @@ class Config:
             db_user=get_env("DB_USER"),
             db_pass=get_env("DB_PASS"),
             db_name=get_env("DB_NAME"),
+            quota_enabled=get_env_bool("QUOTA_ENABLED"),
+            dynamodb_table_name_quota=get_env("DYNAMODB_TABLE_NAME_QUOTA"),
+            quota_max_invoke_per_month=get_env_int("QUOTA_MAX_INVOKE_PER_MONTH") or 1000,
+            quota_max_input_token_per_month=(
+                get_env_int("QUOTA_MAX_INPUT_TOKEN_PER_MONTH") or 50_000_000
+            ),
+            quota_max_output_token_per_month=(
+                get_env_int("QUOTA_MAX_OUTPUT_TOKEN_PER_MONTH") or 10_000_000
+            ),
         )
 
     @classmethod
@@ -309,6 +356,15 @@ class Config:
             db_user=get_env("DB_USER"),
             db_pass=get_env("DB_PASS"),
             db_name=get_env("DB_NAME"),
+            quota_enabled=get_env_bool("QUOTA_ENABLED"),
+            dynamodb_table_name_quota=get_env("DYNAMODB_TABLE_NAME_QUOTA"),
+            quota_max_invoke_per_month=get_env_int("QUOTA_MAX_INVOKE_PER_MONTH") or 1000,
+            quota_max_input_token_per_month=(
+                get_env_int("QUOTA_MAX_INPUT_TOKEN_PER_MONTH") or 50_000_000
+            ),
+            quota_max_output_token_per_month=(
+                get_env_int("QUOTA_MAX_OUTPUT_TOKEN_PER_MONTH") or 10_000_000
+            ),
         )
 
     @classmethod

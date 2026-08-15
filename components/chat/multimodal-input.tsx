@@ -169,7 +169,7 @@ export function MultimodalInput({
               event.preventDefault();
 
               if (isLoading) {
-                toast.error("Please wait for the response to complete!");
+                toast.error(site.messages.waitForResponse);
               } else {
                 submitForm();
               }

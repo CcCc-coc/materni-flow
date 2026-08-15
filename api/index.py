@@ -31,6 +31,9 @@ from agent_app.one.api import one  # Main singleton with agent
 from agent_app.agent_debugger import extract_text_from_messages
 from agent_app.agent_debugger import normalize_render_blocks
 from agent_app.agent_debugger import parse_response_text
+from agent_app.quota import check_quota
+from agent_app.quota import increment_usage
+from agent_app.quota import QuotaExceededError
 # fmt: on
 
 # Add project root to sys.path for module imports
@@ -39,6 +42,14 @@ if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
 app = FastAPI()
+
+#: Shown when the monthly cap is reached. A constant, not a model call: the
+#: whole point is that this path spends nothing.
+QUOTA_EXCEEDED_MESSAGE = (
+    "This demo runs on a monthly token budget, and it has been used up for this "
+    "billing cycle. The chat will start working again when the budget resets at "
+    "the beginning of next month. Thanks for trying it out."
+)
 
 
 @app.get("/api/hello")
@@ -111,6 +122,27 @@ async def handle_chat_data(request: Request, protocol: str = Query("data")):
 
     debug(f"[Agent] Loaded {len(history_messages)} history messages")
 
+    # --- Refuse before spending, if this deployment caps its monthly spend ---
+    # Off by default; see agent_app/quota.py for why and how to turn it on.
+    if one.config.quota_enabled:
+        try:
+            check_quota(one.boto_ses, one.config)
+        except QuotaExceededError as e:
+            debug(f"[Quota] blocked: {e}")
+            response = StreamingResponse(
+                ai_sdk_message_with_reasoning_generator(
+                    reasoning_text="",
+                    output_text=QUOTA_EXCEEDED_MESSAGE,
+                ),
+                media_type="text/event-stream",
+            )
+            response.headers["x-vercel-ai-ui-message-stream"] = "v1"
+            response.headers["Cache-Control"] = "no-cache"
+            response.headers["Connection"] = "keep-alive"
+            return response
+        except Exception as e:  # pragma: no cover - a metering fault must not deny service
+            debug(f"[Quota] check failed, allowing request: {e}")
+
     # Record message count before calling agent (so we only extract new messages)
     msg_count_before = len(agent.messages)
 
@@ -118,9 +150,27 @@ async def handle_chat_data(request: Request, protocol: str = Query("data")):
     old_stdout = sys.stdout
     sys.stdout = io.StringIO()
     try:
-        agent(last_user_message)
+        agent_result = agent(last_user_message)
     finally:
         sys.stdout = old_stdout
+
+    # --- Meter what that cost ---
+    if one.config.quota_enabled:
+        # NOT metrics.accumulated_usage: strands accumulates that across the
+        # lifetime of the Agent instance, and `one.agent` is cached, so reading
+        # it would re-count every earlier request in the process. The
+        # per-invocation total is on the latest AgentInvocation.
+        invocations = getattr(agent_result.metrics, "agent_invocations", None) or []
+        usage = invocations[-1].usage if invocations else {}
+        try:
+            increment_usage(
+                one.boto_ses,
+                one.config,
+                input_tokens=int(usage.get("inputTokens", 0) or 0),
+                output_tokens=int(usage.get("outputTokens", 0) or 0),
+            )
+        except Exception as e:  # pragma: no cover - metering must not break a reply
+            debug(f"[Quota] increment failed: {e}")
 
     # --- Extract thinking and answer from agent response ---
     full_text = extract_text_from_messages(agent.messages, msg_count_before)

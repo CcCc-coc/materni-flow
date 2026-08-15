@@ -126,6 +126,20 @@ export interface SiteConfig {
     techStack: string[]
     cta: { title: string; subtitle: string }
   }
+  /**
+   * Interface messages that are not about the dataset.
+   *
+   * They live here for the same reason the business copy does: a user-visible
+   * string typed into a component is a string nobody can find later. These do
+   * not change when the dataset changes, but they do change with the product's
+   * voice, so they belong with the rest of the voice.
+   */
+  messages: {
+    /** Server refused because this deployment's spend cap was reached. */
+    rateLimited: string
+    /** User submitted while a reply was still streaming. */
+    waitForResponse: string
+  }
   chat: {
     welcomeSubtitle: string
     insights: Insight[]
@@ -331,6 +345,12 @@ export const site: SiteConfig = {
       title: "Start Analyzing",
       subtitle: "Ask questions about your lending portfolio in plain English",
     },
+  },
+
+  messages: {
+    rateLimited:
+      "This demo runs on a monthly token budget and it is used up for now. It resets at the start of next month.",
+    waitForResponse: "Wait for the current answer to finish first.",
   },
 
   chat: {

@@ -291,7 +291,7 @@ grep -n "—" config/site.ts | grep -vE ":\s*\*|:\s*//"
 | `scripts/test_21_agent.py` | 10 个 `request_NN` 变量, 全是上一个领域的业务问题, 全部重写 |
 | `scripts/test_02_run_sql_locally.sql` | 一条示例 SQL, 引用了旧表名 |
 | `tests_python/one/test_one_one_04_agent.py` | 断言里写死了 `FROM loan` 和 `DROP TABLE loan`, 换成新库里真实存在的表 |
-| `data/database-exploration/database-schema.txt` | schema 参考文件. 不要手写, 跑 `.venv/bin/python scripts/test_04_print_database_schema.py` 重新生成 |
+| (schema 参考) | **没有需要维护的文件.** 要看 schema 就跑 `.venv/bin/python scripts/test_04_print_database_schema.py`, 它直接读库, 永远是真的 |
 
 **E. 用户必须提供的.** 输入文档里不会有这些.
 

@@ -351,7 +351,9 @@ Add a new table there, in the right position, or the sync breaks —
 mismatch in either direction.
 
 **Schema Reference:**
-- `data/database-exploration/database-schema.txt` - Database schema (read only when needed)
+- Run `.venv/bin/python scripts/test_04_print_database_schema.py` to print the schema.
+  There is deliberately no checked-in copy: a snapshot of a generated artifact can
+  only ever be right by coincidence, and this one had no reader.
 
 **Run SQL Locally:**
 ```bash

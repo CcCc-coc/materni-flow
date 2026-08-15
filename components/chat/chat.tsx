@@ -6,8 +6,7 @@ import { Overview } from "./overview";
 import { useScrollToBottom } from "@/hooks/use-scroll-to-bottom";
 import { useChat } from "@ai-sdk/react";
 import { toast } from "sonner";
-import { useState, useEffect, useRef } from "react";
-import FingerprintJS from '@fingerprintjs/fingerprintjs';
+import { useState, useEffect } from "react";
 import { site } from "@/config/site";
 
 export function Chat() {
@@ -15,40 +14,6 @@ export function Chat() {
 
   const [input, setInput] = useState("");
   const [isContextBannerVisible, setIsContextBannerVisible] = useState(true);
-
-  const browserFingerprintRef = useRef<string>("");
-
-  useEffect(() => {
-    const generateFingerprint = async () => {
-      try {
-        const fp = await FingerprintJS.load();
-        const result = await fp.get();
-        browserFingerprintRef.current = result.visitorId;
-        console.log('Browser Fingerprint Generated:', result.visitorId);
-      } catch (error) {
-        console.error('Failed to generate browser fingerprint:', error);
-      }
-    };
-
-    generateFingerprint();
-
-    const originalFetch = window.fetch;
-    window.fetch = async (input, init?) => {
-      if (typeof input === 'string' && input.includes('/api/chat')) {
-        const fingerprint = browserFingerprintRef.current;
-        init = init || {};
-        init.headers = {
-          ...init.headers,
-          'X-Client-Fingerprint': fingerprint,
-        };
-      }
-      return originalFetch(input, init);
-    };
-
-    return () => {
-      window.fetch = originalFetch;
-    };
-  }, []);
 
   const {
     messages,
@@ -59,10 +24,7 @@ export function Chat() {
   } = useChat({
     onError: (error) => {
       if (error.message.includes("Too many requests") || error.message.includes("Rate limit") || error.message.includes("429")) {
-        toast.error(
-          "You have reached the usage limit, please try again in 60 minutes",
-          { duration: 8000 }
-        );
+        toast.error(site.messages.rateLimited, { duration: 8000 });
       } else {
         toast.error(error.message);
       }
