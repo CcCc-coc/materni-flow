@@ -156,6 +156,7 @@ class ConnectionTypeEnum(BetterStrEnum):
     """
 
     SQLALCHEMY = "sqlalchemy"  # SQLAlchemy connections
+    SNOWFLAKE = "snowflake"  # Snowflake
     AWS_REDSHIFT = "aws_redshift"  # AWS Redshift
 
 
