@@ -30,6 +30,7 @@ class Runtime:
 
     @cached_property
     def name(self) -> str:
+        # See https://vercel.com/docs/environment-variables/system-environment-variables
         if os.environ.get("VERCEL", "NOTHING") == "1":
             return RuntimeEnum.VERCEL.value
         else:
