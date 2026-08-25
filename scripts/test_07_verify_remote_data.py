@@ -7,13 +7,14 @@ This is the confirmation step after ``test_06_sync_data_to_remote_db.py``. That
 script reports what it *believes* it wrote; this one goes back to the remote
 database and checks what is actually there.
 
-Remote tables carry the project prefix set in ``data/dataset.toml`` (local ``widget``
--> remote ``acme_widget``), so each local table is compared against its prefixed
-counterpart. Tables belonging to other projects are ignored.
+Remote tables live in the PostgreSQL schema named in ``data/dataset.toml`` and
+carry the same names as the local ones, so each local table is compared against
+its namesake inside that schema. Other projects live in other schemas and are
+never looked at.
 
 Three things are checked per table:
 
-1. The prefixed table exists remotely.
+1. The table exists remotely, inside this project's schema.
 2. It is not empty.
 3. Its row count matches the local SQLite table it was synced from.
 
@@ -34,26 +35,26 @@ import sqlalchemy as sa
 
 from agent_app.api import one
 from agent_app.project_config import project_config
-from agent_app.tests.db_sync import TABLE_INSERT_ORDER, prefixed
+from agent_app.tests.db_sync import TABLE_INSERT_ORDER
 
 
-def count_rows(engine: sa.Engine, table_name: str) -> int:
+def count_rows(engine: sa.Engine, table_name: str, schema: str | None = None) -> int:
     """
     Count the rows in one table.
 
     Args:
         engine: SQLAlchemy engine to query.
-        table_name: Table to count. Built from the hardcoded TABLE_INSERT_ORDER
-            list plus the configured prefix, never from user input, so
-            interpolating it is safe here.
+        table_name: Table to count. Taken from the hardcoded TABLE_INSERT_ORDER
+            list, never from user input, so interpolating it is safe here.
+        schema: The PostgreSQL schema it lives in. ``None`` for local SQLite,
+            which has no schemas.
 
     Returns:
         The number of rows in the table.
     """
+    qualified = f'"{schema}"."{table_name}"' if schema else f'"{table_name}"'
     with engine.connect() as conn:
-        return conn.execute(
-            sa.text(f'SELECT COUNT(*) FROM "{table_name}"')
-        ).scalar_one()
+        return conn.execute(sa.text(f"SELECT COUNT(*) FROM {qualified}")).scalar_one()
 
 
 def main() -> int:
@@ -65,50 +66,49 @@ def main() -> int:
     """
     local_engine = one.local_sqlite_engine
     remote_engine = one.remote_postgres_engine
-    table_prefix = project_config.project_name_snake
+    schema_name = project_config.schema_name
 
     print("=" * 76)
     print("Verifying remote PostgreSQL data against local SQLite")
-    print(f"Project prefix: {table_prefix}_")
+    print(f"PostgreSQL schema: {schema_name}")
     print("=" * 76)
 
-    remote_tables = set(sa.inspect(remote_engine).get_table_names())
+    remote_tables = set(sa.inspect(remote_engine).get_table_names(schema=schema_name))
 
     rows = []
     problems = []
 
     for table_name in TABLE_INSERT_ORDER:
-        remote_name = prefixed(table_prefix, table_name)
         local_count = count_rows(local_engine, table_name)
 
-        if remote_name not in remote_tables:
-            rows.append((remote_name, local_count, "MISSING", "table not found"))
-            problems.append(f"{remote_name}: table does not exist remotely")
+        if table_name not in remote_tables:
+            rows.append((table_name, local_count, "MISSING", "table not found"))
+            problems.append(f"{table_name}: table does not exist remotely")
             continue
 
-        remote_count = count_rows(remote_engine, remote_name)
+        remote_count = count_rows(remote_engine, table_name, schema=schema_name)
 
         if remote_count == 0 and local_count > 0:
             status = "EMPTY"
-            problems.append(f"{remote_name}: remote is empty, local has {local_count}")
+            problems.append(f"{table_name}: remote is empty, local has {local_count}")
         elif remote_count != local_count:
             status = "MISMATCH"
             problems.append(
-                f"{remote_name}: remote has {remote_count}, local has {local_count}"
+                f"{table_name}: remote has {remote_count}, local has {local_count}"
             )
         else:
             status = "OK"
 
-        rows.append((remote_name, local_count, str(remote_count), status))
+        rows.append((table_name, local_count, str(remote_count), status))
 
     # Print an aligned report rather than a bare dict: the whole value of this
     # script is being able to eyeball which table went wrong.
     width = max(len(name) for name, *_ in rows)
     print(f"{'remote table'.ljust(width)}  {'local':>8}  {'remote':>8}  status")
     print(f"{'-' * width}  {'-' * 8}  {'-' * 8}  ------")
-    for remote_name, local_count, remote_count, status in rows:
+    for table_name, local_count, remote_count, status in rows:
         print(
-            f"{remote_name.ljust(width)}  {local_count:>8}  {remote_count:>8}  {status}"
+            f"{table_name.ljust(width)}  {local_count:>8}  {remote_count:>8}  {status}"
         )
 
     print("=" * 76)

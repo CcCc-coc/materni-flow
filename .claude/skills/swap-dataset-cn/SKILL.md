@@ -109,23 +109,55 @@ kickstart 问题、能力卡、tooltip、businessContext 的"能问什么", 全�
 
 #### 六步, 严格按顺序
 
-**第 1 步. 数据库落地.**
-复制 sqlite 覆盖 `data.sqlite.example`, 跑 `mise run setup-db`, 按 er_document 的外
-键依赖顺序填 `data/dataset.toml` 的 `tableInsertOrder`, 立刻 `mise run check`.
+**第 1 步. 数据库落地. 而且"落地"到 PostgreSQL 才算数.**
+
+**先确认输入目录里有没有 `.sqlite`**, 因为数据集有两种给法:
+
+```bash
+ls tmp/dataset/*.sqlite
+```
+
+| 情况 | 怎么办 |
+| :--- | :--- |
+| 有 `.sqlite` | 直接用它 |
+| 没有, 只有 `04-<name>_data_generator.py` | **先跑生成器造出 sqlite**, 再往下走 |
+
+跑生成器之前先读一眼它的开头: 它通常要指定输出路径, 有的还要装额外的包 (faker 之类).
+造完再 `ls -lh` 看一眼大小对不对得上 er_document 里声称的量级 -- 生成器跑挂一半会留下
+一个能打开但只有几张表的文件, 那种失败不报错.
+
+拿到 sqlite 之后:
+
+```bash
+cp tmp/dataset/<name>.sqlite data/data.sqlite.example
+mise run setup-db      # 播种到 tmp/data.sqlite
+# 填 data/dataset.toml 的 schemaName 和 tableInsertOrder
+mise run check         # 顺序对不对, 当场就报
+mise run sync-db       # 发布到 PostgreSQL 的本项目 schema
+mise run verify-db     # 逐表对行数
+```
+
+**最后两步不是可选的.** agent 在任何环境下读的都是 PostgreSQL, 本地也一样, 所以不同步
+就等于没有数据库: 第 2 步验证 SQL 会报 schema 缺表, `mise run dev` 起来的 agent 也答
+不出东西. `data/data.sqlite.example` 现在只是**种子和同步源**, 不再是任何人查询的对象.
+
+`schemaName` 用数据集名 (下划线, 不要连字符, 63 字符以内). 它是这个项目在共享 Neon 实例
+里的命名空间, 别的项目在别的 schema 里, 我们的任何一条 SQL 都不会提到它们.
 
 *为什么必须第一:* 后面每一步的验证都要拿它当基准. 顺序错了当场就报.
 
 **同时把体积预算过一眼.** 线上是 NeonDB 的 500MB 配额, 而且那个库是**和别的项目共用
-的**, 我们只占其中带前缀的那一份, 所以真实预算比 500MB 还小. 这条比下面任何一条内容
-质量的要求都硬 -- 内容写差了可以改, 数据塞不进去是直接上不了线.
+的**, 我们只占其中一个 schema, 所以真实预算比 500MB 还小. 这条比下面任何一条内容质量
+的要求都硬 -- 内容写差了可以改, 数据塞不进去是直接上不了线.
 
 ```bash
-ls -lh data.sqlite.example
+ls -lh data/data.sqlite.example
 ```
 
-PostgreSQL 存同一份数据通常比 SQLite 大 **2 到 4 倍** (每行的元组头, 对齐填充, 索引和
-主键约束). 所以拿 sqlite 文件大小乘 4 当上界估: 超过 **120MB** 就要在动手前跟用户确认
-是否要减行, 别等同步的时候才发现. 现在这份是 7.4MB, 离线很远.
+PostgreSQL 存同一份数据比 SQLite 大 (每行的元组头, 对齐填充, 索引和主键约束). 这个
+数据集实测是 7.4MB -> 11MB, 约 1.5 倍; 宽表多, 索引多的数据集会更高. 拿 **乘 4** 当
+上界估还是稳的: sqlite 超过 **120MB** 就在动手前跟用户确认要不要减行, 别等同步的时候
+才发现.
 
 估算只是估算, 真实数字在同步之后量, 见 2.3.
 
@@ -154,20 +186,33 @@ PostgreSQL 存同一份数据通常比 SQLite 大 **2 到 4 倍** (每行的元�
 *一个坑:* `mise run check` 会把 `FROM x` / `JOIN x` 当表名校验, 它分不清散文和 SQL.
 `drawn from a zero baseline` 里的 `from a` 会被判成表 `a`. 换个说法即可.
 
-*另一个坑, 而且是会上线的那种:* **本地是 SQLite, 线上 (Vercel) 是 PostgreSQL.**
-`self.engine` 按运行环境自动选, 所以同一份提示词里的 SQL 例子要在两种方言上都成立.
-只对着本地 sqlite 验过就发上线, 症状不会是崩溃 -- SQL 工具把数据库报错转成字符串还给
-模型, 用户只看到答案变差. 写例子时避开只有一边认的写法:
+*另一个坑, 这条曾经真的上过线:* **提示词里的 SQL 一律写 PostgreSQL 方言.**
 
-| 别写 | 写成 |
+这个仓库以前本地读 SQLite, 线上读 PostgreSQL, 于是每一段提示词 SQL 都是对着 SQLite
+写的、对着 SQLite 验的, 然后发到 PostgreSQL 环境. 症状不是崩溃 -- agent 的 SQL 工具把
+数据库报错转成字符串还给模型, 所以只表现为答案变差, 没人看得见. 这次改成两边都读
+PostgreSQL 之后回头验了一遍旧提示词: **16 段例子里 6 段在 PostgreSQL 上跑不通.**
+
+写的时候直接避开这几个:
+
+| 别写 (SQLite) | 写成 (PostgreSQL) |
 | :--- | :--- |
-| `strftime('%Y-%m', d)` | 按月分桶两边写法不同, 尽量别在例子里做月份分桶 |
-| `JULIANDAY(a) - JULIANDAY(b)` | 用天数差的地方改成描述, 或两边各给一段 |
-| `is_x = 1` | `is_x = 1` 在两边都能跑, 但布尔语义靠列定义, 确认过再写 |
-| `ROUND(x, 2)` | 保留, 但 PostgreSQL 的 `ROUND` 不收 double, 必要时 `ROUND(x::numeric, 2)` |
+| `strftime('%Y-%m', d)` | `TO_CHAR(d, 'YYYY-MM')` |
+| 用 `strftime('%m', ...)` 算季度 | `EXTRACT(QUARTER FROM d)` |
+| `DATE(d, '-90 days')` | `d - INTERVAL '90 days'` |
+| `JULIANDAY(a) - JULIANDAY(b)` | `a - b` (日期相减直接得整数天) |
+| `WHERE is_flag = 1` | `WHERE is_flag` (布尔就是布尔) |
+| 浮点列上的 `ROUND(x, 2)` | `ROUND(x::numeric, 2)` |
 
-`100.0 * a / b` 这个强制浮点除法的写法两边都对, 可以放心用. 拿不准的例子, 按 2.3 的
-办法在两个引擎上各跑一遍.
+最后一条最阴: `ROUND(numeric, int)` 存在而 `ROUND(double precision, int)` 不存在, 所以
+`ROUND(100.0 * a / b, 2)` 没问题 (`100.0` 这个字面量把整个表达式变成 numeric), 而表达式
+里一旦混进 float 列就炸. 表达式里有浮点列就加 `::numeric`.
+
+另外 PostgreSQL 比 SQLite 严的两处, 写的时候就绕开: `GROUP BY` 要列全 SELECT 里所有
+非聚合列; `HAVING` 不认 SELECT 里的别名, 把表达式重写一遍.
+
+**提示词里那节 `## SQL Dialect` 是给模型看的同一份规则**, 换数据集时保留结构只换例子,
+和 `## Rendering Triggers` 一样待遇.
 
 **第 3 步. 写 kickstart 12 条.**
 输入: **只看第 2 步产出的提示词**, 不要回头翻 sql_queries.
@@ -436,8 +481,7 @@ B 组.
 
 **这条能成立, 靠的是一条纪律: 代码注释和 docstring 里的例子必须与数据集无关.**
 
-写 `prefix_table_name("loan") # "smbll_loan"` 这种例子, 等于把当前数据集焊进了通用
-代码. 换数据集之后它不报错、不失败, 只是变成谎话躺在那里 —— 和 skill 开头讲的那个
+在通用代码里写 `# e.g. the "loan" table` 这种例子, 等于把当前数据集焊进了通用代码. 换数据集之后它不报错、不失败, 只是变成谎话躺在那里 —— 和 skill 开头讲的那个
 "医院 docstring 躺在借贷仓库里几个月"是同一个形状, 只是规模小.
 
 正确写法是用永远虚构的占位领域:
@@ -476,18 +520,29 @@ npx next build     # site.toml 的缺 key 和图标名, 只有这里查得到
 
 **第 2 步做完额外做一件事: 把提示词里每一段 SQL 对着真库跑一遍.**
 
+**必须走 `one.engine`, 也就是 PostgreSQL.** 拿本地 sqlite 验过的 SQL 在这里一条都不
+算数 -- 那正是这套流程以前踩的坑.
+
 ```bash
 .venv/bin/python - <<'EOF'
-import re, sqlite3, pathlib
-db = sqlite3.connect("tmp/data.sqlite")
-for i, b in enumerate(re.findall(r"```sql\n(.*?)```",
-        pathlib.Path("data/system-prompt.md").read_text(), re.S), 1):
-    if not b.strip().upper().startswith(("SELECT", "WITH")): continue
+import re, pathlib, sqlalchemy as sa
+from agent_app.api import one
+blocks = re.findall(r"```sql\n(.*?)```",
+                    pathlib.Path("data/system-prompt.md").read_text(), re.S)
+ok = fail = 0
+for i, b in enumerate(blocks, 1):
+    if not b.strip().upper().startswith(("SELECT", "WITH")):
+        continue
     try:
-        rows = db.execute(b).fetchall()
-        print(f"[{i}] OK  {len(rows)} rows | {rows[0] if rows else ''}")
+        with one.engine.connect() as c:
+            rows = c.execute(sa.text(b)).fetchall()
+            c.rollback()
+        ok += 1
+        print(f"[{i}] OK   {len(rows)} rows | {rows[0] if rows else ''}"[:110])
     except Exception as e:
-        print(f"[{i}] FAIL {e}")
+        fail += 1
+        print(f"[{i}] FAIL {str(e).splitlines()[0][:130]}")
+print(f"\n{ok} ok, {fail} fail")
 EOF
 ```
 
@@ -514,6 +569,10 @@ npx next build
 卡片看着好好的, 就是配错了图.
 
 **数据本身要体检一遍. 这一条 ba 那个仓库可以跳过, 我们不行.**
+
+体检的对象是 `tmp/data.sqlite` 这个**种子**, 不是线上的 PostgreSQL: 同步是逐行复制,
+种子干净则线上干净, 而 SQLite 的 `PRAGMA foreign_key_list` 拿孤儿行比写 PostgreSQL 的
+等价查询省事得多. 顺序上先体检再同步, 别把脏数据发上去再回头查.
 
 那边是纯 demo, 图表里的数字"大差不差就行". 这个 App 是要拿去给人认真看的, 所以数据
 不能出现**一眼假**的结论: 违约率 0%, 某张表全是空的, 日期落在 1970 年, 金额是负数.
@@ -580,30 +639,29 @@ EOF
 **同步到线上之后, 量一次真实体积.** 第 1 步只是估.
 
 ```bash
-.venv/bin/python scripts/test_06_sync_data_to_remote_db.py
-.venv/bin/python scripts/test_07_verify_remote_data.py
+mise run sync-db
+mise run verify-db
 .venv/bin/python - <<'EOF'
 import sqlalchemy as sa
 from agent_app.api import one
 from agent_app.project_config import project_config
 
-prefix = f"{project_config.project_name_snake}_%"
 sql = sa.text('''
     SELECT pg_size_pretty(COALESCE(SUM(pg_total_relation_size(c.oid)), 0)) AS ours,
            COUNT(*) AS n_tables,
            pg_size_pretty(pg_database_size(current_database())) AS whole_db
     FROM pg_class c
     JOIN pg_namespace n ON n.oid = c.relnamespace
-    WHERE c.relkind = 'r' AND n.nspname = 'public' AND c.relname LIKE :p
+    WHERE c.relkind = 'r' AND n.nspname = :schema
 ''')
 with one.remote_postgres_engine.connect() as conn:
-    r = conn.execute(sql, {"p": prefix}).one()
+    r = conn.execute(sql, {"schema": project_config.schema_name}).one()
 print(f"我们这 {r.n_tables} 张表占 {r.ours}; 整库 {r.whole_db} / 500 MB")
 EOF
 ```
 
-那 500MB 是整库配额, **和别的项目共用**, 所以看的是两个数: 我们这份别失控, 整库别顶
-到线. 逼近了就回去减行, 通常是把最大那张流水表按时间截一段, 而不是删表 -- 删表会让提
+那 500MB 是整库配额, **和别的项目共用**, 所以看的是两个数: 我们这个 schema 别失控,
+整库别顶到线. 逼近了就回去减行, 通常是把最大那张流水表按时间截一段, 而不是删表 -- 删表会让提
 示词里的分析失效.
 
 **起本地服务看效果:**

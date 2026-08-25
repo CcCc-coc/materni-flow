@@ -42,7 +42,7 @@ Example usage::
 
     project_config.project_name          # "acme"
     project_config.project_name_snake    # "acme"
-    project_config.prefix_table_name("widget")  # "acme_widget"
+    project_config.schema_name           # "acme_widgets_medium"
     project_config.table_insert_order    # ["<parent>", "<child>", ...]
 """
 
@@ -77,13 +77,13 @@ class ProjectConfig:
         """
         Short identifier for this project, e.g. ``"acme"``.
 
-        This is what namespaces tables in the shared remote database. It lives
-        here rather than in ``.env`` because it is not a secret and not
-        machine-specific: every deployment of *this* dataset wants the same
+        It lives here rather than in ``.env`` because it is not a secret and
+        not machine-specific: every deployment of *this* dataset wants the same
         value, so committing it removes one more thing to forget on a swap.
 
-        Keep it short: it is prefixed onto every remote table name, and
-        PostgreSQL identifiers cap at 63 characters.
+        It used to namespace the remote tables as a prefix. It does not any
+        more -- :attr:`schema_name` does that -- and what is left is the label
+        this deployment carries in the monthly LLM spend quota.
         """
         return self.dataset["project"]["name"]
 
@@ -109,13 +109,25 @@ class ProjectConfig:
         return list(self.dataset["database"]["tableInsertOrder"])
 
     @property
+    def schema_name(self) -> str:
+        """
+        The PostgreSQL schema this dataset's tables live in.
+
+        This is how several projects share one NeonDB instance. It replaced a
+        table-name prefix, and the reason is in ``data/dataset.toml`` next to
+        the value: a prefix changes the table name the agent sees, a schema
+        does not.
+        """
+        return self.dataset["database"]["schemaName"]
+
+    @property
     def project_name_snake(self) -> str:
         """
         The project name as a snake_case identifier, e.g. ``acme_data_lens``.
 
-        Use this wherever the name has to be a valid SQL / Python identifier —
-        most importantly as the prefix on remote database table names, which is
-        how several projects share one NeonDB instance without colliding.
+        Use this wherever the name has to be a valid SQL / Python identifier.
+        It no longer namespaces database tables -- :attr:`schema_name` does
+        that -- but it still identifies this deployment in the spend quota.
 
         Any run of characters that is not a letter or digit collapses to a single
         underscore, so ``"Acme Data-Lens"`` and ``"acme_data_lens"`` normalize
@@ -133,18 +145,6 @@ class ProjectConfig:
         S3 buckets, DNS labels), where underscores are awkward or illegal.
         """
         return re.sub(r"[^a-z0-9]+", "-", self.project_name.strip().lower()).strip("-")
-
-    def prefix_table_name(self, table_name: str) -> str:
-        """
-        Namespace a table name for the shared remote database.
-
-        Args:
-            table_name: The local, unprefixed table name, e.g. ``"widget"``.
-
-        Returns:
-            The remote table name, e.g. ``"acme_widget"``.
-        """
-        return f"{self.project_name_snake}_{table_name}"
 
 
 project_config = ProjectConfig()

@@ -16,13 +16,29 @@
 # A dataset swap rewrites that file's contents, never its name.
 
 [project]
-# Short identifier, prefixed onto every table in the shared remote Postgres so
-# several projects can live in one NeonDB without colliding. Keep it short:
-# PostgreSQL identifiers cap at 63 characters. There is no environment override:
+# Short identifier for this deployment. It no longer names anything in the
+# database -- `database.schemaName` below does that -- but it still labels this
+# project in the monthly LLM spend quota. There is no environment override:
 # this is a property of the dataset, identical in every deployment of it.
 name = "smbll"
 
 [database]
+# The PostgreSQL schema this dataset lives in.
+#
+# The namespace is a schema, not a table-name prefix. An earlier revision
+# prefixed every table (`smbll_loan`) and it failed the one test that matters:
+# the table name the agent saw depended on which engine was behind it, bare
+# locally against SQLite and prefixed remotely, so every SQL example in the
+# system prompt was correct in one environment and wrong in the other. A schema
+# moves the namespace off the table name, so `loan` is `loan` everywhere and
+# one prompt is honest in both places.
+#
+# Other projects share this Neon instance and live in other schemas. Nothing
+# here ever names them, which is the entire point.
+#
+# Must be a valid PostgreSQL identifier: lowercase, no hyphens, <= 63 chars.
+schemaName = "fintech_smb_lending_pipeline_medium"
+
 # The database name shown to the LLM at the top of the encoded schema. Purely
 # descriptive: it labels the schema block the agent reads and does not have to
 # match any real database name.

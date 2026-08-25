@@ -105,12 +105,13 @@ GROUP BY rg.grade_code;
 ```sql
 SELECT rg.grade_code,
        rg.implied_default_rate AS pricing_assumption,
-       ROUND(100.0 * COUNT(de.id) / COUNT(l.id), 2) AS actual_rate,
-       ROUND(rg.implied_default_rate - 100.0 * COUNT(de.id) / COUNT(l.id), 2) AS pricing_gap
+       ROUND((100.0 * COUNT(de.id) / COUNT(l.id))::numeric, 2) AS actual_rate,
+       ROUND((rg.implied_default_rate - 100.0 * COUNT(de.id) / COUNT(l.id))::numeric, 2) AS pricing_gap
 FROM risk_grade rg
 JOIN loan l ON rg.id = l.risk_grade_id
 LEFT JOIN default_event de ON l.id = de.loan_id
-GROUP BY rg.id;
+GROUP BY rg.id, rg.grade_code, rg.implied_default_rate
+ORDER BY rg.grade_code;
 ```
 
 ### 3. Approval Rate
@@ -186,7 +187,7 @@ GROUP BY rg.grade_code;
 
 ```sql
 SELECT l.loan_number, l.outstanding_balance,
-       ROUND(l.outstanding_balance * rg.implied_default_rate / 100, 2) AS expected_loss
+       ROUND((l.outstanding_balance * rg.implied_default_rate / 100)::numeric, 2) AS expected_loss
 FROM loan l
 JOIN risk_grade rg ON l.risk_grade_id = rg.id
 JOIN loan_status ls ON l.current_status_id = ls.id
@@ -242,11 +243,11 @@ GROUP BY cohort;
 **Compare by customer type:** Repeat customers default ~3.2% vs first-timers ~9.1%
 
 ```sql
-SELECT CASE WHEN c.is_repeat_customer = 1 THEN 'Repeat' ELSE 'First-Time' END AS type,
+SELECT CASE WHEN c.is_repeat_customer THEN 'Repeat' ELSE 'First-Time' END AS type,
        COUNT(DISTINCT c.id) AS customers,
        COUNT(l.id) AS loans,
-       ROUND(AVG(l.approved_amount), 0) AS avg_loan,
-       ROUND(100.0 * COUNT(de.id) / COUNT(l.id), 2) AS default_rate
+       ROUND(AVG(l.approved_amount)::numeric, 0) AS avg_loan,
+       ROUND((100.0 * COUNT(de.id) / COUNT(l.id))::numeric, 2) AS default_rate
 FROM customer c
 LEFT JOIN loan l ON c.id = l.customer_id
 LEFT JOIN default_event de ON l.id = de.loan_id
@@ -258,10 +259,10 @@ GROUP BY c.is_repeat_customer;
 **Group by origination quarter:**
 
 ```sql
-SELECT strftime('%Y-Q' || ((CAST(strftime('%m', l.disbursement_date) AS INTEGER) - 1) / 3 + 1),
-                l.disbursement_date) AS quarter,
+SELECT TO_CHAR(l.disbursement_date, 'YYYY') || '-Q'
+       || EXTRACT(QUARTER FROM l.disbursement_date)::text AS quarter,
        COUNT(l.id) AS originations,
-       ROUND(100.0 * COUNT(de.id) / COUNT(l.id), 2) AS default_rate
+       ROUND((100.0 * COUNT(de.id) / COUNT(l.id))::numeric, 2) AS default_rate
 FROM loan l
 LEFT JOIN default_event de ON l.id = de.loan_id
 GROUP BY quarter
@@ -280,7 +281,7 @@ FROM default_event de
 JOIN loan l ON de.loan_id = l.id
 JOIN payment p ON l.id = p.loan_id
 WHERE p.payment_date < de.default_date
-  AND p.payment_date >= DATE(de.default_date, '-90 days')
+  AND p.payment_date >= de.default_date - INTERVAL '90 days'
 GROUP BY de.loan_id;
 ```
 
@@ -294,10 +295,10 @@ Used for staffing the underwriting team, so the month must be the application mo
 never the decision month.
 
 ```sql
-SELECT strftime('%Y-%m', a.application_date) AS month,
+SELECT TO_CHAR(a.application_date, 'YYYY-MM') AS month,
        COUNT(*) AS applications,
-       ROUND(100.0 * COUNT(CASE WHEN ls.status_code = 'APPROVED' THEN 1 END)
-             / COUNT(*), 2) AS approval_rate
+       ROUND((100.0 * COUNT(CASE WHEN ls.status_code = 'APPROVED' THEN 1 END)
+             / COUNT(*))::numeric, 2) AS approval_rate
 FROM application a
 JOIN loan_status ls ON a.status_id = ls.id
 GROUP BY month
@@ -354,6 +355,35 @@ loan.id → default_event.loan_id (1:1, only defaulted loans)
 
 Filter active loans: `status_code IN ('CURRENT', 'DISBURSED')`
 Filter completed loans: `status_code IN ('PAID_OFF', 'DEFAULTED')`
+
+## SQL Dialect
+
+The database is **PostgreSQL**, in every environment. Write PostgreSQL.
+
+Table names are bare: `FROM loan`, never `FROM some_schema.loan`. The connection
+already resolves them.
+
+These are the ones that bite, because each is valid SQLite and invalid here:
+
+| Do not write | Write instead |
+| :--- | :--- |
+| `strftime('%Y-%m', d)` | `TO_CHAR(d, 'YYYY-MM')` |
+| `strftime('%m', d)` for a quarter | `EXTRACT(QUARTER FROM d)` |
+| `DATE(d, '-90 days')` | `d - INTERVAL '90 days'` |
+| `JULIANDAY(a) - JULIANDAY(b)` | `a - b` (dates subtract to whole days) |
+| `WHERE is_repeat_customer = 1` | `WHERE is_repeat_customer` (real booleans) |
+| `ROUND(x, 2)` where `x` is a float column | `ROUND(x::numeric, 2)` |
+
+That last one is the subtle one. `ROUND(numeric, int)` exists and
+`ROUND(double precision, int)` does not, so `ROUND(100.0 * a / b, 2)` is fine
+(the `100.0` literal makes the expression numeric) while
+`ROUND(some_float_column * 1.0, 2)` fails. When a float column is anywhere in
+the expression, cast: `ROUND((...)::numeric, 2)`.
+
+Two more places PostgreSQL is stricter than SQLite, worth avoiding up front:
+
+- `GROUP BY` must list every non-aggregated column in the SELECT list.
+- `HAVING` cannot refer to a SELECT alias. Repeat the expression instead.
 
 ## SQL Patterns for This Domain
 

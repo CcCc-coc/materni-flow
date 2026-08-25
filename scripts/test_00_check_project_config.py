@@ -239,9 +239,21 @@ def check_prompt_tables(report: Report, db_tables: set[str]) -> bool:
     """
     Fail if the system prompt queries a table the database does not have.
 
-    Scans for identifiers following ``FROM`` and ``JOIN`` in the prompt's SQL
-    examples. A prompt that teaches the agent to query a table left behind by the
-    previous dataset produces confident, entirely wrong SQL at runtime.
+    Scans for identifiers following ``FROM`` and ``JOIN``, **inside ```sql
+    fenced blocks only**. A prompt that teaches the agent to query a table left
+    behind by the previous dataset produces confident, entirely wrong SQL at
+    runtime.
+
+    Scoping to the fenced blocks is what keeps this honest. Scanning the whole
+    file cannot tell prose from SQL, and the prompt legitimately discusses SQL
+    in prose: the dialect section says to write ``EXTRACT(QUARTER FROM d)``
+    rather than ``strftime``, and a whole-file scan reads that as a query
+    against a table called ``d``. The previous version reported three such
+    tables and no real ones.
+
+    A dotted name is skipped too. ``EXTRACT(QUARTER FROM l.disbursement_date)``
+    is a column reference that happens to follow ``FROM``, and a real one
+    appears inside the SQL examples.
 
     Names the prompt defines itself as CTEs (``WITH early_behavior AS (...)``)
     are resolved and excluded — they read exactly like table references but are
@@ -254,11 +266,14 @@ def check_prompt_tables(report: Report, db_tables: set[str]) -> bool:
         return False
 
     text = path.read_text(encoding="utf-8")
+    sql_blocks = "\n".join(re.findall(r"```sql\n(.*?)```", text, re.S))
     referenced = set(
         name.lower()
         for name in re.findall(
-            r"\b(?:FROM|JOIN)\s+([a-z_][a-z0-9_]*)",
-            text,
+            # The trailing `(?!\.)` drops `FROM l.disbursement_date`, which is a
+            # column inside EXTRACT rather than a table.
+            r"\b(?:FROM|JOIN)\s+([a-z_][a-z0-9_]*)(?!\s*\.)",
+            sql_blocks,
             re.IGNORECASE,
         )
     )
@@ -268,7 +283,7 @@ def check_prompt_tables(report: Report, db_tables: set[str]) -> bool:
         name.lower()
         for name in re.findall(
             r"(?:\bWITH\s+|,\s*)([a-z_][a-z0-9_]*)\s+AS\s*\(",
-            text,
+            sql_blocks,
             re.IGNORECASE,
         )
     )

@@ -34,6 +34,14 @@ depends = ["inst-python-deps", "inst-node-deps"]
 description = "📥 Seed tmp/data.sqlite from the committed data/data.sqlite.example"
 run = ".venv/bin/python scripts/test_01_setup_sqlite_file.py"
 
+[tasks.sync-db]
+description = "☁️  Publish tmp/data.sqlite into this project's PostgreSQL schema"
+run = ".venv/bin/python scripts/test_06_sync_data_to_remote_db.py"
+
+[tasks.verify-db]
+description = "🔎 Confirm the remote schema matches local, table by table"
+run = ".venv/bin/python scripts/test_07_verify_remote_data.py"
+
 [tasks.export]
 description = "💾 Export Core Python dependencies to requirements.txt via uv"
 run = "uv export --format requirements-txt --no-dev --no-emit-project --no-hashes --no-annotate --no-emit-package pywin32 --no-emit-package colorama --no-emit-package tzdata | sed 's/ ; platform_machine ==.*or.*//' > requirements.txt"

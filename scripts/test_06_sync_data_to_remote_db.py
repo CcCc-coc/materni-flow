@@ -3,7 +3,7 @@
 """
 Sync local SQLite database to remote PostgreSQL (NeonDB).
 
-Remote tables are namespaced with the project prefix from ``data/dataset.toml``, so
+Remote tables live in the PostgreSQL schema named in ``data/dataset.toml``, so
 this project can share one NeonDB instance with others without colliding:
 local ``widget`` becomes remote ``acme_widget``, and its foreign keys are rewritten
 to match.
@@ -31,7 +31,7 @@ def main():
     """Run the sync operation."""
     print("=" * 68)
     print("Syncing local SQLite to remote PostgreSQL (NeonDB)")
-    print(f"Project prefix: {project_config.project_name_snake}_")
+    print(f"PostgreSQL schema: {project_config.schema_name}")
     print("=" * 68)
 
     result = reset_remote_database(verbose=True)

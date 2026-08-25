@@ -27,17 +27,20 @@ class TestProjectConfig:
         assert "bogus" not in project_config.table_insert_order
 
     def test_name_derivations(self, tmp_path: Path):
-        """project_name normalizes into snake, slug, and table-prefix forms."""
+        """project_name normalizes into snake and slug forms."""
         toml = tmp_path / "dataset.toml"
         toml.write_text(
             '[project]\nname = "SMB Lending-Lens"\n'
-            '[database]\ndisplayName = "d"\ntableInsertOrder = ["loan"]\n',
+            '[database]\nschemaName = "smb_lending"\n'
+            'displayName = "d"\ntableInsertOrder = ["loan"]\n',
             encoding="utf-8",
         )
         cfg = ProjectConfig(path_dataset_toml=toml)
         assert cfg.project_name_snake == "smb_lending_lens"
         assert cfg.project_name_slug == "smb-lending-lens"
-        assert cfg.prefix_table_name("loan") == "smb_lending_lens_loan"
+        # The schema name is read, not derived: it namespaces this project's
+        # tables in the shared database and must not silently follow a rebrand.
+        assert cfg.schema_name == "smb_lending"
 
     def test_no_environment_dependence(self, monkeypatch):
         """
