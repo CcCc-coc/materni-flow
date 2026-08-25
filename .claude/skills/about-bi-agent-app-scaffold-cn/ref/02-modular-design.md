@@ -127,7 +127,7 @@ const BLOCK_RENDERERS: Record<string, ComponentType<BlockProps>> = {
 跳过第三步的结果是渲染器一行代码都跑不到, 而前端测试全绿.
 
 同一份契约还有第三半: `site.toml` 里那 12 条 kickstart 问题, 每条带一个 `render` 字段和
-一句触发短语. `mise run check` 双向校验它们. 细节见 [03-chat-rendering.md](03-chat-rendering.md).
+一句触发短语. `mise run check` 双向校验它们. 细节见 [04-rendering-contract.md](04-rendering-contract.md).
 
 ---
 
@@ -198,25 +198,16 @@ SQLite 没有消失, 它是**种子和同步源**: `data/data.sqlite.example` ->
 
 ## 7. 边界靠什么守住
 
-模块化设计不会自己维持, 它要么被机械检查守住, 要么慢慢烂掉. 现在守着的有两道:
+模块化设计不会自己维持, 它要么被机械检查守住, 要么慢慢烂掉. 现在守着的是三条命令:
 
 ```bash
-mise run check     # 建表顺序对撞种子; 提示词里的表名; 内容文件; kickstart 渲染配额
+mise run check     # 建表顺序 / 提示词表名 / 内容文件 / kickstart 渲染配额
+mise run test      # Python 单元测试
 npx next build     # site.toml 的必填 key 和图标名, 只有这里查得到
 ```
 
-**两条都要跑, 查的东西不重叠.**
-
-### 什么该自动检查, 什么不该
-
-判据是**判据本身是否机械可判**:
-
-- "这 12 条里有没有恰好 3 条写了 `as a flowchart`" —— 字符串计数, 值得写成脚本
-- "这 12 条问得好不好" —— 自然语言语义, 只能做成模糊匹配, 必然产出一堆没人看的 warn
-
-后一类不加检查, 改用**顺序**来防: 提示词先写, 下游的 kickstart 问题, 能力卡, 首页文案
-都只从提示词改写, 不回头读原始数据集文档. 每一步只从上一步的产物推导, 漂移就无从发生.
-这条推导链的细节在 `swap-dataset-cn` skill 里.
+每一项具体拦住什么, 机械检查盖不住的部分怎么人工验, 以及"什么该自动检查什么不该"的判据,
+全在 [06-what-guards-the-boundaries.md](06-what-guards-the-boundaries.md).
 
 ---
 

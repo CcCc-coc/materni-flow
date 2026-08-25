@@ -12,9 +12,16 @@ description: 这个仓库的事实标准. 它是什么性质的项目, 为什么
 
 | 你在做什么 | 读 |
 | :--- | :--- |
-| 想搞清楚这个项目的定位, 或者要对外介绍它 | [ref/01-what-this-project-is.md](ref/01-what-this-project-is.md) |
-| 重构, 挪文件, 加模块, 判断某个东西该放哪一层 | [ref/02-modular-design.md](ref/02-modular-design.md) |
-| 动 `/chat` 页的渲染层 (Markdown, Mermaid, chart) | [ref/03-chat-rendering.md](ref/03-chat-rendering.md) |
+| 想搞清楚这个项目的定位, 或者要对外介绍它 | [01-what-this-project-is.md](ref/01-what-this-project-is.md) |
+| 重构, 挪文件, 加模块, 判断某个东西该放哪一层 | [02-modular-design.md](ref/02-modular-design.md) |
+| 动数据库, 写 SQL, 同步数据, 估体积 | [03-one-database-everywhere.md](ref/03-one-database-everywhere.md) |
+| 让 agent 画图 / 出表格, 或者加一种新的渲染块 | [04-rendering-contract.md](ref/04-rendering-contract.md) |
+| 写 `data/` 下面那几个文件 (配置, 文案, 提示词) | [05-authoring-the-data-directory.md](ref/05-authoring-the-data-directory.md) |
+| 想知道改完要跑什么, 或者要加/改一项检查 | [06-what-guards-the-boundaries.md](ref/06-what-guards-the-boundaries.md) |
+
+渲染器**内部**怎么实现的 (流式期间的残缺围栏, 懒加载, 安全等级, 兜底), 在另一个 skill:
+`agent-app-design-cn` 的 `ref/chat-frontend.md`. 它有 `paths` 触发器, 你编辑
+`components/chat/` 时会自动加载.
 
 ---
 

@@ -29,7 +29,7 @@
 - **图表**: 柱状图和折线图, 用来讲排名, 趋势, 两个量之间的差距
 
 这四样在提示词和前端之间有一份**契约** (触发短语 -> 渲染块), 不是"模型看着办". 细节见
-[03-chat-rendering.md](03-chat-rendering.md).
+[04-rendering-contract.md](04-rendering-contract.md).
 
 ## 麻雀虽小, 五脏俱全
 

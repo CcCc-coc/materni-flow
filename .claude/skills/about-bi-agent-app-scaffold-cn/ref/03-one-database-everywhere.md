@@ -1,0 +1,127 @@
+# 一个数据库, 到处都是它
+
+## 规矩
+
+> **agent 在任何环境下读的都是同一个 PostgreSQL, 本地也一样.**
+>
+> SQLite 只是种子和同步源, 不是任何人查询的对象.
+
+## 为什么: 一份提示词, 不可能维护两套方言
+
+这个仓库以前是本地读 SQLite, 线上 (Vercel) 读 PostgreSQL, 引擎按运行环境自动选. 听起来
+很合理: 本地不用连网, 线上用真库.
+
+代价是**提示词维护不了**. 系统提示词里有十几段 SQL 例子, 它们是写给模型照抄的. 那些例子
+是在本地写的, 在本地验的, 于是它们全是 SQLite 方言. 发到线上以后:
+
+- `strftime('%Y-%m', d)` 不存在
+- `JULIANDAY(a) - JULIANDAY(b)` 不存在
+- `DATE(d, '-90 days')` 不存在
+- `is_flag = 1` 报 `operator does not exist: boolean = integer`
+- `ROUND(x, 2)` 在 `x` 是浮点列时报 `function round(double precision, integer) does not exist`
+
+**而线上从来没崩过.** agent 的 SQL 工具把数据库报错转成字符串还给模型, 模型换个写法再试
+或者直接绕过去, 所以症状不是异常, 是**答案悄悄变差**. 没有任何监控会报这种事.
+
+改成两边都读 PostgreSQL 之后, 回头把旧提示词逐段跑了一遍: **16 段例子里 6 段跑不通.**
+那 6 段在本地跑了几个月, 每次都绿.
+
+一个数据库到处都是它, 是让一份提示词诚实的唯一办法.
+
+**代价要认**: 本地开发现在需要 `DB_*` 环境变量和一次同步才能工作. 这是一个安装步骤, 换掉
+的是一个静默的错误答案. 这笔交易划算.
+
+## 命名空间用 schema, 不用表名前缀
+
+线上是一个 Neon 实例, 多个项目共用. 隔离靠 PostgreSQL schema:
+
+```
+本地 SQLite 种子              远程 PostgreSQL
+loan                  ->      schema <schemaName> 里的 loan
+customer              ->      schema <schemaName> 里的 customer
+```
+
+**表名两边一模一样, 这是全部设计目标.**
+
+早先的做法是给表加前缀 (`smbll_loan`). 它失败在同一个地方: agent 看到的表名取决于背后是
+哪个引擎, 于是提示词里每一段 SQL 在一个环境对, 在另一个环境错. schema 把命名空间从表名上
+移走了, 所以 agent 看到的名字永远不变.
+
+schema 名在 `data/dataset.toml` 的 `database.schemaName`. 用数据集名, 下划线, 63 字符以内.
+
+## search_path 有三种钉法, 只有一种是对的
+
+让 agent 写 `FROM loan` 而不用写 `FROM some_schema.loan`, 靠的是把 `search_path` 钉到我们
+的 schema. 三种做法, 前两种都会在生产上咬人:
+
+| 做法 | 结果 |
+| :--- | :--- |
+| libpq 启动参数 `options=-csearch_path=...` | **连不上**. Neon 的 `-pooler` 和 PgBouncer 一律拒绝: `unsupported startup parameter in options: search_path`. 在驱动层就失败, 表现为整个应用连不上数据库 |
+| `connect` 事件上 `SET search_path` | **看起来能用, 不安全**. 事务池化下代理按事务分配服务端连接, SET 跑过的那条连接不一定是后续查询拿到的那条. 症状是"表突然消失" |
+| 事务内 `SET LOCAL search_path` | **对**. 事务是代理保证留在同一条服务端连接上的单位 |
+
+所以引擎是在 `begin` 事件上发 `SET LOCAL`. SQLAlchemy 在第一次 execute 时隐式开事务, 所以
+schema 反射和 agent 的 SQL 工具都免费拿到.
+
+## 数据从哪来, 到哪去
+
+```
+数据集的 .sqlite  ──cp──>  data/data.sqlite.example   (种子, 进 Git)
+                              │
+                     mise run setup-db
+                              ↓
+                        tmp/data.sqlite               (工作副本, 不进 Git)
+                              │
+                     mise run sync-db
+                              ↓
+                 PostgreSQL schema <schemaName>       (agent 唯一读的地方)
+                              │
+                     mise run verify-db               (逐表对行数)
+```
+
+**`sync-db` 和 `verify-db` 不是可选步骤.** 不同步就等于没有数据库: agent 的 schema 工具会
+反射到一个空 schema, 而**空 schema 和不存在的 schema 在反射器看来一模一样** —— agent 会
+以为这个库没有表, 然后凭空编出一些看起来合理的表名来回答. 所以代码里专门加了一个检查:
+schema 里缺表就直接抛异常, 并告诉你去跑 `sync-db`.
+
+同步是幂等的: 每次都 drop 本项目的表再重建, 所以跑几次都一样.
+
+## 体积预算
+
+线上 Neon 是 500MB 配额, **和别的项目共用一个实例**, 我们只占一个 schema.
+
+实测这个数据集: SQLite 种子 7.4MB -> PostgreSQL 11MB, 约 **1.5 倍**. 宽表多, 索引多的
+数据集会更高.
+
+动手前用 `sqlite 文件大小 x 4` 当上界估, 超过 120MB 就先和人确认要不要减行, 别等同步的
+时候才发现. 同步之后量真实数字:
+
+```sql
+SELECT pg_size_pretty(SUM(pg_total_relation_size(c.oid)))
+FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
+WHERE c.relkind = 'r' AND n.nspname = :schema
+```
+
+**换数据集之后记得清理上一个数据集留下的表.** 它们不会被新的同步碰到 (同步只管本 schema
+里 `tableInsertOrder` 列出的表), 会一直占着配额. 这个仓库真发生过: 前缀时代的 10 张
+`smbll_*` 表在 `public` 里躺着占了 11MB, 整库 30MB 里有 11MB 是死数据.
+
+## 写 SQL 时的方言清单
+
+给模型的那份在 `data/system-prompt.md` 的 `## SQL Dialect` 一节. 人写代码时同样适用:
+
+| 别写 (SQLite) | 写成 (PostgreSQL) |
+| :--- | :--- |
+| `strftime('%Y-%m', d)` | `TO_CHAR(d, 'YYYY-MM')` |
+| 用 `strftime('%m', ...)` 算季度 | `EXTRACT(QUARTER FROM d)` |
+| `DATE(d, '-90 days')` | `d - INTERVAL '90 days'` |
+| `JULIANDAY(a) - JULIANDAY(b)` | `a - b` (日期相减直接得整数天) |
+| `WHERE is_flag = 1` | `WHERE is_flag` |
+| 浮点列上的 `ROUND(x, 2)` | `ROUND(x::numeric, 2)` |
+
+最后一条最阴: `ROUND(numeric, int)` 存在而 `ROUND(double precision, int)` 不存在. 所以
+`ROUND(100.0 * a / b, 2)` **没问题** —— `100.0` 这个字面量把整个表达式变成 numeric ——
+而 `ROUND(some_float_column * 1.0, 2)` 会炸. 表达式里混进浮点列就加 `::numeric`.
+
+另外 PostgreSQL 比 SQLite 严的两处: `GROUP BY` 要列全 SELECT 里所有非聚合列; `HAVING`
+不认 SELECT 里的别名.
