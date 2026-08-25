@@ -49,7 +49,7 @@ api/index.py
 ```python
 from fastapi import FastAPI, Request, Query
 from fastapi.responses import JSONResponse, StreamingResponse
-from vercel_ai_sdk_mate.api import RequestBody
+from agent_app.vendor.vercel_ai_sdk import RequestBody
 
 from agent_app.ai_sdk_adapter import ai_sdk_message_with_reasoning_generator
 from agent_app.ai_sdk_adapter import get_last_user_message_text
@@ -63,7 +63,7 @@ from agent_app.agent_debugger import parse_response_text
 
 | 模块 | 作用 |
 |------|------|
-| `vercel_ai_sdk_mate.api.RequestBody` | 解析 Vercel AI SDK 格式的请求 |
+| `agent_app.vendor.vercel_ai_sdk.RequestBody` | 解析 Vercel AI SDK 格式的请求 |
 | `one` | 项目的单例对象，包含 Agent 实例 |
 | `extract_text_from_messages` | 从 Agent 消息中提取文本 |
 | `parse_response_text` | 分离思考过程和最终回答 |

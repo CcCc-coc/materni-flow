@@ -242,9 +242,9 @@ ai_sdk_adapter
 | `fastapi` | Web 框架 |
 | `uvicorn` | ASGI 服务器 |
 | `boto3` | AWS SDK |
-| `vercel-ai-sdk-mate` | AI SDK 请求/响应格式解析 |
-| `boto3-dataclass-bedrock-runtime` | Bedrock 响应类型化 |
-| `func-args` | 可选参数处理 |
+| `pydantic` | 数据校验（AI SDK 请求体的解析就靠它，见 `agent_app/vendor/vercel_ai_sdk.py`） |
+| `strands-agents` | Agent 框架 |
+| `SQLAlchemy` | 数据库访问 |
 
 ---
 

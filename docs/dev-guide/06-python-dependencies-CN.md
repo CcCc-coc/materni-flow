@@ -119,13 +119,16 @@ mise run inst
 
 ### 前端协议适配
 
-| 库名 | 用途 | PyPI 链接 |
-|------|------|-----------|
-| **vercel-ai-sdk-mate** | 适配 Vercel AI SDK 的消息格式 | [pypi.org/project/vercel-ai-sdk-mate](https://pypi.org/project/vercel-ai-sdk-mate/) |
+这一层**没有第三方依赖**。前端（React）用 Vercel AI SDK 描述对话，后端用 Agent 的消息格式，两边"说的语言不一样"，需要翻译 —— 但翻译代码就在本仓库里：
+
+| 模块 | 用途 |
+|------|------|
+| `agent_app/vendor/vercel_ai_sdk.py` | AI SDK 请求体的 pydantic 数据模型（只管解析，不碰任何 LLM 厂商） |
+| `agent_app/ai_sdk_adapter.py` | AI SDK 消息 ↔ Agent 消息，以及 SSE 事件流的生成 |
 
 **人话解释：**
 
-- **vercel-ai-sdk-mate**：前端（React）用 Vercel AI SDK，后端（Python）用 Bedrock，两边"说的语言不一样"。这个库负责翻译，让它们能互相理解。
+早期这里用的是 PyPI 上的 `vercel-ai-sdk-mate`。后来把它的数据模型（约 100 行 pydantic）抄进了 `agent_app/vendor/`，原因有两个：这点代码不值得为它绑一个我们控制不了发版节奏的依赖；更重要的是，那个库校验得**太严**——AI SDK 只要新增一种 message part 类型，它就直接抛校验错误。仓库里这一份放宽了，新增的东西会落进 `UnknownUIPart` 而不是让请求解析崩掉。细节见该文件的 docstring。
 
 ---
 

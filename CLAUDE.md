@@ -31,6 +31,10 @@ agent_app/                   # Python package. Name is deliberately generic and
 ├── config/                  # NOTE: secrets from .env -- NOT config/*.json
 │   └── conf_00_def.py
 │
+├── vendor/                  # Third-party code copied in, not installed.
+│   └── vercel_ai_sdk.py     #   AI SDK request-body data model. No project
+│                            #   logic goes in here.
+│
 ├── one/
 │   ├── one_00_main.py
 │   ├── one_01_config.py
@@ -132,7 +136,8 @@ a typo is a compile error.
 | `constants.py` | Enums and constants | When adding new enum types or magic values that need to be shared across modules. |
 | `project_config.py` | Typed reader over `config/dataset.toml`; also owns the `project_name` derivations (`_snake`, `_slug`, `prefix_table_name`) | When Python needs a new dataset value. If it varies by environment it belongs in `config/conf_00_def.py`; if only the frontend reads it, `config/site.ts`. |
 | `sql_utils.py` | Pure functions for SQL execution and formatting | When changing how SQL results are formatted or adding new query validation rules. |
-| `ai_sdk_adapter.py` | Converts Vercel AI SDK format <-> Bedrock format | When frontend message format changes or when switching to a different LLM provider. |
+| `ai_sdk_adapter.py` | Converts Vercel AI SDK messages <-> Strands Agent messages, and generates the SSE event stream back to the browser | When the frontend message format changes. **Not** when switching LLM provider — this file is provider-agnostic and must stay that way; provider code belongs in `one_04_agent.py`. |
+| `vendor/vercel_ai_sdk.py` | Pydantic data model for the AI SDK request body. Vendored from `vercel-ai-sdk-mate`, deliberately lenient so a new AI SDK release cannot break request parsing | When the frontend starts sending a message part type the backend needs to read: add the model class and one line to `PART_MODEL_BY_TYPE`. Keep it a pure data model — no provider logic. |
 
 **config/ Directory:**
 

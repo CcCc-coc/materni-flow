@@ -20,8 +20,7 @@ import io
 # fmt: off
 from fastapi import FastAPI, Request, Query
 from fastapi.responses import JSONResponse, StreamingResponse
-from vercel_ai_sdk_mate.api import RequestBody  # Parses AI SDK request format
-
+from agent_app.vendor.vercel_ai_sdk import RequestBody  # Parses AI SDK request format
 from agent_app.utils import debug
 from agent_app.ai_sdk_adapter import debug_ai_sdk_request
 from agent_app.ai_sdk_adapter import ai_sdk_message_with_reasoning_generator
