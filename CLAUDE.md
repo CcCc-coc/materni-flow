@@ -324,9 +324,50 @@ tests_python/
 - `mise run test-node` - Run Node.js tests
 - `mise run test` - Run all tests (Python + Node.js)
 - `mise run export` - Export Python requirements to requirements.txt
-- `mise run dev` - Start all development servers (Next.js + FastAPI, auto-kills old instances first)
-- `mise run kill` - Kill all running development servers
+- `mise run dev` - Start all development servers (Next.js + FastAPI, auto-kills this project's old instances first)
+- `mise run kill` - Kill this project's development servers
 - `mise run check` - Verify the repo agrees with its config (run after a dataset swap)
+
+### Running the dev server from an agent session
+
+`mise run dev` never exits on its own. Three rules follow from that, and the
+cost of breaking them is a session that looks hung for half an hour.
+
+**1. Never wait on it in the foreground.** Start it with `run_in_background`, or
+detached with `nohup`. A foreground call blocks until the server dies, which is
+whenever the user happens to stop it.
+
+**2. Wait for readiness in a separate background command that exits by itself.**
+One notification, arriving in seconds:
+
+```bash
+until grep -q "Ready in" <task-output-file>; do sleep 0.5; done
+```
+
+Both halves have to be up, and they log different lines: Next.js prints
+`Ready in`, uvicorn prints `Application startup complete.`. Do not poll with a
+bare `for` loop and no `sleep` -- that spins the CPU and returns instantly
+whether or not the thing ever became ready.
+
+**3. Decide who owns the server before you start it.**
+
+| Why you are starting it | How | Cleanup |
+| :--- | :--- | :--- |
+| To verify something yourself | `run_in_background` | `TaskStop` as soon as you are done |
+| The user asked for a server to use | `nohup ... &`, detached | Leave it; tell the user how to stop it |
+
+A backgrounded task that is still holding a server when the user replaces it
+emits a stale failure notification much later -- `mise run dev` exits 143 when
+its `kill` dependency terminates the previous instance, which reads as
+`task failed` even though nothing went wrong. Detaching a server the user owns
+avoids that entirely.
+
+**Interpreting an exit code from `mise run dev`:**
+
+| Code | What happened |
+| :--- | :--- |
+| 143 | SIGTERM. Normally a second `mise run dev` in this same checkout replaced it. Not an error |
+| 1 from the `kill` step, no server started | A dev port is held by a process from another checkout. Intended: stop that one, or `--force`. See `kill-dev-servers.py` |
 
 ---
 

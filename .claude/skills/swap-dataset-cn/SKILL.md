@@ -18,6 +18,30 @@ disable-model-invocation: true
 
 还有一条贯穿始终的判断: **能配置化的东西早就配置化了, 剩下要手改的都是 "内容"**. 提示词, kickstart 问题, 数据库, 这三样不可能从配置里生成, 它们必须被重写. 不要试图把它们塞进配置文件.
 
+### 三个角色, 三个固定位置
+
+这个仓库**一个 repo 只服务一个数据集**, 没有 `dataset/<name>/` 那种一个目录装一个
+App 的机制. 换数据集是**原地覆盖**, 不是新增目录. 三个角色文件各在各的位置, 格式
+也各不相同, 因为它们的读者不同:
+
+| 角色 | 位置 | 格式 | 谁读 |
+| :--- | :--- | :--- | :--- |
+| 数据集契约 | `config/dataset.toml` | TOML | Python |
+| 界面上说的每一句话 | `config/site.ts` | TypeScript | Next.js |
+| agent 的领域大脑 | `agent_app/prompts/bi-agent-system-prompt.md` | Markdown | 提示词 |
+| kickstart 12 条 | `data/suggested-actions.json` | JSON | Next.js |
+| 数据本体 | `data.sqlite.example` | SQLite | 播种到 `tmp/data.sqlite` |
+
+`site.ts` 是 TypeScript 而不是 TOML, 买到的是图标名拼错会**编译报错**而不是静默兜底.
+代价是它不能像 TOML 那样被 Python 直接读, 所以后端要的那几个值单独放在
+`dataset.toml` 里. 这个分法是按**读者**切的, 不是按主题切的.
+
+**这个结构有一个代价, 必须正视.** 那种"一次接入只准碰一个目录, 用 `git status` 就
+能验收"的机械标准, 在这里不成立 -- 换数据集本来就要改遍全仓库的固定位置. 补偿办法
+只有两个: 2.2 那张完备性清单, 和 2.3 那一串验证. 两个都不能省.
+
+---
+
 最后, 换数据集分**两个阶段**, 中间必须停下来让用户验收:
 
 - **阶段一 (2.1 到 2.3)**: 换内容. 做完之后功能是对的, 但页面还穿着上一个行业的衣服.
@@ -87,6 +111,20 @@ kickstart 问题、能力卡、tooltip、businessContext 的"能问什么", 全�
 
 *为什么必须第一:* 后面每一步的验证都要拿它当基准. 顺序错了当场就报.
 
+**同时把体积预算过一眼.** 线上是 NeonDB 的 500MB 配额, 而且那个库是**和别的项目共用
+的**, 我们只占其中带前缀的那一份, 所以真实预算比 500MB 还小. 这条比下面任何一条内容
+质量的要求都硬 -- 内容写差了可以改, 数据塞不进去是直接上不了线.
+
+```bash
+ls -lh data.sqlite.example
+```
+
+PostgreSQL 存同一份数据通常比 SQLite 大 **2 到 4 倍** (每行的元组头, 对齐填充, 索引和
+主键约束). 所以拿 sqlite 文件大小乘 4 当上界估: 超过 **120MB** 就要在动手前跟用户确认
+是否要减行, 别等同步的时候才发现. 现在这份是 7.4MB, 离线很远.
+
+估算只是估算, 真实数字在同步之后量, 见 2.3.
+
 **第 2 步. 写提示词. 这是唯一允许通读数据集全部文档的一步.**
 输入: business_context + er_document + sql_queries 全文.
 
@@ -94,13 +132,38 @@ kickstart 问题、能力卡、tooltip、businessContext 的"能问什么", 全�
   20 条每条一行 (这条分析回答什么问题), 然后挑其中**外行会算错的**那些, 在
   `## Derived Business Concepts` 里给出精确公式和 SQL. 覆盖靠索引, 篇幅靠取舍 ——
   两者不要混为一谈.
-- 保留 `## Diagrams and Charts: The Fence Rule` / `## Diagrams` / `## Charts` 三节
-  的结构 (那是前端能力, 与数据集无关), 只换里面的例子.
+- **把 [`ref/system-prompt-render-blocks.md`](ref/system-prompt-render-blocks.md)
+  整段逐字抄进去**, 放在 `## Response Guidelines` 之后, `## Safety` 之前. 只替换里面
+  的例子 (表名, 指标名, 数字), 不要改结构, 不要改措辞, 不要精简.
+
+  那五节 (`Rendering Triggers` / `The Fence Rule` / `Showing the SQL` / `Diagrams` /
+  `Charts`) 管的是**前端能渲染什么**, 与数据集无关, 措辞是对着
+  `components/chat/blocks/` 的真实行为调出来的. 仓库里已经有一个补丁
+  (`agent_app/agent_debugger.py` 的 `normalize_render_blocks`) 专门收拾模型把 chart
+  包进 `<chart>` 标签的毛病, 改写这几节等于把那个教训重踩一遍.
+
+  **`Rendering Triggers` 那张表和第 3 步的 kickstart 措辞是同一份契约的两半.** 表里
+  写的短语, 就是 kickstart 的 `action` 里要原样出现的短语. 两边对不上, 触发就不稳定.
 - 写完**把提示词里每一段 SQL 对着真库跑一遍**. 跑不通的例子比没有例子更糟, 模型会
   照抄.
 
 *一个坑:* `mise run check` 会把 `FROM x` / `JOIN x` 当表名校验, 它分不清散文和 SQL.
 `drawn from a zero baseline` 里的 `from a` 会被判成表 `a`. 换个说法即可.
+
+*另一个坑, 而且是会上线的那种:* **本地是 SQLite, 线上 (Vercel) 是 PostgreSQL.**
+`self.engine` 按运行环境自动选, 所以同一份提示词里的 SQL 例子要在两种方言上都成立.
+只对着本地 sqlite 验过就发上线, 症状不会是崩溃 -- SQL 工具把数据库报错转成字符串还给
+模型, 用户只看到答案变差. 写例子时避开只有一边认的写法:
+
+| 别写 | 写成 |
+| :--- | :--- |
+| `strftime('%Y-%m', d)` | 按月分桶两边写法不同, 尽量别在例子里做月份分桶 |
+| `JULIANDAY(a) - JULIANDAY(b)` | 用天数差的地方改成描述, 或两边各给一段 |
+| `is_x = 1` | `is_x = 1` 在两边都能跑, 但布尔语义靠列定义, 确认过再写 |
+| `ROUND(x, 2)` | 保留, 但 PostgreSQL 的 `ROUND` 不收 double, 必要时 `ROUND(x::numeric, 2)` |
+
+`100.0 * a / b` 这个强制浮点除法的写法两边都对, 可以放心用. 拿不准的例子, 按 2.3 的
+办法在两个引擎上各跑一遍.
 
 **第 3 步. 写 kickstart 12 条.**
 输入: **只看第 2 步产出的提示词**, 不要回头翻 sql_queries.
@@ -108,6 +171,42 @@ kickstart 问题、能力卡、tooltip、businessContext 的"能问什么", 全�
 逐条对着 `## Analysis Index` 挑 11 条改写成用户口吻的问题 (第 1 条固定是
 "Introduction / What can you do?"). 挑不出来说明提示词覆盖不够, 回第 2 步补, 不要
 在这里现编.
+
+##### 渲染配额: 这 12 条是橱窗, 不是问题列表
+
+随手写 12 个问题, 结果大概率是 12 段纯文字 -- 于是 mermaid 渲染器
+(`MermaidBlock.tsx`), chart 渲染器 (`ChartBlock.tsx`), SQL 高亮 (`CodeBlock.tsx`)
+全都没人看得见. 这个 App 是拿去给人看的, 三个渲染器一个都不露面, 等于白写. 所以配额
+写死, **四类各恰好 3 条**:
+
+| 类别 | 要出什么 | `action` 里必须原样出现 |
+| :--- | :--- | :--- |
+| 表格 | Markdown 表格 **且** SQL | `as a Markdown table` 且 `show the SQL` |
+| 流程图 | mermaid 流程图 | `as a flowchart` |
+| 图表 | chart 图表 | `as a bar chart` 或 `as a line chart` |
+| 自由 | 散文 (含第 1 条 Introduction) | 以上短语**一个都不能出现** |
+
+这些短语和第 2 步那份 `Rendering Triggers` 表是同一份契约的两半. 措辞对不上, 触发就
+不稳定 -- 尤其在小模型上, 它跟的是措辞不是意图.
+
+*这里和 ba 那个仓库有意不一样:* 那边每条还带一个 `render = "table"` 字段, 因为它的
+前端要据此在按钮上画个小图标. **我们的前端不画图标** (`multimodal-input.tsx` 只用
+`title` 和 `label`), 所以这里不加那个字段 -- 加了就是一个没有读者的字段, 迟早烂掉.
+短语本身就是唯一事实来源, 用 2.3 的脚本机械核对. 哪天前端真要画图标了, 再加不迟.
+
+**选题比措辞更要紧**, 不是随便挑三条加上短语就行:
+
+- **流程图**挑本来就是流程或状态迁移的问题: 生命周期, 漏斗, 状态流转. 给一个排名
+  问题硬套流程图, 出来的是装饰. 让节点标签带上查出来的数字, 那才是它比表格强的地方.
+- **图表**挑形状就是答案的问题: 排名, 趋势, 两个量的差距. `line` 留给有序刻度 (时间,
+  账龄), 其余用 `bar`. 差距类问题用双 series (一条是定价假设的, 一条是实际发生的).
+- **表格 + SQL** 挑读者会想验算的问题: 评分卡, 分档明细, 敞口清单.
+
+**点名要哪几列.** 说清楚要 grade, loan count, implied rate, actual rate 这四列, 比说
+"给我一张表" 更能让模型真的吐出表格, 顺带还能让回答快下来.
+
+**问题问小一点.** 一条要连着调三次以上工具才能凑齐答案的问题, 不要靠调措辞救, 直接
+拆小. 这是给人现场点开看的按钮, 转很久的圈就等于坏了, 哪怕最后答案是对的.
 
 **第 4 步. 写 site.ts 的业务部分.**
 输入: 提示词 (定能力) + 数据库 (定数字) + business_context (定叙事口吻).
@@ -138,8 +237,12 @@ print(len(ts),'tables', sum(db.execute(f'SELECT COUNT(*) FROM {t}').fetchone()[0
 是**不值得**: 判据是自然语言语义, 只能做成模糊匹配, 必然产出一堆需要人工判断的
 warn, 最后没人看. **顺序是零成本的, 检查是有成本且不可靠的.**
 
-保留的检查只有机械可判的那几条: 表顺序对撞 sqlite、提示词 FROM/JOIN 的表名、内容
-文件存在性. 这些没有歧义, 所以值得自动化.
+保留的检查只有机械可判的那几条: 表顺序对撞 sqlite, 提示词 FROM/JOIN 的表名, 内容
+文件存在性, 以及 2.3 里新加的那两个脚本 (渲染配额的短语计数, 数据的空表 / 孤儿外键 /
+日期越界). 这些判据都是字符串匹配或整数比较, 没有歧义, 所以值得自动化.
+
+分界线就在这里: **"这 12 条里有没有恰好 3 条写了 `as a flowchart`" 是机械问题,
+"这 12 条问得好不好" 不是.** 前者写成脚本, 后者靠 2.2 的推导顺序和用户验收.
 
 ---
 
@@ -279,7 +382,7 @@ grep -n "—" config/site.ts | grep -vE ":\s*\*|:\s*//"
 
 | 文件 | 数量 | 来源 |
 | :--- | :--- | :--- |
-| `data/suggested-actions.json` | 12 条, 每条 `title` + `label` + `action` | sql_queries 的 20 条挑 11 条改写, 第 1 条固定是 "Introduction / What can you do?" |
+| `data/suggested-actions.json` | 12 条, 每条 `title` + `label` + `action`, 四类渲染各 3 条 | 第 2 步的提示词 `## Analysis Index` 挑 11 条改写, 第 1 条固定是 "Introduction / What can you do?" |
 | `data.sqlite.example` | 1 个文件 | 直接复制 `tmp/dataset/<name>.sqlite` 覆盖 |
 
 覆盖数据库之后必须跑 `mise run setup-db`, 它把 `data.sqlite.example` 播种到 `tmp/data.sqlite`, 后者才是本地实际读的库.
@@ -364,6 +467,131 @@ EOF
 跑不通的 SQL 例子比没有例子更糟: 模型会照抄, 然后在用户面前失败. 顺便这一步还会
 暴露"公式写错了但语法没错"的情况 —— 结果数字明显不对就能看出来.
 
+**第 3 步做完核对渲染配额.** 纯机械, 不要靠眼睛数:
+
+```bash
+.venv/bin/python - <<'EOF'
+import json, re, pathlib
+acts = json.loads(pathlib.Path("data/suggested-actions.json").read_text())
+pat = {
+    "table":     lambda a: "as a markdown table" in a and "show the sql" in a,
+    "flowchart": lambda a: "as a flowchart" in a or "as a diagram" in a,
+    "chart":     lambda a: "as a bar chart" in a or "as a line chart" in a,
+}
+tally, bad = {k: [] for k in pat}, []
+for i, x in enumerate(acts):
+    a = x["action"].lower()
+    hit = [k for k, f in pat.items() if f(a)]
+    if len(hit) > 1:
+        bad.append(f"[{i}] {x['title']}: 同时命中 {hit}, 一条只能要一种格式")
+    for k in hit:
+        tally[k].append(x["title"])
+free = [x["title"] for i, x in enumerate(acts)
+        if not any(f(x["action"].lower()) for f in pat.values())]
+print(f"{len(acts)} 条; table {len(tally['table'])}, flowchart {len(tally['flowchart'])}, "
+      f"chart {len(tally['chart'])}, free {len(free)}")
+for line in bad:
+    print("❌", line)
+if len(acts) != 12 or any(len(v) != 3 for v in tally.values()) or len(free) != 3:
+    print("❌ 配额不是 12 条四类各 3")
+elif not bad:
+    print("✅ 配额和短语都对")
+EOF
+```
+
+**数据本身要体检一遍. 这一条 ba 那个仓库可以跳过, 我们不行.**
+
+那边是纯 demo, 图表里的数字"大差不差就行". 这个 App 是要拿去给人认真看的, 所以数据
+不能出现**一眼假**的结论: 违约率 0%, 某张表全是空的, 日期落在 1970 年, 金额是负数.
+标准也就到这里为止 -- 不需要逐行对账, 不需要和源文档的统计量严格吻合, **能跑, 且没有
+一眼假的结论**, 就算过.
+
+```bash
+.venv/bin/python - <<'EOF'
+import sqlite3, datetime
+
+db = sqlite3.connect("tmp/data.sqlite")
+db.row_factory = sqlite3.Row
+tables = [r[0] for r in db.execute(
+    "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'")]
+
+print(f"{len(tables)} tables\n")
+issues = []
+for t in tables:
+    n = db.execute(f"SELECT COUNT(*) FROM {t}").fetchone()[0]
+    if n == 0:
+        issues.append(f"{t}: 空表")
+    print(f"  {t:<28} {n:>9,} rows")
+
+    # 外键指向一个不存在的父行
+    for fk in db.execute(f"PRAGMA foreign_key_list({t})").fetchall():
+        col, parent, pcol = fk["from"], fk["table"], fk["to"] or "id"
+        orphans = db.execute(
+            f"SELECT COUNT(*) FROM {t} c LEFT JOIN {parent} p ON c.{col} = p.{pcol} "
+            f"WHERE c.{col} IS NOT NULL AND p.{pcol} IS NULL").fetchone()[0]
+        if orphans:
+            issues.append(f"{t}.{col} -> {parent}.{pcol}: {orphans} 条孤儿行")
+
+    # 落在常识之外的日期
+    for col in db.execute(f"PRAGMA table_info({t})").fetchall():
+        if "date" not in col["name"].lower() and "DATE" not in col["type"].upper():
+            continue
+        lo, hi = db.execute(
+            f"SELECT MIN({col['name']}), MAX({col['name']}) FROM {t}").fetchone()
+        if lo is None:
+            continue
+        for label, v in (("min", lo), ("max", hi)):
+            try:
+                y = datetime.date.fromisoformat(str(v)[:10]).year
+            except ValueError:
+                continue
+            if not (1990 <= y <= 2035):
+                issues.append(f"{t}.{col['name']} {label} = {str(v)[:10]}")
+
+print()
+print("❌ " + "\n❌ ".join(issues) if issues
+      else "✅ 无空表, 无孤儿外键, 日期都在常识范围内")
+EOF
+```
+
+脚本查的是机械可判的那几样. 剩下**要靠眼睛看一遍**的, 是提示词里那几条核心指标算出来
+的数字: 违约率, 定价缺口, 逾期率. 拿第 2 步跑 SQL 那一步的输出直接看:
+
+- 比率类落在这个行业说得过去的区间里 (不是 0%, 不是 80%)
+- 分档之间的排序符合常识 (风险高的档位违约率更高)
+- 金额没有负数, 没有比总资产还大的单笔
+
+有一条明显离谱, 说明数据集本身有问题, 回去找用户确认, 不要在提示词里绕过它.
+
+**同步到线上之后, 量一次真实体积.** 第 1 步只是估.
+
+```bash
+.venv/bin/python scripts/test_06_sync_data_to_remote_db.py
+.venv/bin/python scripts/test_07_verify_remote_data.py
+.venv/bin/python - <<'EOF'
+import sqlalchemy as sa
+from agent_app.api import one
+from agent_app.project_config import project_config
+
+prefix = f"{project_config.project_name_snake}_%"
+sql = sa.text('''
+    SELECT pg_size_pretty(COALESCE(SUM(pg_total_relation_size(c.oid)), 0)) AS ours,
+           COUNT(*) AS n_tables,
+           pg_size_pretty(pg_database_size(current_database())) AS whole_db
+    FROM pg_class c
+    JOIN pg_namespace n ON n.oid = c.relnamespace
+    WHERE c.relkind = 'r' AND n.nspname = 'public' AND c.relname LIKE :p
+''')
+with one.remote_postgres_engine.connect() as conn:
+    r = conn.execute(sql, {"p": prefix}).one()
+print(f"我们这 {r.n_tables} 张表占 {r.ours}; 整库 {r.whole_db} / 500 MB")
+EOF
+```
+
+那 500MB 是整库配额, **和别的项目共用**, 所以看的是两个数: 我们这份别失控, 整库别顶
+到线. 逼近了就回去减行, 通常是把最大那张流水表按时间截一段, 而不是删表 -- 删表会让提
+示词里的分析失效.
+
 **起本地服务看效果:**
 
 ```bash
@@ -388,13 +616,28 @@ mise run check -- --retired "loan,lending,borrower,default_event,risk_grade"
 阶段一到此为止. **明确告诉用户: 内容已经换完, 但页面还是上一个行业的视觉, 请先跑一下看功能对不对.** 让他确认这几件事:
 
 - agent 回答得像不像这个领域的专家
-- 12 个 kickstart 问题点下去是否都能出结果
+- **12 条 kickstart 逐条点一遍, 该出的块真的出来了**: 3 条出表格加 SQL 高亮, 3 条出
+  流程图, 3 条出图表. 这一条必须手点, 不能靠读配置 -- 配额脚本只能证明问法写对了,
+  证明不了模型照做了. 出不来最常见的原因是提示词里 `Rendering Triggers` 那节被精简过
+- 答案里的数字没有一眼假的 (违约率不是 0%, 排序符合常识). 不必逐行对账, 但明显离谱
+  的必须回去查
 - 首页文案和 chat 页文案有没有残留旧领域的说法
 - 所有前端文案里没有破折号, 且 businessContext 里最多一张 mermaid 图
 - 点开首页那个 business context 弹窗, 一个完全不懂这行的人读完能不能明白这个 App 解决什么问题
 - 四张能力卡 hover / Tab 聚焦 / 手机点按, tooltip 都能弹出, 窄屏下不跑出屏幕
 
-用户满意之后再进入视觉改造, 这一步**加载 `frontend-design:frontend-design` skill** 来做 (注意是带 plugin 前缀的全名).
+用户满意之后再进入视觉改造.
+
+**这一步开始之前, 先做两件事, 顺序不能反:**
+
+1. **用一句话告诉用户你要进入阶段二了, 并且明说你正在加载视觉设计 skill.** 比如:
+   "阶段一验收通过, 我现在进入视觉改造, 先加载 `frontend-design` skill 拿它的设计
+   规范." 不要闷头就开始改颜色 -- 用户看到的是一堆 diff, 不知道你依据的是什么.
+2. **真的用 Skill 工具加载 `frontend-design:frontend-design`** (注意是带 plugin 前缀
+   的全名), 然后按它给的规范做. 不要凭记忆写"我觉得好看的配色".
+
+同理, 改图表配色那一步要加载 `dataviz` skill, 跑它自带的调色板 validator, 别靠眼睛
+判断.
 
 视觉相关的代码就这些, 别只改首页就收工:
 
@@ -416,6 +659,6 @@ mise run check -- --retired "loan,lending,borrower,default_event,risk_grade"
 
 图标有两个来源: 从 lucide-react 挑现成的 (记得同步注册进 `lib/icons.ts`), 或者自己画 SVG 放进 `components/chat/icons/`. 后者适合行业特有的形状.
 
-改图表配色时注意 `app/globals.css` 里 `.viz-root` 的深色 token 只认 `.dark` class, 不认系统偏好, 因为全站 Tailwind 是 `darkMode: ["class"]` 策略, 别去接 `prefers-color-scheme`. 换配色之后加载 `dataviz` skill, 跑它自带的调色板 validator, 别靠眼睛判断.
+改图表配色时注意 `app/globals.css` 里 `.viz-root` 的深色 token 只认 `.dark` class, 不认系统偏好, 因为全站 Tailwind 是 `darkMode: ["class"]` 策略, 别去接 `prefers-color-scheme`. 换配色之后跑一遍 `dataviz` skill 的调色板 validator (上面已经说过要加载它).
 
 视觉改完再跑一次 `mise run check` 和 `mise run test`, 因为改图标名或删组件都可能把编译打断.
