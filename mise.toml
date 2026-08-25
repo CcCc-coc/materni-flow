@@ -43,14 +43,12 @@ description = "🔎 Confirm the remote schema matches local, table by table"
 run = ".venv/bin/python scripts/test_07_verify_remote_data.py"
 
 [tasks.export]
-description = "💾 Export Python dependencies (all providers) to requirements.txt"
-# --all-extras on purpose: requirements.txt is what the Vercel Python runtime
-# installs, and a deployment that shipped only one provider's SDK would make
-# LLM_PROVIDER a build-time decision instead of an environment variable. Every
-# provider SDK is pure Python and small next to boto3, so shipping all four
-# costs little and lets a deployment switch models by editing one dashboard
-# variable and redeploying.
-run = "uv export --format requirements-txt --all-extras --no-dev --no-emit-project --no-hashes --no-annotate --no-emit-package pywin32 --no-emit-package colorama --no-emit-package tzdata | sed 's/ ; platform_machine ==.*or.*//' > requirements.txt"
+description = "💾 Export Python dependencies to requirements.txt (not used by Vercel)"
+# Vercel does NOT read this. It reads pyproject.toml + uv.lock directly, and
+# when both exist it prefers the lock file. The task is kept for deploying
+# somewhere that only understands requirements.txt; the generated file is not
+# committed, because a second dependency list is a second thing to drift.
+run = "uv export --format requirements-txt --no-dev --no-emit-project --no-hashes --no-annotate --no-emit-package pywin32 --no-emit-package colorama --no-emit-package tzdata | sed 's/ ; platform_machine ==.*or.*//' > requirements.txt"
 
 [tasks.check]
 description = "🔍 Check the repo agrees with data/dataset.toml (run after a dataset swap)"
@@ -79,12 +77,16 @@ depends = ["cov-python"]
 # Every dev server is stamped with this env var so `mise run kill` can find
 # exactly our processes and nothing else. Children inherit it, so tagging the
 # top of each tree tags next-server, the postcss worker, and the uvicorn
-# reloader for free. The value is this checkout's path, so a second clone of
-# this repo never kills the first one's servers. kill-dev-servers.py reads the
-# same name -- change it in both places or in neither.
+# reloader for free.
+#
+# The name is generic on purpose and may be shared with other projects grown
+# from this scaffold: what identifies a checkout is the *value*, which is this
+# checkout's path, so a second clone never kills the first one's servers.
+# kill-dev-servers.py reads the same name -- change it in both places or in
+# neither.
 [tasks.next-dev]
 description = "🌐 Start Next.js development server"
-env = { SMB_LENDING_LENS_DEV_SERVER = "{{config_root}}" }
+env = { AGENT_APP_DEV_SERVER = "{{config_root}}" }
 # Pinned to 3000 on purpose. Left to itself Next.js hops to 3001 when 3000 is
 # taken, but next.config.js rewrites /api to a hardcoded 127.0.0.1:8000, so the
 # hopped-to frontend silently talks to whichever backend owns 8000 -- possibly
@@ -93,13 +95,13 @@ run = "next dev --port 3000"
 
 [tasks.fastapi-dev]
 description = "⚙️ Start FastAPI development server"
-env = { SMB_LENDING_LENS_DEV_SERVER = "{{config_root}}" }
+env = { AGENT_APP_DEV_SERVER = "{{config_root}}" }
 run = "uv run -- python -m uvicorn api.index:app --reload --host 127.0.0.1 --port 8000"
 
 [tasks.dev]
 description = "🚀 Start all development servers (Next.js + FastAPI)"
 depends = ["kill"]
-env = { SMB_LENDING_LENS_DEV_SERVER = "{{config_root}}" }
+env = { AGENT_APP_DEV_SERVER = "{{config_root}}" }
 run = "pnpm exec concurrently 'mise run next-dev' 'mise run fastapi-dev'"
 
 [tasks.kill]

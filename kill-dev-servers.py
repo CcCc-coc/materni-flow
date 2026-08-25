@@ -39,10 +39,15 @@ import time
 
 PROJECT_ROOT = Path(__file__).resolve().parent
 
-# The env var `mise run dev` stamps on its servers. The value is the project
-# root, so two checkouts of this repo never kill each other's servers, and no
-# other program on the machine can collide with it by accident.
-DEV_MARKER_VAR = "SMB_LENDING_LENS_DEV_SERVER"
+# The env var `mise run dev` stamps on its servers.
+#
+# The name is deliberately generic, shared by every project grown from this
+# scaffold, because the *value* is what identifies a checkout: the marker
+# matched below is `NAME=<absolute path>`, so two projects using the same
+# variable name still never see each other's processes. Naming it after the
+# dataset was the earlier arrangement and bought nothing, while guaranteeing the
+# name would go stale the first time the dataset was swapped.
+DEV_MARKER_VAR = "AGENT_APP_DEV_SERVER"
 DEV_MARKER = f"{DEV_MARKER_VAR}={PROJECT_ROOT}"
 
 # Only the ports this repo actually serves on: 3000 for `next dev` and 8000 for

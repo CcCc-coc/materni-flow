@@ -13,8 +13,24 @@ dependencies = [
     # NOTE: no typed-wrapper or type-stub package for boto3 here on purpose. They
     # only buy editor autocompletion, and they pin to a boto3 version — when they
     # lag a release they break the install for everyone.
-    # NOTE: LLM provider SDKs are not core dependencies either. See
-    # [project.optional-dependencies] below: install only the one you use.
+    # --- LLM provider SDKs, all of them, on purpose ---------------------------
+    #
+    # Core dependencies rather than extras, so that LLM_PROVIDER stays an
+    # environment variable instead of becoming a build-time decision. An extra is
+    # opt-in by definition: `uv sync` installs none unless named, and the Vercel
+    # Python build has no way to know which one to name. With openai as the
+    # default provider, leaving its SDK in an extra meant a deployment could not
+    # reach any model at all.
+    #
+    # bedrock needs nothing extra: boto3 is already above (DynamoDB uses it too).
+    "strands-agents[openai]>=1.50.2,<2.0.0",     # LLM_PROVIDER=openai (default)
+    # >=2.0.0 is required by strands' OpenAIResponsesModel, which we use so that
+    # function tools work with the reasoning models (see one_04_agent.py).
+    "openai>=2.0.0,<3.0.0",
+    "strands-agents[anthropic]>=1.50.2,<2.0.0",  # LLM_PROVIDER=anthropic
+    "anthropic>=0.121.0,<1.0.0",
+    "strands-agents[gemini]>=1.50.2,<2.0.0",     # LLM_PROVIDER=google
+    "google-genai>=2.17.0,<3.0.0",
     # NOTE: no vercel-ai-sdk-mate here on purpose. Its data model was ~100 lines
     # of pydantic and is now vendored in agent_app/vendor/vercel_ai_sdk.py, which
     # also relaxes it so a future AI SDK release cannot break request parsing by
@@ -32,33 +48,10 @@ dependencies = [
 
 [project.optional-dependencies]
 
-# LLM provider SDKs, one extra per LLM_PROVIDER value other than "bedrock"
-# (bedrock needs nothing extra: boto3 is already a core dependency).
-#
-# In practice all of them get installed: `mise run inst-python-deps` runs
-# `uv sync --all-extras`, and `mise run export` writes requirements.txt with
-# --all-extras, which is what Vercel installs. That is deliberate -- it keeps
-# LLM_PROVIDER an environment variable rather than a build-time decision, so a
-# deployment can switch models without changing how it was built.
-#
-# They are still separate extras so someone who wants a minimal install can
-# take just one, e.g. `uv sync --extra openai`.
-anthropic = [
-    "strands-agents[anthropic]>=1.50.2,<2.0.0",         # LLM_PROVIDER=anthropic
-    "anthropic>=0.121.0,<1.0.0",
-] # LLM_PROVIDER=anthropic
-openai = [
-    "strands-agents[openai]>=1.50.2,<2.0.0",             # LLM_PROVIDER=openai
-    # >=2.0.0 is required by strands' OpenAIResponsesModel, which we use so that
-    # function tools work with the reasoning models (see one_04_agent.py).
-    "openai>=2.0.0,<3.0.0",
-]
-gemini = [
-    "strands-agents[gemini]>=1.50.2,<2.0.0",
-    "google-genai>=2.17.0,<3.0.0",
-]       # LLM_PROVIDER=google
-
-# (Unit/Coverage/Integration/Load) Test dependenceies
+# Only test dependencies are optional now. The LLM provider SDKs used to live
+# here, one extra per provider, and that was wrong for this repo: an extra is
+# opt-in, so nothing installs one in a deployment. They are core dependencies
+# now -- see the comment next to them above.
 test = [
     "pytest>=8.2.2,<9.0.0", # Testing framework
     "pytest-cov>=6.0.0,<7.0.0", # Coverage reporting

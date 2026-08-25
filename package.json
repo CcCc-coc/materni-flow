@@ -4,7 +4,7 @@
   "private": true,
   "packageManager": "pnpm@10.28.0",
   "scripts": {
-    "fastapi-dev": "pip3 install -r requirements.txt && python3 -m uvicorn api.index:app --reload --host 127.0.0.1 --port 8000",
+    "fastapi-dev": "uv run -- python -m uvicorn api.index:app --reload --host 127.0.0.1 --port 8000",
     "next-dev": "next dev --port 3000",
     "dev": "concurrently \"npm run next-dev\" \"npm run fastapi-dev\"",
     "build": "next build",
