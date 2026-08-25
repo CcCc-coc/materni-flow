@@ -62,19 +62,32 @@ run = ".venv/bin/pytest tests_python -s --tb=native --cov=agent_app --cov-report
 description = "🧪 Run all code coverage tests (Python + Node.js)"
 depends = ["cov-python"]
 
+# Every dev server is stamped with this env var so `mise run kill` can find
+# exactly our processes and nothing else. Children inherit it, so tagging the
+# top of each tree tags next-server, the postcss worker, and the uvicorn
+# reloader for free. The value is this checkout's path, so a second clone of
+# this repo never kills the first one's servers. kill-dev-servers.py reads the
+# same name -- change it in both places or in neither.
 [tasks.next-dev]
 description = "🌐 Start Next.js development server"
-run = "next dev"
+env = { SMB_LENDING_LENS_DEV_SERVER = "{{config_root}}" }
+# Pinned to 3000 on purpose. Left to itself Next.js hops to 3001 when 3000 is
+# taken, but next.config.js rewrites /api to a hardcoded 127.0.0.1:8000, so the
+# hopped-to frontend silently talks to whichever backend owns 8000 -- possibly
+# another checkout's. Failing to start is the better outcome.
+run = "next dev --port 3000"
 
 [tasks.fastapi-dev]
 description = "⚙️ Start FastAPI development server"
+env = { SMB_LENDING_LENS_DEV_SERVER = "{{config_root}}" }
 run = "uv run -- python -m uvicorn api.index:app --reload --host 127.0.0.1 --port 8000"
 
 [tasks.dev]
 description = "🚀 Start all development servers (Next.js + FastAPI)"
 depends = ["kill"]
+env = { SMB_LENDING_LENS_DEV_SERVER = "{{config_root}}" }
 run = "pnpm exec concurrently 'mise run next-dev' 'mise run fastapi-dev'"
 
 [tasks.kill]
-description = "🛑 Kill all development servers (Next.js + FastAPI)"
+description = "🛑 Kill this project's development servers (Next.js + FastAPI)"
 run = "uv run -- python kill-dev-servers.py"
