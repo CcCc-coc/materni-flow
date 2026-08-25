@@ -18,6 +18,8 @@ description: 这个仓库的事实标准. 它是什么性质的项目, 为什么
 | 让 agent 画图 / 出表格, 或者加一种新的渲染块 | [04-rendering-contract.md](ref/04-rendering-contract.md) |
 | 写 `data/` 下面那几个文件 (配置, 文案, 提示词) | [05-authoring-the-data-directory.md](ref/05-authoring-the-data-directory.md) |
 | 想知道改完要跑什么, 或者要加/改一项检查 | [06-what-guards-the-boundaries.md](ref/06-what-guards-the-boundaries.md) |
+| 写注释 / docstring, 或者要加教学材料 | [07-comments-explain-why.md](ref/07-comments-explain-why.md) |
+| 开发服务器起不来 / 杀不掉, 或者要动 `kill-dev-servers.py` | [08-killing-dev-servers.md](ref/08-killing-dev-servers.md) |
 
 渲染器**内部**怎么实现的 (流式期间的残缺围栏, 懒加载, 安全等级, 兜底), 在另一个 skill:
 `agent-app-design-cn` 的 `ref/chat-frontend.md`. 它有 `paths` 触发器, 你编辑
