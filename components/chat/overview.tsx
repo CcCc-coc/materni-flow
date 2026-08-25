@@ -1,9 +1,10 @@
 import { motion } from "framer-motion";
-import { site } from "@/config/site";
-import { getIcon } from "@/lib/icons";
 
-export const Overview = () => {
-  const { agent, chat } = site;
+import CapabilityCard from "@/components/CapabilityCard";
+import type { SiteConfig } from "@/lib/site/schema";
+
+export const Overview = ({ site }: { site: SiteConfig }) => {
+  const { chat, capabilities } = site;
 
   return (
     <motion.div
@@ -19,7 +20,7 @@ export const Overview = () => {
           {/* Header */}
           <div className="flex flex-col items-center text-center mb-8">
             <h2 className="font-display text-2xl sm:text-3xl text-[#0A1628] dark:text-white mb-2">
-              <span className="text-blue-600 dark:text-blue-400">{agent.name}</span>
+              <span className="text-blue-600 dark:text-blue-400">{chat.agent}</span>
             </h2>
 
             <p className="text-slate-500 dark:text-slate-400 max-w-md">
@@ -27,24 +28,25 @@ export const Overview = () => {
             </p>
           </div>
 
-          {/* Quick Insight Cards - 2x2 Grid */}
+          {/* The same four business threads the home page shows, from the same
+              `[[capabilities]]`. Two arrays here is how the two screens drifted
+              apart last time. */}
           <div className="grid grid-cols-2 gap-4">
-            {chat.insights.map((insight, index) => {
-              const Icon = getIcon(insight.icon);
-              return (
-                <motion.div
-                  key={insight.title}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.4 + index * 0.1 }}
-                  className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700/50"
-                >
-                  <Icon className="w-5 h-5 text-blue-600 dark:text-blue-400 mb-2" />
-                  <h3 className="font-medium text-sm text-[#0A1628] dark:text-white">{insight.title}</h3>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{insight.description}</p>
-                </motion.div>
-              );
-            })}
+            {capabilities.map((capability, index) => (
+              <motion.div
+                key={capability.title}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4 + index * 0.1 }}
+              >
+                <CapabilityCard
+                  capability={capability}
+                  align={index % 2 === 0 ? "start" : "end"}
+                  compact
+                  className="h-full"
+                />
+              </motion.div>
+            ))}
           </div>
 
           {/* Example prompts */}

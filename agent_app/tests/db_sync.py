@@ -24,7 +24,7 @@ Ordering
 
 ``TABLE_INSERT_ORDER`` is the single source of truth for dependency order:
 parents first, children after. It is not written here — it comes from
-``config/dataset.toml``, so that swapping the dataset means editing one TOML file
+``data/dataset.toml``, so that swapping the dataset means editing one TOML file
 rather than hunting for a list buried in a sync module. Everything else is
 derived from it —
 
@@ -45,9 +45,9 @@ from ..project_config import project_config
 #: row's parents already exist by the time it is inserted. Drop order is the
 #: reverse — see the module docstring.
 #:
-#: Defined in ``config/dataset.toml`` under ``database.tableInsertOrder``.
+#: Defined in ``data/dataset.toml`` under ``database.tableInsertOrder``.
 #: ``mise run check`` verifies it against the tables actually present in
-#: ``data.sqlite.example``, so a table added to the dataset but forgotten here
+#: ``data/data.sqlite.example``, so a table added to the dataset but forgotten here
 #: fails loudly instead of silently vanishing from the remote database.
 TABLE_INSERT_ORDER = project_config.table_insert_order
 
@@ -133,7 +133,7 @@ def build_remote_metadata(
     """
     remote_metadata = sa.MetaData()
 
-    # The local file and `config/dataset.toml` can disagree — most often because
+    # The local file and `data/dataset.toml` can disagree — most often because
     # `tmp/data.sqlite` is left over from a different dataset and nobody re-ran
     # `mise run setup-db` after a swap. Reported as a bare KeyError on whichever
     # table happened to be missing, that costs a real debugging session before
@@ -142,7 +142,7 @@ def build_remote_metadata(
     if missing:
         raise ValueError(
             f"Local database is missing {len(missing)} table(s) named in "
-            f"config/dataset.toml: {', '.join(missing)}. "
+            f"data/dataset.toml: {', '.join(missing)}. "
             f"It holds {sorted(local_metadata.tables)} instead. "
             f"If this file is left over from another dataset, re-seed it with "
             f"`mise run setup-db`; otherwise fix `database.tableInsertOrder`."

@@ -18,27 +18,31 @@ disable-model-invocation: true
 
 还有一条贯穿始终的判断: **能配置化的东西早就配置化了, 剩下要手改的都是 "内容"**. 提示词, kickstart 问题, 数据库, 这三样不可能从配置里生成, 它们必须被重写. 不要试图把它们塞进配置文件.
 
-### 三个角色, 三个固定位置
+### 一个目录: `data/`
 
 这个仓库**一个 repo 只服务一个数据集**, 没有 `dataset/<name>/` 那种一个目录装一个
-App 的机制. 换数据集是**原地覆盖**, 不是新增目录. 三个角色文件各在各的位置, 格式
-也各不相同, 因为它们的读者不同:
+App 的机制. 但换数据集要改的东西**全部在 `data/` 一个目录里**, 换数据集是把这个目录
+的内容整体重写:
 
-| 角色 | 位置 | 格式 | 谁读 |
-| :--- | :--- | :--- | :--- |
-| 数据集契约 | `config/dataset.toml` | TOML | Python |
-| 界面上说的每一句话 | `config/site.ts` | TypeScript | Next.js |
-| agent 的领域大脑 | `agent_app/prompts/bi-agent-system-prompt.md` | Markdown | 提示词 |
-| kickstart 12 条 | `data/suggested-actions.json` | JSON | Next.js |
-| 数据本体 | `data.sqlite.example` | SQLite | 播种到 `tmp/data.sqlite` |
+| 文件 | 装什么 | 谁读 |
+| :--- | :--- | :--- |
+| `data/dataset.toml` | 表前缀, 库显示名, 建表顺序 | Python |
+| `data/site.toml` | 界面上说的每一句话, 4 张能力卡, 12 条 kickstart | Next.js |
+| `data/business-context.md` | 首页那个 "这解决什么问题" 弹窗的正文 | Next.js |
+| `data/system-prompt.md` | agent 的领域大脑 | 提示词 |
+| `data/data.sqlite.example` | 数据本体, 播种到 `tmp/data.sqlite` | 两边 |
 
-`site.ts` 是 TypeScript 而不是 TOML, 买到的是图标名拼错会**编译报错**而不是静默兜底.
-代价是它不能像 TOML 那样被 Python 直接读, 所以后端要的那几个值单独放在
-`dataset.toml` 里. 这个分法是按**读者**切的, 不是按主题切的.
+**唯一的例外是写操作的 `@tool`**, 它在 `one_04_agent.py` 里, 因为那是代码不是内容.
 
-**这个结构有一个代价, 必须正视.** 那种"一次接入只准碰一个目录, 用 `git status` 就
-能验收"的机械标准, 在这里不成立 -- 换数据集本来就要改遍全仓库的固定位置. 补偿办法
-只有两个: 2.2 那张完备性清单, 和 2.3 那一串验证. 两个都不能省.
+`site.toml` 曾经是 `config/site.ts`, 改成 TOML 是为了让一次换数据集变成"换一个目录"
+而不是"一个散落全仓库的 diff". 代价是编译器不再检查它, 补偿在 `lib/site/load.ts`:
+`REQUIRED_SITE_KEYS` 查缺 key, `assertIconsExist` 查图标名, 两者都在 `next build`
+时抛. 所以**换完数据集必须跑一次 `npx next build`**, 光跑 `mise run check` 查不到
+图标名和缺 key.
+
+**这个结构有一个代价, 必须正视.** ba 那种"一次接入只准碰一个目录, 用 `git status`
+就能验收"的机械标准, 在这里只对一半成立: `data/` 之外确实还有要动的 (脚本里的硬编码
+问题, 测试里的表名). 补偿办法是 2.2 那张完备性清单和 2.3 那一串验证, 两个都不能省.
 
 ---
 
@@ -107,7 +111,7 @@ kickstart 问题、能力卡、tooltip、businessContext 的"能问什么", 全�
 
 **第 1 步. 数据库落地.**
 复制 sqlite 覆盖 `data.sqlite.example`, 跑 `mise run setup-db`, 按 er_document 的外
-键依赖顺序填 `config/dataset.toml` 的 `tableInsertOrder`, 立刻 `mise run check`.
+键依赖顺序填 `data/dataset.toml` 的 `tableInsertOrder`, 立刻 `mise run check`.
 
 *为什么必须第一:* 后面每一步的验证都要拿它当基准. 顺序错了当场就报.
 
@@ -189,10 +193,13 @@ PostgreSQL 存同一份数据通常比 SQLite 大 **2 到 4 倍** (每行的元�
 这些短语和第 2 步那份 `Rendering Triggers` 表是同一份契约的两半. 措辞对不上, 触发就
 不稳定 -- 尤其在小模型上, 它跟的是措辞不是意图.
 
-*这里和 ba 那个仓库有意不一样:* 那边每条还带一个 `render = "table"` 字段, 因为它的
-前端要据此在按钮上画个小图标. **我们的前端不画图标** (`multimodal-input.tsx` 只用
-`title` 和 `label`), 所以这里不加那个字段 -- 加了就是一个没有读者的字段, 迟早烂掉.
-短语本身就是唯一事实来源, 用 2.3 的脚本机械核对. 哪天前端真要画图标了, 再加不迟.
+**两半缺一不可.** 每条都要写 `render` 字段, 它是**按钮对读者的承诺** -- 前端据它在
+按钮上画一个表格 / 流程 / 柱状的小图标 (`components/chat/RenderBadge.tsx`), 读者不
+点开就知道会画出什么, `render = "free"` 故意什么都不画. 而真正让块出现的是 `action`
+里那句短语.
+
+只查短语, 图标会撒谎; 只查 `render`, 一个标着图表的问题会回一段散文.
+`mise run check` 的 render quota **两个方向都验**, 所以两边写反了当场就报.
 
 **选题比措辞更要紧**, 不是随便挑三条加上短语就行:
 
@@ -253,30 +260,36 @@ warn, 最后没人看. **顺序是零成本的, 检查是有成本且不可靠�
 
 | 文件 | 来源 | 说明 |
 | :--- | :--- | :--- |
-| `agent_app/prompts/bi-agent-system-prompt.md` | 第 2 步 | 整份重写, 含 Analysis Index |
+| `data/system-prompt.md` | 第 2 步 | 整份重写, 含 Analysis Index |
 
-**B. 配置.** 两个文件, 按读者分, 前端读 TS 后端读 TOML.
+**B. 配置.** 两个 TOML, 按读者分: 后端读 `dataset.toml`, 前端读 `site.toml`.
 
 | 文件 | 要改的 key | 来源 |
 | :--- | :--- | :--- |
-| `config/dataset.toml` | `project.name` (远程表前缀, 要短) | 用户提供或从品牌名缩写 |
+| `data/dataset.toml` | `project.name` (远程表前缀, 要短) | 用户提供或从品牌名缩写 |
 | | `database.displayName` | 数据集名 |
 | | `database.tableInsertOrder` | er_document 的外键依赖顺序, 父表在前 |
-| `config/site.ts` | `project.*` (displayName, tagline, logo.prefix/accent, footerName) | **用户提供品牌名** |
-| | `agent.*` (name, domainLabel) | 用户提供或据业务拟 |
-| | `seo.*` (title, description, keywords) | summary |
-| | `database.blurb` | summary 里的表数和行数 |
-| | `home.*` (headline, description, capabilities × 4, techStack, cta) | summary + business_context |
-| | `chat.*` (welcomeSubtitle, insights × 4, tryExamples, suggestionsHint, inputPlaceholder) | sql_queries 的主题分类 |
-| | `home.capabilities[].tooltip` × 4 | business_context 的术语表, 见下 |
+| `data/site.toml` | `[brand]` (displayName, logoPrefix, logoAccent, footerName) | **用户提供品牌名** |
+| | `[seo]` (title, description, keywords) | summary |
+| | `[[capabilities]]` × 4 (icon, title, subtitle, tooltip) | 提示词的四条主线, 见下 |
+| | `[home]` (tagline, description, blurb, techStack, headline, cta) | summary + business_context |
+| | `[home.businessContext]` (triggerLabel, title, subtitle) | 弹窗的标题, 正文在 `business-context.md` |
+| | `[chat]` (agent, welcomeSubtitle, tryExamples, suggestionsHint, inputPlaceholder) | 用户提供 agent 名 + sql_queries 的主题分类 |
+| | `[chat.messages]` (welcomeMessage, rateLimited, waitForResponse) | 与数据集无关, 照抄 |
+| | `[[chat.suggestedActions]]` × 12 | 第 3 步, 见渲染配额那节 |
+
+**`[[capabilities]]` 只有一份, 首页和 agent 页渲染的是同一份.** 别去找
+`chat.insights` —— 那是旧形态, 它和 `home.capabilities` 曾经各写各的, 结果第二条
+在首页叫 "Portfolio Concentration" 在 agent 页叫 "Portfolio Health", 图标不同,
+tooltip 只有一边有. 现在两边都走 `components/CapabilityCard.tsx`.
 | | `businessContext.*` (triggerLabel, title, subtitle, sections × 6) | **business_context 全文** + sql_queries 的主题分类. 见下面的 spec |
 
 `capabilities` 和 `insights` 里的 `icon` 必须是 `lib/icons.ts` 里已注册的名字, 否则**编译报错**. 需要新图标就在那个文件里 import 并加进 `ICONS`. 从 lucide-react 挑.
 
-#### 前端文案的写法规范 (所有 `config/site.ts` 字符串都适用)
+#### 前端文案的写法规范 (所有 `data/site.toml` 字符串都适用)
 
 这一节管的是 `site.ts` 里每一个会显示给用户的字符串: seo, home, chat, tooltip,
-businessContext 全部在内. 不管 `data/suggested-actions.json`, 也不管代码注释和
+businessContext 全部在内. 也管 `data/business-context.md`. 不管代码注释和
 提示词.
 
 **第一条: 不要用破折号.**
@@ -300,22 +313,22 @@ businessContext 全部在内. 不管 `data/suggested-actions.json`, 也不管代
 bullet. 不要用表格, 不要嵌套列表, 不要 emoji, 不要行内代码块 (那是给开发者看的,
 这里的读者不是).
 
-**第三条: businessContext 允许一张 mermaid 流程图.**
+**第三条: business-context.md 允许一张 mermaid 流程图.**
 
-`ContextSection` 有一个可选的 `mermaid` 字段, 整份说明里**最多用一次**, 十个节点
-以内. 它是留给"读者必须一次性装进脑子里的顺序或分支"的, 比如借贷那版画的是
+写成普通的 ` ```mermaid ` 围栏块, 整份说明里**最多用一次**, 十个节点以内. 它是留给"读者必须一次性装进脑子里的顺序或分支"的, 比如借贷那版画的是
 "申请 -> 批/拒 -> 放款 -> 还款 -> 结清/违约" 这条主线.
 
 判断标准很简单: **如果这张图只是把上一句话又说了一遍, 那就删掉图, 留那句话.**
 第二张图一定是装饰.
 
 渲染走 `components/chat/blocks/MermaidBlock.tsx` (已做懒加载和 `securityLevel:
-"strict"`), 组件与数据集无关, 不用改.
+"strict"`), 组件与数据集无关, 不用改. 弹窗和 chat 页共用它, 所以这里能画的图和
+agent 能画的图是同一套能力.
 
 **改完自查一遍:**
 
 ```bash
-grep -n "—" config/site.ts | grep -vE ":\s*\*|:\s*//"
+grep -n "—" data/site.toml data/business-context.md | grep -v "^\s*#"
 ```
 
 有输出就是还有破折号没清干净 (那两个 `grep -v` 是排除代码注释).
@@ -334,12 +347,18 @@ grep -n "—" config/site.ts | grep -vE ":\s*\*|:\s*//"
 
 四条要和 `capabilities` 一一对应, 也就是和四条业务主线一一对应.
 
-#### businessContext 的 spec
+#### `data/business-context.md` 的 spec
 
-这是整个 `site.ts` 里最花笔墨的一项, 也最容易做砸, 所以单独定一份 spec. 它是首页
-那个按钮打开的弹窗, 2 到 3 屏可滚动内容, 由
-`app/(marketing)/_components/BusinessContextModal.tsx` 渲染 (组件与数据集无关, 换
-数据集时不用动).
+这是整份内容里最花笔墨的一项, 也最容易做砸, 所以单独定一份 spec. 它是首页那个按钮
+打开的弹窗, 2 到 3 屏可滚动内容, 由 `components/BusinessContextModal.tsx` 渲染
+(组件与数据集无关, 换数据集时不用动).
+
+**它是一份普通 Markdown**, 走的是 chat 页那个同一个 Markdown 渲染器, 所以里面的
+` ```mermaid ` 围栏会真的画成图, 而且是懒加载 + `securityLevel: "strict"` 那一套.
+六节就是六个 `##` 标题, 术语表用加粗开头的 bullet.
+
+弹窗的标题和副标题不在这个文件里, 在 `site.toml` 的 `[home.businessContext]` --
+那三行是**按钮和窗框的标签**, 不是正文.
 
 **它讲的是这个 agentic App, 不是这个数据集.**
 
@@ -382,10 +401,14 @@ grep -n "—" config/site.ts | grep -vE ":\s*\*|:\s*//"
 
 | 文件 | 数量 | 来源 |
 | :--- | :--- | :--- |
-| `data/suggested-actions.json` | 12 条, 每条 `title` + `label` + `action`, 四类渲染各 3 条 | 第 2 步的提示词 `## Analysis Index` 挑 11 条改写, 第 1 条固定是 "Introduction / What can you do?" |
-| `data.sqlite.example` | 1 个文件 | 直接复制 `tmp/dataset/<name>.sqlite` 覆盖 |
+| `data/business-context.md` | 六节 | business_context 全文, 见下面的 spec |
+| `data/data.sqlite.example` | 1 个文件 | 直接复制 `tmp/dataset/<name>.sqlite` 覆盖 |
 
-覆盖数据库之后必须跑 `mise run setup-db`, 它把 `data.sqlite.example` 播种到 `tmp/data.sqlite`, 后者才是本地实际读的库.
+覆盖数据库之后必须跑 `mise run setup-db`, 它把 `data/data.sqlite.example` 播种到
+`tmp/data.sqlite`, 后者才是本地实际读的库.
+
+kickstart 12 条不在这张表里, 它们是 `site.toml` 的 `[[chat.suggestedActions]]`, 见
+B 组.
 
 **D. 脚本和测试里的硬编码.** 这一组最容易漏.
 
@@ -442,10 +465,14 @@ grep -n "—" config/site.ts | grep -vE ":\s*\*|:\s*//"
 哪个是根因、哪个是连锁反应.
 
 ```bash
-mise run check     # 表顺序 / 提示词表名 / 内容文件
+mise run check     # 表顺序 / 提示词表名 / 内容文件 / 渲染配额
 mise run test      # Python + Node
-npx tsc --noEmit   # site.ts 的图标名、字段结构
+npx next build     # site.toml 的缺 key 和图标名, 只有这里查得到
 ```
+
+**三条都要跑, 它们查的东西不重叠.** `mise run check` 读 TOML 的形状和配额;
+`next build` 是唯一会把 `site.toml` 的 `icon` 拿去对 `lib/icons.ts` 的地方, 也是唯一
+会真的把 `business-context.md` 渲染一遍的地方.
 
 **第 2 步做完额外做一件事: 把提示词里每一段 SQL 对着真库跑一遍.**
 
@@ -454,7 +481,7 @@ npx tsc --noEmit   # site.ts 的图标名、字段结构
 import re, sqlite3, pathlib
 db = sqlite3.connect("tmp/data.sqlite")
 for i, b in enumerate(re.findall(r"```sql\n(.*?)```",
-        pathlib.Path("agent_app/prompts/bi-agent-system-prompt.md").read_text(), re.S), 1):
+        pathlib.Path("data/system-prompt.md").read_text(), re.S), 1):
     if not b.strip().upper().startswith(("SELECT", "WITH")): continue
     try:
         rows = db.execute(b).fetchall()
@@ -467,37 +494,24 @@ EOF
 跑不通的 SQL 例子比没有例子更糟: 模型会照抄, 然后在用户面前失败. 顺便这一步还会
 暴露"公式写错了但语法没错"的情况 —— 结果数字明显不对就能看出来.
 
-**第 3 步做完核对渲染配额.** 纯机械, 不要靠眼睛数:
+**第 3 步做完核对渲染配额.** 不用自己写脚本, `mise run check` 里的 `render quota`
+那一项就是干这个的, 两个方向都验:
 
 ```bash
-.venv/bin/python - <<'EOF'
-import json, re, pathlib
-acts = json.loads(pathlib.Path("data/suggested-actions.json").read_text())
-pat = {
-    "table":     lambda a: "as a markdown table" in a and "show the sql" in a,
-    "flowchart": lambda a: "as a flowchart" in a or "as a diagram" in a,
-    "chart":     lambda a: "as a bar chart" in a or "as a line chart" in a,
-}
-tally, bad = {k: [] for k in pat}, []
-for i, x in enumerate(acts):
-    a = x["action"].lower()
-    hit = [k for k, f in pat.items() if f(a)]
-    if len(hit) > 1:
-        bad.append(f"[{i}] {x['title']}: 同时命中 {hit}, 一条只能要一种格式")
-    for k in hit:
-        tally[k].append(x["title"])
-free = [x["title"] for i, x in enumerate(acts)
-        if not any(f(x["action"].lower()) for f in pat.values())]
-print(f"{len(acts)} 条; table {len(tally['table'])}, flowchart {len(tally['flowchart'])}, "
-      f"chart {len(tally['chart'])}, free {len(free)}")
-for line in bad:
-    print("❌", line)
-if len(acts) != 12 or any(len(v) != 3 for v in tally.values()) or len(free) != 3:
-    print("❌ 配额不是 12 条四类各 3")
-elif not bad:
-    print("✅ 配额和短语都对")
-EOF
+mise run check
 ```
+
+它会报三类问题: 条数不是 12 或四类不是各 3 条; 某条的 `render` 和它 `action` 里的
+措辞对不上; 某条同时命中两种格式的短语. 报出来的信息带序号和标题, 直接能定位.
+
+**图标名和缺 key 它查不到**, 那两样在 `next build` 时由 `lib/site/load.ts` 抛:
+
+```bash
+npx next build
+```
+
+这两条要一起跑. 只跑 `mise run check` 的话, 一个拼错的图标名会安静地渲染成兜底图标,
+卡片看着好好的, 就是配错了图.
 
 **数据本身要体检一遍. 这一条 ba 那个仓库可以跳过, 我们不行.**
 
@@ -648,9 +662,9 @@ mise run check -- --retired "loan,lending,borrower,default_event,risk_grade"
 | favicon | `app/icon.png` |
 | 导航栏 | `app/_components/layouts/Navigation.tsx` (logo 的两段式着色在这里) |
 | 首页 | `app/(marketing)/_components/Hero.tsx`, `app/(marketing)/HomePageContent.tsx` |
-| **business context 弹窗** | `app/(marketing)/_components/BusinessContextModal.tsx` (遮罩, 面板, 滚动条, 分节排版), `ConceptTooltip.tsx` (气泡与小尖角) |
-| **chat 空状态** | `components/chat/overview.tsx` (标题, 4 张洞察卡) |
-| **chat 输入区** | `components/chat/multimodal-input.tsx` (12 张 kickstart 卡片的排布) |
+| **business context 弹窗** | `components/BusinessContextModal.tsx` (遮罩, 面板, 滚动条, Markdown 排版), `components/ConceptTooltip.tsx` (气泡与小尖角) |
+| **chat 空状态** | `components/chat/overview.tsx` (标题 + 4 张能力卡, 卡片本身是 `components/CapabilityCard.tsx`, 首页共用) |
+| **chat 输入区** | `components/chat/multimodal-input.tsx` (12 张 kickstart 卡片的排布), `components/chat/RenderBadge.tsx` (按钮上那个表格/流程/柱状小图标) |
 | **chat 对话气泡** | `components/chat/message.tsx` (AI 头像那个方块, 用户头像, 气泡配色) |
 | **chat 顶部横幅** | `components/chat/chat.tsx` (那条介绍 agent 的 banner) |
 | 图表配色 | `app/globals.css` 的 `.viz-root` token |

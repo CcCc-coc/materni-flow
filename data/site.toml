@@ -1,0 +1,219 @@
+# data/site.toml
+#
+# Every sentence this app says, grouped by the surface it appears on.
+#
+# The contract is one way: every key named in `REQUIRED_SITE_KEYS`
+# (lib/site/schema.ts) must exist here, extra keys are allowed and only the
+# component that knows about them reads them.
+#
+# TOML trap: once an array of tables starts, every bare key after it belongs to
+# the last element of that array. So each section's plain fields come first.
+
+
+# === Brand =================================================================
+[brand]
+displayName = "SMB Lending Lens"
+
+logoPrefix = "lending"
+logoAccent = "lens"
+
+footerName = "LendingLens"
+
+
+# === <head> ================================================================
+[seo]
+locale = "en_US"
+title = "SMB Lending Lens: AI-Powered Fintech Analytics Agent"
+description = "An AI agent for fintech lending analytics. Query loan portfolios, analyze risk pricing, detect approval leakage, identify early warning signals, and understand customer lifecycle value through natural conversation."
+keywords = [
+    "Fintech",
+    "SMB Lending",
+    "Loan Analytics",
+    "Risk Pricing",
+    "AI Agent",
+    "Portfolio Analysis",
+    "Credit Risk",
+    "Lending Intelligence",
+]
+
+
+# === The four business threads. Exactly four ==============================
+#
+# One config, rendered twice: the capability cards on the home page and the
+# insight cards on the agent welcome screen.
+#
+#   title    the concept name. Precise to an insider, opaque to everyone else
+#   subtitle one plain sentence. This is what a stranger reads first
+#   tooltip  two or three sentences: define the term, then say what moves it
+#
+# No jargon inside a tooltip. Explaining one insider word with another is the
+# mistake this field exists to prevent.
+#
+# This used to be two arrays, `home.capabilities` and `chat.insights`, naming
+# the same four things in two vocabularies. They had already drifted: the
+# second thread was "Portfolio Concentration" on one screen and "Portfolio
+# Health" on the other, with a different icon and no tooltip.
+
+[[capabilities]]
+icon = "BarChart3"
+title = "Risk Pricing"
+subtitle = "Whether each grade is priced for the losses it actually produces"
+tooltip = "Every loan is priced on an assumed default rate, meaning the share of borrowers in that risk grade expected not to repay. Pricing analysis puts that assumption next to how many actually defaulted, because the gap between the two is margin the lender never charged for."
+
+[[capabilities]]
+icon = "Shield"
+title = "Portfolio Concentration"
+subtitle = "How much of the money on loan sits in a single industry"
+tooltip = "Concentration is how much of the money out on loan sits in one industry. It matters because loans in the same industry fail together, so one bad year for restaurants hits every restaurant loan at once. Nobody ever decides to become concentrated. It accumulates one approval at a time."
+
+[[capabilities]]
+icon = "AlertTriangle"
+title = "Early Warning Signals"
+subtitle = "The payment patterns that show up months before a default"
+tooltip = "A borrower rarely stops paying without warning: payments start arriving late, or arriving short, months before the loan is written off. Early warning is reading those patterns while there is still time to call the customer, rather than after the loss is booked."
+
+[[capabilities]]
+icon = "Users"
+title = "Customer Lifecycle Value"
+subtitle = "What a returning borrower is worth, and what a wrong rejection costs"
+tooltip = "A borrower who has already repaid a loan is a known quantity, and defaults at roughly half the rate of a first-time borrower. Lifecycle value is what that track record is worth, and what it costs to turn away a good applicant who would have become one."
+
+
+# === Home page =============================================================
+[home]
+tagline = "Fintech Lending Analytics Agent"
+
+description = "An AI agent that helps fintech lending teams analyze loan portfolios through natural conversation. Query risk metrics, identify mispriced segments, detect early warning signals, and surface actionable insights from your lending data."
+
+blurb = "Analyzing SMB lending data: 10 tables, ~111,000 records covering applications, loans, payments, and defaults"
+
+techStack = ["Strands SDK", "AWS Bedrock", "PostgreSQL", "Next.js"]
+
+[home.headline]
+prefix = "SMB Lending "
+accent = "Lens"
+
+[home.cta]
+title = "Start Analyzing"
+subtitle = "Ask questions about your lending portfolio in plain English"
+
+# Labels for the overlay that renders business-context.md.
+[home.businessContext]
+triggerLabel = "What problem does this solve?"
+title = "The business behind the agent"
+subtitle = "A small-business lender can grow its book, hold its rates, and still lose money, because the losses arrive quietly and late. This is where they come from, and what this agent does about them."
+
+
+# === Agent page ============================================================
+[chat]
+agent = "Lending Lens"
+welcomeSubtitle = "Ask questions about the SMB lending portfolio in plain English."
+tryExamples = "Try: \"What's the default rate by risk grade?\" or \"Which industries have the highest concentration?\""
+
+suggestionsHint = "Ask me directly or click a suggestion"
+inputPlaceholder = "Enter your question..."
+
+[chat.messages]
+welcomeMessage = "I'm here to help you with SMB lending analytics."
+rateLimited = "This demo runs on a monthly token budget and it is used up for now. It resets at the start of next month."
+waitForResponse = "Wait for the current answer to finish first."
+
+
+# === kickstart questions: exactly 12 ======================================
+#
+# Every one is a rewrite of a line in the Analysis Index of system-prompt.md.
+# Nothing here may ask for an analysis the prompt does not teach.
+#
+# Render quota, exactly 3 of each:
+#
+#   table      "as a Markdown table" and "show the SQL"
+#   flowchart  "as a flowchart"
+#   chart      "as a bar chart" or "as a line chart"
+#   free       none of those phrases may appear
+#
+# The render field draws the icon on the button, the phrase is what actually
+# makes the block appear. `mise run check` verifies both directions.
+
+# === free 1 / 3 ===
+[[chat.suggestedActions]]
+render = "free"
+title = "Introduction"
+label = "What can you do?"
+action = "What can you help me analyze? Give me a short tour of the portfolio and the kinds of questions you answer well."
+
+# === chart 1 / 3 (bar, two series: a gap) ===
+[[chat.suggestedActions]]
+render = "chart"
+title = "Risk Pricing"
+label = "Is pricing aligned with risk?"
+action = "For each risk grade, give me the implied default rate we priced for and the default rate we actually got. Show it as a bar chart with one series for each, then say in one line which grades are underpriced."
+
+# === flowchart 1 / 3 (funnel) ===
+[[chat.suggestedActions]]
+render = "flowchart"
+title = "Application Funnel"
+label = "What happened to every application?"
+action = "Trace what happened to every application: how many were approved, how many rejected, and what the approved loans became. Put the count on each stage. Show it as a flowchart."
+
+# === table 1 / 3 (scorecard) ===
+[[chat.suggestedActions]]
+render = "table"
+title = "Officer Scorecard"
+label = "Who approves the best loans?"
+action = "For each loan officer, give me the officer name, region, applications handled, approval rate, and the default rate on the loans they approved. Show it as a Markdown table, and show the SQL you ran."
+
+# === free 2 / 3 ===
+[[chat.suggestedActions]]
+render = "free"
+title = "Early Warnings"
+label = "What comes before a default?"
+action = "What payment behaviour showed up in the months before loans defaulted, compared with loans that are still current? Say which signal appears earliest and how much warning it gives."
+
+# === chart 2 / 3 (line: ordered scale) ===
+[[chat.suggestedActions]]
+render = "chart"
+title = "Lateness Trend"
+label = "Is lateness getting worse?"
+action = "Give me the late payment rate for each month across the whole period. Show it as a line chart, then say in one line whether lateness is getting better or worse."
+
+# === table 2 / 3 (exposure list) ===
+[[chat.suggestedActions]]
+render = "table"
+title = "Largest Exposures"
+label = "Where is the biggest loss sitting?"
+action = "List the ten active loans with the largest expected loss. Give me the loan id, industry, risk grade, outstanding balance, and expected loss. Show it as a Markdown table, and show the SQL you ran."
+
+# === flowchart 2 / 3 (state machine) ===
+[[chat.suggestedActions]]
+render = "flowchart"
+title = "The Default Path"
+label = "How does a loan go bad?"
+action = "Show the stages a loan passes through on its way from disbursed to written off, and how many loans sit at each stage right now. Show it as a flowchart."
+
+# === chart 3 / 3 (bar, ranking) ===
+[[chat.suggestedActions]]
+render = "chart"
+title = "Industry Exposure"
+label = "How concentrated are we?"
+action = "Rank the top ten industries by outstanding balance. Show it as a bar chart, then say in one line how concentrated the portfolio is."
+
+# === table 3 / 3 (banded detail) ===
+[[chat.suggestedActions]]
+render = "table"
+title = "Recovery"
+label = "What comes back after a default?"
+action = "For each risk grade, give me the number of defaults, the average amount recovered, and the recovery rate. Show it as a Markdown table, and show the SQL you ran."
+
+# === flowchart 3 / 3 (loop) ===
+[[chat.suggestedActions]]
+render = "flowchart"
+title = "Repeat Borrowers"
+label = "Who comes back for a second loan?"
+action = "Trace the repeat borrower path from first loan to paid off to a second loan, with the number of borrowers at each step. Show it as a flowchart."
+
+# === free 3 / 3 ===
+[[chat.suggestedActions]]
+render = "free"
+title = "Early Payers"
+label = "Does paying early predict anything?"
+action = "Do borrowers who pay on time in their first three months default less often than those who are late early on? Say how big the difference is and whether it is big enough to act on."

@@ -15,7 +15,7 @@ same thing:
 
 - This module holds **dataset identity** — what the project is called, what
   database it describes, which prompt it loads. Those come from
-  ``config/dataset.toml``, are committed to Git, and differ per *dataset*.
+  ``data/dataset.toml``, are committed to Git, and differ per *dataset*.
 
 The dividing line is sharp, and worth stating as a rule: **nothing in this
 module varies by environment.** Local, Vercel, and CI all read the same values,
@@ -27,8 +27,8 @@ is in the wrong module.
 Why this file is so small
 -------------------------
 
-``config/dataset.toml`` holds only what Python actually reads. Everything the UI
-says lives in ``config/site.ts`` instead, because it is consumed exclusively by
+``data/dataset.toml`` holds only what Python actually reads. Everything the UI
+says lives in ``data/site.toml`` instead, because it is consumed exclusively by
 TypeScript and gets type checking there that JSON could never provide. The two
 runtimes were found to read disjoint sets of keys, so a single shared config
 file was two unrelated files stapled together.
@@ -59,7 +59,7 @@ from .paths import path_enum
 @dataclasses.dataclass
 class ProjectConfig:
     """
-    Typed reader over ``config/dataset.toml``.
+    Typed reader over ``data/dataset.toml``.
 
     Attributes:
         path_dataset_toml: Location of the dataset config file.
@@ -69,7 +69,7 @@ class ProjectConfig:
 
     @cached_property
     def dataset(self) -> dict[str, T.Any]:
-        """Parsed ``config/dataset.toml``."""
+        """Parsed ``data/dataset.toml``."""
         return tomllib.loads(self.path_dataset_toml.read_text(encoding="utf-8"))
 
     @property

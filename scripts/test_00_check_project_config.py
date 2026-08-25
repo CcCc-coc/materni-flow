@@ -8,9 +8,12 @@ Why this script exists
 
 This repo is a template. The same scaffolding — one prompt, one database, one
 website — gets pointed at a new dataset and a new business domain over and over.
-Most of what changes is now centralized in ``config/dataset.toml`` and
-``config/site.ts``, but not all of it can be: the SQLite file, the system prompt, and the kickstart questions are
-content, not configuration, and they have to be rewritten by hand.
+Everything a swap rewrites now lives in ``data/``: ``dataset.toml`` for what
+Python reads, ``site.toml`` for every sentence the UI says, plus the explainer,
+the system prompt, and the database seed. Config and content sit side by side
+there, but they fail differently -- a missing config key is caught by the
+frontend loader, while the prompt and the questions are prose that has to be
+rewritten by hand, and prose cannot be type-checked.
 
 Hand-rewriting is where things get forgotten. The evidence is in this repo's own
 history: a previous swap updated the prompt and the frontend but left an entire
@@ -29,14 +32,19 @@ What it checks
    tables actually present in the SQLite file, in both directions.
 2. **Prompt vs. schema** — every table the system prompt writes ``FROM`` or
    ``JOIN`` against must exist in the database.
-3. **Content files** — the system prompt and the kickstart questions must exist
-   and be non-trivial.
-4. **Retired vocabulary** — opt in with ``--retired``, for the one run right
+3. **Content files** — the system prompt, the site copy, and the explainer must
+   exist and be non-trivial.
+4. **Render quota** — the twelve kickstart questions must be three of each kind,
+   and each question's ``render`` must agree with the trigger phrase inside its
+   ``action``. Both directions, because they fail differently: a wrong phrase
+   means the block never appears, and a wrong ``render`` means the button draws
+   an icon promising something the answer will not contain.
+5. **Retired vocabulary** — opt in with ``--retired``, for the one run right
    after a dataset swap.
 
-Icon names used to be checked here too. They no longer need to be: the UI config
-moved to ``config/site.ts``, where the ``IconName`` type makes a typo a compile
-error instead of a silent fallback in the browser.
+Icon names are not checked here. ``lib/site/load.ts`` checks them against
+``lib/icons.ts`` when Next.js reads the TOML, which is a real check at build
+time rather than a second list to keep in step.
 
 Usage::
 
@@ -45,9 +53,9 @@ Usage::
 """
 
 import argparse
-import json
 import re
 import sys
+import tomllib
 import typing as T
 from pathlib import Path
 
@@ -285,34 +293,103 @@ def check_content_files(report: Report) -> bool:
     """Fail if the hand-written content a swap must replace is missing or empty."""
     ok = True
 
-    prompt = path_enum.path_bi_agent_system_prompt_md
-    if not prompt.exists():
-        report.error("content", f"system prompt missing: {prompt}")
-        ok = False
-    elif len(prompt.read_text(encoding="utf-8").strip()) < 500:
-        report.error("content", f"system prompt looks like a stub: {prompt}")
-        ok = False
-
-    suggestions = path_enum.dir_project_root / "data" / "suggested-actions.json"
-    if not suggestions.exists():
-        report.error("content", f"kickstart questions missing: {suggestions}")
-        ok = False
-    else:
-        actions = json.loads(suggestions.read_text(encoding="utf-8"))
-        if not actions:
-            report.error("content", "data/suggested-actions.json is empty")
+    for label, path, floor in (
+        ("system prompt", path_enum.path_bi_agent_system_prompt_md, 500),
+        ("site copy", path_enum.path_site_toml, 500),
+        ("business context", path_enum.path_business_context_md, 500),
+    ):
+        if not path.exists():
+            report.error("content", f"{label} missing: {path}")
             ok = False
-        else:
-            for i, action in enumerate(actions):
-                missing = {"title", "label", "action"} - set(action)
-                if missing:
-                    report.error(
-                        "content",
-                        f"data/suggested-actions.json[{i}] is missing {sorted(missing)}",
-                    )
-                    ok = False
+        elif len(path.read_text(encoding="utf-8").strip()) < floor:
+            report.error("content", f"{label} looks like a stub: {path}")
+            ok = False
 
     report.section("content files", ok)
+    return ok
+
+
+
+#: How many kickstart questions of each kind `data/site.toml` must carry.
+#:
+#: Twelve buttons that all return prose leave the diagram renderer and the chart
+#: renderer with nothing to draw, which is the same as not having built them.
+RENDER_QUOTAS = {"table": 3, "flowchart": 3, "chart": 3, "free": 3}
+
+#: The phrase that actually makes each block appear.
+#:
+#: The other half of the contract in the prompt's ``## Rendering Triggers``
+#: table. The model follows the wording, not the intent, so these are literal.
+RENDER_PHRASES = {
+    "table": (("as a markdown table",), ("show the sql",)),
+    "flowchart": (("as a flowchart", "as a diagram"),),
+    "chart": (("as a bar chart", "as a line chart"),),
+}
+
+
+def kind_from_phrases(action: str) -> str:
+    """Which block this question's wording will actually produce."""
+    hits = [
+        kind
+        for kind, groups in RENDER_PHRASES.items()
+        if all(any(p in action for p in group) for group in groups)
+    ]
+    if len(hits) == 1:
+        return hits[0]
+    return "ambiguous" if hits else "free"
+
+
+def check_render_quota(report: Report) -> bool:
+    """Fail if the kickstart questions do not exercise every renderer.
+
+    Checked in both directions on purpose. ``render`` is what the button
+    promises the reader, the phrase is what the model reacts to, and each can be
+    wrong without the other noticing: a question marked ``chart`` whose wording
+    forgot "as a bar chart" draws a chart icon over a paragraph of prose.
+    """
+    ok = True
+    site_toml = path_enum.path_site_toml
+    if not site_toml.exists():
+        report.section("render quota", False)
+        return False
+
+    actions = tomllib.loads(site_toml.read_text(encoding="utf-8")).get("chat", {}).get(
+        "suggestedActions", []
+    )
+    tally: dict[str, int] = {kind: 0 for kind in RENDER_QUOTAS}
+
+    for i, item in enumerate(actions):
+        missing = {"render", "title", "label", "action"} - set(item)
+        if missing:
+            report.error("quota", f"suggestedActions[{i}] is missing {sorted(missing)}")
+            ok = False
+            continue
+
+        declared = item["render"]
+        if declared not in RENDER_QUOTAS:
+            report.error(
+                "quota",
+                f"suggestedActions[{i}] '{item['title']}': unknown render {declared!r}",
+            )
+            ok = False
+            continue
+
+        tally[declared] += 1
+        actual = kind_from_phrases(item["action"].lower())
+        if actual != declared:
+            report.error(
+                "quota",
+                f"suggestedActions[{i}] '{item['title']}': render is {declared!r} but "
+                f"the wording produces {actual!r}",
+            )
+            ok = False
+
+    for kind, want in RENDER_QUOTAS.items():
+        if tally[kind] != want:
+            report.error("quota", f"{tally[kind]} {kind} question(s), expected {want}")
+            ok = False
+
+    report.section(f"render quota ({len(actions)} questions)", ok)
     return ok
 
 
@@ -342,6 +419,7 @@ def main(argv: list[str] | None = None) -> int:
     check_table_insert_order(report, db_tables)
     check_prompt_tables(report, db_tables)
     check_content_files(report)
+    check_render_quota(report)
 
     print("=" * 60)
 

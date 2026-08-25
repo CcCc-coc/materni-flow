@@ -44,7 +44,9 @@ const BLOCK_RENDERERS: Record<string, ComponentType<BlockProps>> = {
 
 没在表里的语言 (包括 ```python 这种普通代码) 全部落到 `CodeBlock`.
 
-刻意**没有** 把这个开关放进 `config/site.ts`. 那个文件装的是 "这个数据集说什么", 而渲染器开关是 "这个 app 能渲染什么", 两件事换的频率不一样. 何况一个数据集不需要图, 让 agent 不输出就行. 真到了要按数据集裁剪 bundle 那天再搬.
+刻意**没有** 把这个开关放进 `data/site.toml`. 那个文件装的是 "这个数据集说什么", 而渲染器开关是 "这个 app 能渲染什么", 两件事换的频率不一样. 何况一个数据集不需要图, 让 agent 不输出就行. 真到了要按数据集裁剪 bundle 那天再搬.
+
+注意区分 `site.toml` 里 kickstart 那 12 条各自带的 `render` 字段: 它不是开关, 是**按钮对读者的承诺** (画在按钮上的那个小图标, 见 `components/chat/RenderBadge.tsx`). 真正让块出现的是 `action` 里那句触发短语. 两者由 `mise run check` 的 render quota 双向校验.
 
 ---
 
@@ -96,10 +98,12 @@ const BLOCK_RENDERERS: Record<string, ComponentType<BlockProps>> = {
 
 1. 在 `components/chat/blocks/` 写组件, 入参是 `BlockProps`, 失败时 `return <CodeBlock {...props} />`.
 2. 在 `index.ts` 的 `BLOCK_RENDERERS` 加一行.
-3. 在 `agent_app/prompts/bi-agent-system-prompt.md` 里告诉 agent 什么时候产出这种块.
+3. 在 `data/system-prompt.md` 里告诉 agent 什么时候产出这种块.
 
 第三步是分界线: 前端认得一个格式, 不等于模型会输出它. 跳过这步的结果是渲染器一行代码都跑不到, 而前端测试全绿, 你会以为功能做完了.
 
-提示词里现在有 `## Diagrams` 和 `## Charts` 两段, 都约束到了 "什么时候用" 和 "确切格式" 这个粒度. 加新块时照这个粒度写.
+提示词里现在有五段管这件事: `## Rendering Triggers` (kickstart 短语到块的对照表), `## Diagrams and Charts: The Fence Rule`, `## Showing the SQL`, `## Diagrams`, `## Charts`. 后四段都约束到了 "什么时候用" 和 "确切格式" 这个粒度, 加新块时照这个粒度写, 并在 Rendering Triggers 表里加一行.
+
+这五段的母本在 `.claude/skills/swap-dataset-cn/ref/system-prompt-render-blocks.md`, 换数据集时整段逐字抄过去, 只换例子. 改渲染器行为时**两边一起改**, 否则下次换数据集会把旧措辞抄回来.
 
 写提示词时注意一个坑: `mise run check` 会扫提示词里的 `FROM x` 和 `JOIN x` 当表名校验, 而它认不出这是散文还是 SQL. `drawn from a zero baseline` 里的 `from a` 会被判成表 `a` 而让构建失败. 换个说法即可.

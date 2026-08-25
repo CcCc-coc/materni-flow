@@ -7,9 +7,9 @@ import { useScrollToBottom } from "@/hooks/use-scroll-to-bottom";
 import { useChat } from "@ai-sdk/react";
 import { toast } from "sonner";
 import { useState, useEffect } from "react";
-import { site } from "@/config/site";
+import type { SiteConfig } from "@/lib/site/schema";
 
-export function Chat() {
+export function Chat({ site }: { site: SiteConfig }) {
   const chatId = "001";
 
   const [input, setInput] = useState("");
@@ -24,7 +24,7 @@ export function Chat() {
   } = useChat({
     onError: (error) => {
       if (error.message.includes("Too many requests") || error.message.includes("Rate limit") || error.message.includes("429")) {
-        toast.error(site.messages.rateLimited, { duration: 8000 });
+        toast.error(site.chat.messages.rateLimited, { duration: 8000 });
       } else {
         toast.error(error.message);
       }
@@ -73,7 +73,7 @@ export function Chat() {
         className="flex flex-col min-w-0 gap-4 flex-1 overflow-y-scroll pt-4 px-4"
       >
         {/* Initial AI Assistant Welcome Display */}
-        {messages.length === 0 && <Overview />}
+        {messages.length === 0 && <Overview site={site} />}
 
         {/* Context Banner */}
         {messages.length > 0 && isContextBannerVisible && (
@@ -85,11 +85,11 @@ export function Chat() {
                     <span className="font-display text-sm text-white">AI</span>
                   </div>
                   <div className="flex-1">
-                    <h3 className="font-display text-sm text-[#0A1628] dark:text-white">{site.agent.name}</h3>
+                    <h3 className="font-display text-sm text-[#0A1628] dark:text-white">{site.chat.agent}</h3>
                     <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                       I'm here to help you with{" "}
                       <span className="font-semibold text-blue-600 dark:text-blue-400">
-                        {site.agent.domainLabel}
+                        {site.chat.messages.welcomeMessage}
                       </span>
                       .
                     </p>
@@ -135,6 +135,7 @@ export function Chat() {
         <form className="flex mx-auto gap-2 w-full md:max-w-3xl">
           <MultimodalInput
             chatId={chatId}
+            site={site}
             input={input}
             setInput={setInput}
             handleSubmit={handleSubmit}

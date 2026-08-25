@@ -31,7 +31,7 @@ What does NOT belong here
 Anything that is the same in every environment. The project's name, the tables
 it owns, and the database it describes are properties of the *dataset*, not of
 the machine, so they live in :mod:`agent_app.project_config` and are read from
-``config/dataset.toml``. Duplicating such a value here, even with an environment
+``data/dataset.toml``. Duplicating such a value here, even with an environment
 variable as an escape hatch, gives it two homes and eventually two answers.
 
 How it works

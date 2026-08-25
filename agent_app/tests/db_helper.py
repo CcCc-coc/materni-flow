@@ -9,7 +9,7 @@ Sync mechanism
 The local SQLite database is seeded from a pristine copy that **is** committed
 to Git::
 
-    data.sqlite.example   (repo root, tracked by Git, never modified)
+    data/data.sqlite.example  (tracked by Git, never modified)
             |
             |  copy + overwrite
             v
@@ -39,7 +39,7 @@ def setup_sqlite_db(
     Seed the working SQLite database from the committed example file.
 
     Args:
-        src: Pristine seed file tracked by Git (``data.sqlite.example``).
+        src: Pristine seed file tracked by Git (``data/data.sqlite.example``).
         dest: Working copy used by the app and tests (``tmp/data.sqlite``).
         overwrite: If True (default), always replace an existing working copy.
             If False, keep the existing file and do nothing.

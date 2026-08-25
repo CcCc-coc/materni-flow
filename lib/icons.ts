@@ -15,9 +15,9 @@ import {
 } from "lucide-react"
 
 /**
- * Icon names usable from `config/site.ts`.
+ * Icon names usable from `data/site.toml`.
  *
- * `config/site.ts` names an icon and this map resolves it. Keeping the map
+ * `data/site.toml` names an icon and this map resolves it. Keeping the map
  * explicit, rather than indexing all of `lucide-react`, means the bundle only
  * carries icons we actually use, and it gives `IconName` below something exact
  * to be derived from.
@@ -40,7 +40,7 @@ export const ICONS = {
 } satisfies Record<string, LucideIcon>
 
 /**
- * Every icon name `config/site.ts` is allowed to use.
+ * Every icon name `data/site.toml` is allowed to use.
  *
  * This is what makes a typo a compile error instead of a silent fallback in the
  * browser. It replaces a runtime check that used to live in the Python

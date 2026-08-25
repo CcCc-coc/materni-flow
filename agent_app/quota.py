@@ -25,7 +25,7 @@ and the three caps. All live in ``.env`` and are read through ``Config``.
 
 Fixed, because it does not: the item schema below, and the partition key, which
 is ``<project name>-YYYY-MM``. The project name comes from
-``config/dataset.toml`` -- the same identifier that namespaces this project's
+``data/dataset.toml`` -- the same identifier that namespaces this project's
 tables in the shared Postgres. One DynamoDB table can hold the counters for
 several projects for the same reason one Postgres database can hold their
 tables, and giving that identifier a second home in ``.env`` would eventually

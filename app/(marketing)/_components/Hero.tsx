@@ -3,12 +3,19 @@
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { ArrowRight, BookOpen } from "lucide-react"
-import { site } from "@/config/site"
-import { getIcon } from "@/lib/icons"
-import BusinessContextModal from "./BusinessContextModal"
-import ConceptTooltip from "./ConceptTooltip"
 
-export default function Hero() {
+import BusinessContextModal from "@/components/BusinessContextModal"
+import CapabilityCard from "@/components/CapabilityCard"
+import type { SiteConfig } from "@/lib/site/schema"
+
+export default function Hero({
+  site,
+  businessContext,
+}: {
+  site: SiteConfig
+  /** Raw Markdown of `data/business-context.md`, read on the server. */
+  businessContext: string
+}) {
   const [isVisible, setIsVisible] = useState(false)
   const [contextOpen, setContextOpen] = useState(false)
 
@@ -16,7 +23,7 @@ export default function Hero() {
     setIsVisible(true)
   }, [])
 
-  const { home, project, database, businessContext } = site
+  const { home, capabilities } = site
 
   return (
     <section className="min-h-screen flex flex-col justify-center pt-24 pb-12 px-4 sm:px-6 lg:px-8 bg-white dark:bg-[#0A1628]">
@@ -31,7 +38,7 @@ export default function Hero() {
           </h1>
 
           <p className="text-xl sm:text-2xl text-slate-500 dark:text-slate-400 mb-4">
-            {project.tagline}
+            {home.tagline}
           </p>
 
           <div className="w-20 h-1.5 bg-amber-500 rounded mb-10" />
@@ -53,33 +60,22 @@ export default function Hero() {
             className="group inline-flex items-center gap-2 mb-10 px-4 py-2 rounded-full text-sm font-medium bg-slate-50 dark:bg-slate-800/50 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:border-blue-500 dark:hover:border-blue-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer"
           >
             <BookOpen className="w-4 h-4" aria-hidden="true" />
-            {businessContext.triggerLabel}
+            {home.businessContext.triggerLabel}
           </button>
 
-          {/* Capability Cards */}
+          {/* The four business threads. Same four on the agent's welcome
+              screen, from the same `[[capabilities]]`. */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
-            {home.capabilities.map((cap, index) => {
-              const Icon = getIcon(cap.icon)
-              return (
-                <ConceptTooltip
-                  key={cap.label}
-                  text={cap.tooltip}
-                  // Two columns on a phone: outer cards hang the bubble from
-                  // their outer edge so it cannot run off screen.
-                  align={index % 2 === 0 ? "start" : "end"}
-                  className={`p-5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 cursor-help hover:border-blue-400 dark:hover:border-blue-500 transition-all duration-500 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
-                >
-                  <Icon className="w-6 h-6 text-blue-600 dark:text-blue-400 mb-3" aria-hidden="true" />
-                  <p className="text-sm font-medium text-[#0A1628] dark:text-white">{cap.label}</p>
-                  {/* The dashed rule is the only thing telling a reader there is
-                      something to hover over. Without it the hint is invisible. */}
-                  <span
-                    aria-hidden="true"
-                    className="mt-3 block w-8 border-b border-dashed border-slate-300 dark:border-slate-600 group-hover:border-blue-500 transition-colors"
-                  />
-                </ConceptTooltip>
-              )
-            })}
+            {capabilities.map((cap, index) => (
+              <CapabilityCard
+                key={cap.title}
+                capability={cap}
+                // Two columns on a phone: outer cards hang the bubble from
+                // their outer edge so it cannot run off screen.
+                align={index % 2 === 0 ? "start" : "end"}
+                className={`transition-all duration-500 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
+              />
+            ))}
           </div>
 
           {/* Tech Stack Tags */}
@@ -121,13 +117,16 @@ export default function Hero() {
         <div
           className={`mt-10 transition-all duration-700 delay-700 ${isVisible ? "opacity-100" : "opacity-0"}`}
         >
-          <p className="text-sm text-slate-400 dark:text-slate-500">
-            {database.blurb}
-          </p>
+          <p className="text-sm text-slate-400 dark:text-slate-500">{home.blurb}</p>
         </div>
       </div>
 
-      <BusinessContextModal open={contextOpen} onClose={() => setContextOpen(false)} />
+      <BusinessContextModal
+        open={contextOpen}
+        onClose={() => setContextOpen(false)}
+        labels={home.businessContext}
+        markdown={businessContext}
+      />
     </section>
   )
 }

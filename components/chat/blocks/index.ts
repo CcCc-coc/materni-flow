@@ -14,7 +14,7 @@ import type { BlockProps } from "./types"
  *
  * When adding one, do not stop at the frontend. The UI understanding a format
  * does not make the model produce it, so
- * `agent_app/prompts/bi-agent-system-prompt.md` has to say when to emit the
+ * `data/system-prompt.md` has to say when to emit the
  * block. That step is invisible from here and is the one people forget.
  */
 const BLOCK_RENDERERS: Record<string, ComponentType<BlockProps>> = {

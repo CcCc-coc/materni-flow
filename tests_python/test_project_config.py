@@ -3,7 +3,7 @@
 """
 Test for ProjectConfig.
 
-Reads the real ``config/dataset.toml``, because the point of this module is that
+Reads the real ``data/dataset.toml``, because the point of this module is that
 there is exactly one copy of these values and it is committed. Building one from
 a literal would test the dataclass, not the config.
 """
@@ -15,7 +15,7 @@ from agent_app.project_config import ProjectConfig, project_config
 
 class TestProjectConfig:
     def test_reads_the_committed_toml(self):
-        """The singleton parses config/dataset.toml and finds all three sections."""
+        """The singleton parses data/dataset.toml and finds all three sections."""
         assert project_config.project_name
         assert project_config.database_display_name
         assert len(project_config.table_insert_order) > 0

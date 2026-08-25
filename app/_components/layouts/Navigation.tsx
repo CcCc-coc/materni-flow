@@ -5,14 +5,21 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Menu, X } from "lucide-react"
 import { NavItem, NavigationProps } from "@/types"
-import { site } from "@/config/site"
 
 const DEFAULT_NAV_ITEMS: NavItem[] = [
   { label: "Home", href: "/" },
   { label: "Chat", href: "/chat" },
 ]
 
-export default function Navigation({ items = DEFAULT_NAV_ITEMS }: NavigationProps) {
+export default function Navigation({
+  items = DEFAULT_NAV_ITEMS,
+  logoPrefix,
+  logoAccent,
+}: NavigationProps & {
+  /** The wordmark, split so the two halves can be coloured differently. */
+  logoPrefix: string
+  logoAccent: string
+}) {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const pathname = usePathname()
 
@@ -33,8 +40,8 @@ export default function Navigation({ items = DEFAULT_NAV_ITEMS }: NavigationProp
             className="flex items-center gap-3 text-white hover:opacity-90 transition-opacity"
           >
             <span className="font-display text-xl font-semibold tracking-tight">
-              {site.project.logo.prefix}
-              <span className="text-amber-500">{site.project.logo.accent}</span>
+              {logoPrefix}
+              <span className="text-amber-500">{logoAccent}</span>
             </span>
           </Link>
 

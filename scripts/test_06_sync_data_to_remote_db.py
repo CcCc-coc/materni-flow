@@ -3,7 +3,7 @@
 """
 Sync local SQLite database to remote PostgreSQL (NeonDB).
 
-Remote tables are namespaced with the project prefix from ``config/dataset.toml``, so
+Remote tables are namespaced with the project prefix from ``data/dataset.toml``, so
 this project can share one NeonDB instance with others without colliding:
 local ``widget`` becomes remote ``acme_widget``, and its foreign keys are rewritten
 to match.

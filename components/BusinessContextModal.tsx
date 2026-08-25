@@ -2,8 +2,8 @@
 
 import { useEffect, useRef } from "react"
 import { X } from "lucide-react"
-import { site } from "@/config/site"
-import { MermaidBlock } from "@/components/chat/blocks/MermaidBlock"
+
+import { Markdown } from "@/components/chat/markdown"
 
 /**
  * The long-form business explainer, as a dismissable overlay.
@@ -19,15 +19,23 @@ import { MermaidBlock } from "@/components/chat/blocks/MermaidBlock"
  * as an obvious idea until you try to scroll a long document and it vanishes
  * under you.
  *
- * All copy comes from `config/site.ts`, so swapping the dataset rewrites this
- * without touching the component.
+ * The body arrives as raw Markdown from `data/business-context.md` and the
+ * labels from `[home.businessContext]` in `data/site.toml`, so swapping the
+ * dataset rewrites this without touching the component. Rendering goes through
+ * the same Markdown component the chat uses, which is why a ```mermaid fence in
+ * that document draws a diagram here too, lazily and at securityLevel
+ * "strict", without this component knowing anything about diagrams.
  */
 export default function BusinessContextModal({
   open,
   onClose,
+  labels,
+  markdown,
 }: {
   open: boolean
   onClose: () => void
+  labels: { title: string; subtitle: string }
+  markdown: string
 }) {
   const panelRef = useRef<HTMLDivElement>(null)
 
@@ -54,8 +62,6 @@ export default function BusinessContextModal({
   }, [open, onClose])
 
   if (!open) return null
-
-  const { businessContext } = site
 
   return (
     <div
@@ -87,65 +93,26 @@ export default function BusinessContextModal({
             id="business-context-title"
             className="font-display text-3xl sm:text-4xl text-[#0A1628] dark:text-white mb-3 pr-12"
           >
-            {businessContext.title}
+            {labels.title}
           </h2>
           <p className="text-base sm:text-lg text-slate-600 dark:text-slate-300 leading-relaxed">
-            {businessContext.subtitle}
+            {labels.subtitle}
           </p>
 
           <div className="w-16 h-1.5 bg-amber-500 rounded mt-7" />
 
-          {businessContext.sections.map((section) => (
-            <section key={section.heading} className="mt-10">
-              <h3 className="font-display text-xl sm:text-2xl text-[#0A1628] dark:text-white mb-3">
-                {section.heading}
-              </h3>
-
-              {section.paragraphs.map((paragraph) => (
-                <p
-                  key={paragraph}
-                  className="text-slate-600 dark:text-slate-300 leading-relaxed mb-3"
-                >
-                  {paragraph}
-                </p>
-              ))}
-
-              {section.bullets && (
-                <dl className="mt-4 space-y-4">
-                  {section.bullets.map((bullet) => (
-                    <div
-                      key={bullet.term}
-                      className="pl-4 border-l-2 border-slate-200 dark:border-slate-700 hover:border-amber-500 transition-colors"
-                    >
-                      <dt className="font-medium text-[#0A1628] dark:text-white mb-1">
-                        {bullet.term}
-                      </dt>
-                      <dd className="text-slate-600 dark:text-slate-300 leading-relaxed">
-                        {bullet.detail}
-                      </dd>
-                    </div>
-                  ))}
-                </dl>
-              )}
-
-              {/* Reuses the chat renderer, which already lazy-loads the ~1MB
-                  mermaid bundle and runs it at securityLevel "strict". */}
-              {section.mermaid && (
-                <div className="my-5">
-                  <MermaidBlock source={section.mermaid} language="mermaid" />
-                </div>
-              )}
-
-              {section.closingParagraphs?.map((paragraph) => (
-                <p
-                  key={paragraph}
-                  className="text-slate-600 dark:text-slate-300 leading-relaxed mt-4"
-                >
-                  {paragraph}
-                </p>
-              ))}
-            </section>
-          ))}
+          {/* The shared Markdown component is sized for chat bubbles. This is a
+              document, so the headings and body are scaled up here rather than
+              by forking the renderer. */}
+          <div
+            className="mt-8 text-base text-slate-600 dark:text-slate-300
+                       [&_h2]:font-display [&_h2]:text-xl [&_h2]:sm:text-2xl [&_h2]:font-normal
+                       [&_h2]:text-[#0A1628] [&_h2]:dark:text-white [&_h2]:mt-10 [&_h2]:mb-3
+                       [&_h3]:text-lg [&_h3]:text-[#0A1628] [&_h3]:dark:text-white [&_h3]:mt-6
+                       [&_li]:mb-2 [&_strong]:text-[#0A1628] [&_strong]:dark:text-white"
+          >
+            <Markdown>{markdown}</Markdown>
+          </div>
         </div>
       </div>
     </div>

@@ -15,20 +15,24 @@ from agent_app.api import one  # Main singleton instance
 ### Directory Structure
 
 ```
-config/                      # Committed to Git. Split by CONSUMER, not by topic.
-├── site.ts                  #   Everything the frontend says. TypeScript, typed.
-└── dataset.toml             #   The 4 values Python reads. TOML, commented.
+data/                        # EVERYTHING a dataset swap rewrites, and nothing else.
+├── dataset.toml             #   The handful of values Python reads.
+├── site.toml                #   Every sentence the frontend says, incl. the 12
+│                            #   kickstart questions and the 4 capability cards.
+├── business-context.md      #   The long-form explainer behind the home page.
+├── system-prompt.md         #   The agent's domain brain.
+└── data.sqlite.example      #   Pristine seed, copied to tmp/data.sqlite.
 
 agent_app/                   # Python package. Name is deliberately generic and
 ├── api.py                   #   never changes when the dataset changes.
 ├── paths.py
-├── project_config.py        # Typed reader over config/*.json
+├── project_config.py        # Typed reader over data/dataset.toml
 ├── runtime.py
 ├── constants.py
 ├── sql_utils.py
 ├── ai_sdk_adapter.py
 │
-├── config/                  # NOTE: secrets from .env -- NOT config/*.json
+├── config/                  # NOTE: secrets from .env -- NOT data/*.toml
 │   └── conf_00_def.py
 │
 ├── vendor/                  # Third-party code copied in, not installed.
@@ -43,14 +47,23 @@ agent_app/                   # Python package. Name is deliberately generic and
 │   ├── one_04_agent.py
 │   └── api.py
 │
-├── prompts/
-│   └── bi-agent-system-prompt.md
-│
 └── db_schema/
 
 lib/
 ├── icons.ts                 # Icon-name -> component map; exports the IconName type
-└── constants.ts             # Derived view of config/site.ts; authored nothing
+├── constants.ts             # Derived view of data/site.toml; authored nothing
+└── site/
+    ├── schema.ts            # The shape data/site.toml must have, plus the
+    │                        #   required-key list checked at load
+    └── load.ts              # Parses the TOML once. SERVER ONLY (reads disk).
+
+components/
+├── CapabilityCard.tsx       # One business thread. Home page AND agent page
+│                            #   render this, from one [[capabilities]] entry.
+├── BusinessContextModal.tsx # Renders business-context.md as Markdown
+├── ConceptTooltip.tsx       # The hover/focus/tap bubble behind a concept name
+└── chat/
+    └── RenderBadge.tsx      # The glyph promising what a kickstart draws
 ```
 
 ### The Two Kinds of "Config"
@@ -58,7 +71,7 @@ lib/
 Two things in this repo are called config. They change for different reasons and
 must not be mixed:
 
-| | `config/site.ts` + `config/dataset.toml` | `.env` → `agent_app/config/` |
+| | `data/` | `.env` → `agent_app/config/` |
 |---|---|---|
 | Holds | Project identity, business copy, table order | API keys, DB credentials, LLM provider |
 | Differs per | **dataset** | **machine** |
@@ -69,7 +82,7 @@ Rotating an API key must not touch the project's name; pointing the repo at a
 new dataset must not touch anyone's credentials.
 
 **The test for which layer a value belongs to: does it vary by environment?**
-`agent_app/project_config.py` reads `config/dataset.toml` and nothing in it
+`agent_app/project_config.py` reads `data/dataset.toml` and nothing in it
 varies by environment. Local, Vercel, and CI all serve the same dataset, so they
 all get the same answer. `agent_app/config/conf_00_def.py` holds everything that
 *does* differ per machine. A value must not appear in both, not even with an
@@ -77,13 +90,34 @@ environment variable as an "escape hatch": that gives it two homes and
 eventually two answers. `project_name` used to be duplicated that way and is
 now only in `project_config`.
 
-**`config/` is split by consumer, not by topic.** The frontend and the backend
+**`data/` is split by consumer, not by topic.** The frontend and the backend
 read disjoint sets of keys, so one shared file was two unrelated files stapled
-together. `site.ts` is TypeScript because only TypeScript reads it, which buys
-autocomplete and makes a bad icon name a compile error. `dataset.toml` is TOML
-because only Python reads it, and TOML has real comments. Before adding a value,
-ask which runtime consumes it; if the answer is "both", say so out loud, because
-today nothing does.
+together. `site.toml` is read only by Next.js, `dataset.toml` only by Python.
+Before adding a value, ask which runtime consumes it; if the answer is "both",
+say so out loud, because today nothing does.
+
+**Why the site copy is TOML rather than TypeScript.** It used to be
+`config/site.ts`, and the argument for that was real: the compiler checked the
+shape for free and a misspelled icon name was a build error. What outweighed it
+is that the copy belongs to the *dataset*, not to the frontend. Keeping it in
+`lib/`-adjacent TypeScript meant a dataset swap was a diff scattered across the
+repo; keeping every authored artifact in `data/` makes a swap a directory
+replacement, which is a far easier thing to get right and to review.
+
+The checks the compiler used to perform are not gone, they moved into
+`lib/site/load.ts` and run when Next.js reads the file: `REQUIRED_SITE_KEYS`
+rejects a missing key by name, and `assertIconsExist` rejects an icon that is
+not in `lib/icons.ts`. Both throw during `next build`, so a broken `site.toml`
+still cannot ship. What genuinely got weaker is editor autocomplete while
+authoring the TOML. That was judged an acceptable trade, because authoring
+happens once per dataset while reviewing a swap happens every time.
+
+**Both directions of the kickstart contract are machine-checked.** Each of the
+12 questions in `site.toml` carries a `render` field, and its `action` carries
+the literal trigger phrase that makes the block appear. `mise run check` fails
+if the two disagree, in either direction: a wrong phrase means the block never
+appears, and a wrong `render` means the button draws an icon promising a chart
+over an answer that is prose.
 
 **Comments and identifiers are English only.** Every comment, docstring, and
 name in the source tree (`.ts`, `.tsx`, `.py`) is written in English, even when
@@ -99,30 +133,36 @@ not need.
 
 ### Swapping the Dataset
 
-Everything that varies between datasets is either in `config/` or in one of
-three content files. When adding UI copy, a brand string, or a business term,
-put it in `config/site.ts` — never inline it in a component.
+Everything that varies between datasets lives in `data/`. When adding UI copy, a
+brand string, or a business term, put it in `data/site.toml` — never inline it
+in a component.
 
 | What | Where |
 |---|---|
-| Product name, all UI copy, SEO, icons | `config/site.ts` |
-| Table prefix, DB display name, table order, prompt file | `config/dataset.toml` |
-| Agent's domain knowledge | `agent_app/prompts/bi-agent-system-prompt.md` |
-| Kickstart questions | `data/suggested-actions.json` |
-| The data itself | `data.sqlite.example` |
+| Product name, all UI copy, SEO, icons | `data/site.toml` |
+| The 4 capability cards (home page *and* agent page) | `[[capabilities]]` in `data/site.toml` |
+| The 12 kickstart questions, with their render quota | `[[chat.suggestedActions]]` in `data/site.toml` |
+| The long-form "what problem does this solve" explainer | `data/business-context.md` |
+| Table prefix, DB display name, table order | `data/dataset.toml` |
+| Agent's domain knowledge | `data/system-prompt.md` |
+| The data itself | `data/data.sqlite.example` |
 | Dataset-specific write tools | `@tool` methods in `one_04_agent.py` |
 
+The only entry not in `data/` is the last one, because a write tool is code.
+
 Run `mise run check` afterwards. It fails on a `tableInsertOrder` that
-disagrees with the SQLite file, a prompt that queries a nonexistent table, and
-missing content files. Right after a swap also run it with the outgoing
-domain's vocabulary, which is a one-off argument rather than committed state:
+disagrees with the SQLite file, a prompt that queries a nonexistent table,
+missing content files, and a kickstart question whose `render` disagrees with
+its own wording. Right after a swap also run it with the outgoing domain's
+vocabulary, which is a one-off argument rather than committed state:
 
 ```bash
 mise run check -- --retired "patient,bed,ward,nurse"
 ```
 
-Icon names need no check: `config/site.ts` types them against `lib/icons.ts`, so
-a typo is a compile error.
+Icon names are checked by `npx next build`, not by `mise run check`:
+`lib/site/load.ts` rejects any `icon` that `lib/icons.ts` does not export. Run
+the build too, since the check script never parses the TOML's icon fields.
 
 ### When to Modify Each File
 
@@ -134,7 +174,7 @@ a typo is a compile error.
 | `paths.py` | Defines all file/directory paths as `PathEnum`, including the system prompt | When adding new files (prompts, data files, output paths). Add path here first, then use `path_enum.your_new_path` everywhere. Paths are source-tree facts, so they are never named in config. |
 | `runtime.py` | Detects runtime environment (local vs vercel) | When adding a new deployment target (e.g., AWS Lambda). Add new enum value and detection logic. |
 | `constants.py` | Enums and constants | When adding new enum types or magic values that need to be shared across modules. |
-| `project_config.py` | Typed reader over `config/dataset.toml`; also owns the `project_name` derivations (`_snake`, `_slug`, `prefix_table_name`) | When Python needs a new dataset value. If it varies by environment it belongs in `config/conf_00_def.py`; if only the frontend reads it, `config/site.ts`. |
+| `project_config.py` | Typed reader over `data/dataset.toml`; also owns the `project_name` derivations (`_snake`, `_slug`, `prefix_table_name`) | When Python needs a new dataset value. If it varies by environment it belongs in `config/conf_00_def.py`; if only the frontend reads it, `data/site.toml`. |
 | `sql_utils.py` | Pure functions for SQL execution and formatting | When changing how SQL results are formatted or adding new query validation rules. |
 | `ai_sdk_adapter.py` | Converts Vercel AI SDK messages <-> Strands Agent messages, and generates the SSE event stream back to the browser | When the frontend message format changes. **Not** when switching LLM provider — this file is provider-agnostic and must stay that way; provider code belongs in `one_04_agent.py`. |
 | `vendor/vercel_ai_sdk.py` | Pydantic data model for the AI SDK request body. Vendored from `vercel-ai-sdk-mate`, deliberately lenient so a new AI SDK release cannot break request parsing | When the frontend starts sending a message part type the backend needs to read: add the model class and one line to `PART_MODEL_BY_TYPE`. Keep it a pure data model — no provider logic. |
@@ -156,11 +196,14 @@ a typo is a compile error.
 | `one_04_agent.py` | `AgentMixin`: provides `self.agent` and all `@tool` methods | **Most common edit.** When adding/modifying agent tools. Add `@tool` method here, then register in `self.agent`'s `tools=[]` list. |
 | `api.py` | Exports `one = One()` singleton | Rarely. Only touched when restructuring exports. |
 
-**prompts/ Directory:**
+**data/ Directory (everything a dataset swap rewrites):**
 
 | File | What It Does | When to Modify |
 |------|--------------|----------------|
-| `bi-agent-system-prompt.md` | System prompt for the BI agent | When changing agent behavior, adding tool usage instructions, or updating workflow guidelines. |
+| `system-prompt.md` | System prompt for the BI agent | When changing agent behavior, adding tool usage instructions, or updating workflow guidelines. The five rendering sections are copied verbatim from `.claude/skills/swap-dataset-cn/ref/system-prompt-render-blocks.md`; change them in both places or neither. |
+| `site.toml` | Every sentence the UI says, the 4 capability cards, the 12 kickstart questions | When changing any user-visible string. Never inline copy in a component. |
+| `business-context.md` | The long-form explainer behind the home page | When the domain explanation changes. At most one mermaid diagram in the file. |
+| `dataset.toml` | Table prefix, DB display name, table insert order | When adding a table, or pointing at a new dataset. |
 
 **db_schema/ Directory:**
 
@@ -219,7 +262,7 @@ does.
 from agent_app.api import one           # Main app instance
 from agent_app.paths import path_enum   # All paths
 from agent_app.runtime import runtime   # Runtime detection
-from agent_app.project_config import project_config  # config/dataset.toml
+from agent_app.project_config import project_config  # data/dataset.toml
 ```
 
 ### Agent Framework
@@ -227,7 +270,7 @@ from agent_app.project_config import project_config  # config/dataset.toml
 - **Library**: `strands` (Strands Agents SDK)
 - **Model**: AWS Bedrock (configurable via `config.model_id`)
 - **Tools**: Defined with `@tool` decorator in `one_04_agent.py`
-- **System Prompt**: `agent_app/prompts/bi-agent-system-prompt.md`
+- **System Prompt**: `data/system-prompt.md`
 
 ---
 
@@ -238,8 +281,8 @@ from agent_app.project_config import project_config  # config/dataset.toml
 - Node.js: pnpm (via mise)
 
 **Core Configuration Files:**
-- `config/site.ts` - All frontend copy and identity (swapped per dataset)
-- `config/dataset.toml` - The 4 values Python reads (swapped per dataset)
+- `data/site.toml` - All frontend copy and identity (swapped per dataset)
+- `data/dataset.toml` - The values Python reads (swapped per dataset)
 - `mise.toml` - Project tasks and tool versions (Python 3.12, Node 24, uv, pnpm)
 - `pyproject.toml` - Python dependencies and project metadata
 - `package.json` - Node.js dependencies
@@ -319,7 +362,7 @@ tests_python/
 - `mise run inst-python-deps` - Install Python dependencies
 - `mise run inst-node-deps` - Install Node.js dependencies
 - `mise run inst` - Install all dependencies (Python + Node.js)
-- `mise run setup-db` - Seed `tmp/data.sqlite` from the committed `data.sqlite.example`
+- `mise run setup-db` - Seed `tmp/data.sqlite` from the committed `data/data.sqlite.example`
 - `mise run test-python` - Run Python tests
 - `mise run test-node` - Run Node.js tests
 - `mise run test` - Run all tests (Python + Node.js)
@@ -383,13 +426,13 @@ avoids that entirely.
 
 The remote instance is **shared with other projects**, so every table this project
 owns is prefixed with `config.project_name_snake` (from `project.name` in
-`config/dataset.toml`). Foreign
+`data/dataset.toml`). Foreign
 keys are rewritten to match, and the sync script only ever touches prefixed
 tables — other projects' tables are never dropped. `database_schema_str` likewise
 reflects only prefixed tables when running remotely, so the agent never sees
 another project's schema.
 
-Dependency order lives in `config/dataset.toml` under
+Dependency order lives in `data/dataset.toml` under
 `database.tableInsertOrder`, exposed to Python as `TABLE_INSERT_ORDER` in
 `agent_app/tests/db_sync.py`: inserts walk it forwards, drops walk it backwards.
 Add a new table there, in the right position, or the sync breaks —
@@ -422,7 +465,7 @@ them in sequence the first time, then individually as needed.
 | # | Script | What it does |
 |---|--------|--------------|
 | 00 | `test_00_check_project_config.py` | Verify the repo agrees with its config (also `mise run check`) |
-| 01 | `test_01_setup_sqlite_file.py` | Seed `tmp/data.sqlite` from `data.sqlite.example` (also `mise run setup-db`) |
+| 01 | `test_01_setup_sqlite_file.py` | Seed `tmp/data.sqlite` from `data/data.sqlite.example` (also `mise run setup-db`) |
 | 02 | `test_02_run_sql_locally.py` | Run the SQL in `test_02_run_sql_locally.sql` against local SQLite |
 | 03 | `test_03_run_sql_locally_cli.py` | Same, but takes `--sql "..."` on the command line |
 | 04 | `test_04_print_database_schema.py` | Print the LLM-optimized schema string |

@@ -1,6 +1,7 @@
 import { Metadata } from "next"
 import { generateSEOMetadata } from "@/lib/seo/generateMetadata"
 import { METADATA } from "@/lib/constants"
+import { loadBusinessContext, loadSite } from "@/lib/site/load"
 import HomePageContent from "./HomePageContent"
 
 
@@ -19,5 +20,5 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default function HomePage() {
-  return <HomePageContent />
+  return <HomePageContent site={loadSite()} businessContext={loadBusinessContext()} />
 }

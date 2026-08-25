@@ -1,7 +1,7 @@
 <!--
 系统提示词的渲染层片段.
 
-这几节**逐字抄进 agent_app/prompts/bi-agent-system-prompt.md**, 只替换里面的例子
+这几节**逐字抄进 data/system-prompt.md**, 只替换里面的例子
 (表名, 指标名, 数字), 不要改结构, 不要改措辞, 不要精简.
 
 为什么是逐字抄: 这几节描述的是**前端能渲染什么**, 与数据集无关. 它们的措辞是对着
@@ -15,7 +15,7 @@ api/index.py 里调用) 专门收拾模型把 chart 包进 <chart> 标签的毛�
 放在提示词的什么位置: Response Guidelines 之后, Safety 之前.
 
 它和 kickstart 12 条是同一份契约的两半. 下面 Rendering Triggers 表里的短语, 就是
-data/suggested-actions.json 的 action 里要原样出现的短语. 两边对不上, 触发就不稳定.
+data/site.toml 里 [[chat.suggestedActions]] 的 action 里要原样出现的短语. 两边对不上, 触发就不稳定.
 -->
 
 ## Rendering Triggers
@@ -69,13 +69,13 @@ answer, and describe the earlier steps in one sentence each rather than pasting
 all of them.
 
 ```sql
-SELECT rg.grade,
+SELECT rg.grade_code,
        ROUND(100.0 * COUNT(de.id) / COUNT(l.id), 2) AS actual_default_rate
 FROM loan l
 JOIN risk_grade rg ON l.risk_grade_id = rg.id
 LEFT JOIN default_event de ON l.id = de.loan_id
-GROUP BY rg.grade
-ORDER BY rg.grade
+GROUP BY rg.grade_code
+ORDER BY rg.grade_code
 ```
 
 Never show a query you did not actually run. The reader may paste it back.
@@ -96,9 +96,11 @@ makes a funnel diagram worth drawing.
 
 ```mermaid
 flowchart LR
-    A[Applications 12,480] --> B[Approved 7,110]
-    A --> C[Rejected 5,370]
-    B --> D[Funded 6,842]
+    A[Applications 3,000] --> B[Approved 2,231]
+    A --> C[Rejected 769]
+    B --> D[Current 1,584]
+    B --> E[Paid off 436]
+    B --> F[Defaulted 211]
 ```
 
 If the diagram would just restate a sentence, write the sentence instead.
@@ -119,7 +121,7 @@ text, so do not improvise fields:
   "title": "Actual default rate by risk grade",
   "yLabel": "%",
   "categories": ["A", "B", "C", "D", "E"],
-  "series": [{ "name": "actual", "values": [2.1, 5.4, 11.2, 18.7, 26.3] }]
+  "series": [{ "name": "actual", "values": [3.9, 6.23, 9.89, 15.16, 18.91] }]
 }
 ```
 

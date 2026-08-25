@@ -16,15 +16,14 @@ import { useLocalStorage, useWindowSize } from "usehooks-ts";
 import { cn, sanitizeUIMessages } from "@/lib/utils";
 
 import { ArrowUpIcon, StopIcon } from "./icons";
+import { RenderBadge } from "./RenderBadge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import suggestedActionsData from "@/data/suggested-actions.json";
-import { site } from "@/config/site";
-
-const suggestedActions = suggestedActionsData;
+import type { SiteConfig } from "@/lib/site/schema";
 
 export function MultimodalInput({
   chatId,
+  site,
   input,
   setInput,
   isLoading,
@@ -36,6 +35,7 @@ export function MultimodalInput({
   className,
 }: {
   chatId: string;
+  site: SiteConfig;
   input: string;
   setInput: (value: string) => void;
   isLoading: boolean;
@@ -115,7 +115,7 @@ export function MultimodalInput({
 
           <div className="max-h-[320px] sm:max-h-[280px] overflow-y-auto">
             <div className="grid sm:grid-cols-2 gap-2 w-full pr-1">
-              {suggestedActions.map((suggestedAction, index) => (
+              {site.chat.suggestedActions.map((suggestedAction, index) => (
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -136,7 +136,11 @@ export function MultimodalInput({
                     <span className="font-display text-sm text-[#0A1628] dark:text-white">
                       {suggestedAction.title}
                     </span>
-                    <span className="text-xs text-blue-600 dark:text-blue-400 group-hover:text-blue-700 dark:group-hover:text-blue-300 leading-snug transition-colors">
+                    {/* The glyph says what pressing this will draw. Nine of the
+                        twelve produce a table, a flowchart, or a chart; without
+                        a mark the only way to find out is to press one. */}
+                    <span className="flex items-center gap-1.5 text-xs text-blue-600 dark:text-blue-400 group-hover:text-blue-700 dark:group-hover:text-blue-300 leading-snug transition-colors">
+                      <RenderBadge render={suggestedAction.render} />
                       {suggestedAction.label}
                     </span>
                   </Button>
@@ -169,7 +173,7 @@ export function MultimodalInput({
               event.preventDefault();
 
               if (isLoading) {
-                toast.error(site.messages.waitForResponse);
+                toast.error(site.chat.messages.waitForResponse);
               } else {
                 submitForm();
               }

@@ -1,15 +1,18 @@
 import { Toaster } from "sonner";
 
-import Navigation from "@/app/_components/layouts/Navigation";
+import Navigation from "@/app/_components/layouts/Navigation"
+import { loadSite } from "@/lib/site/load";
 
 export default function ChatLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const { brand } = loadSite()
+
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-[#0A1628]">
-      <Navigation />
+      <Navigation logoPrefix={brand.logoPrefix} logoAccent={brand.logoAccent} />
       <div className="pt-16">{children}</div>
       {/* Without this, every toast.error() in the chat UI — including the
           rate-limit notice — is a silent no-op. */}

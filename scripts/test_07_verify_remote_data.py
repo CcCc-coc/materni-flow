@@ -7,7 +7,7 @@ This is the confirmation step after ``test_06_sync_data_to_remote_db.py``. That
 script reports what it *believes* it wrote; this one goes back to the remote
 database and checks what is actually there.
 
-Remote tables carry the project prefix set in ``config/dataset.toml`` (local ``widget``
+Remote tables carry the project prefix set in ``data/dataset.toml`` (local ``widget``
 -> remote ``acme_widget``), so each local table is compared against its prefixed
 counterpart. Tables belonging to other projects are ignored.
 
