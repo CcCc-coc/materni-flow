@@ -40,6 +40,10 @@ class LlmProviderEnum(BetterStrEnum):
 #:     error, check the provider's current model list before debugging anything
 #:     else, and override per-environment with ``LLM_MODEL_ID`` in ``.env`` rather
 #:     than editing this dict for a one-off.
+#:
+#: ``openai`` is the default provider (see ``Config.llm_provider``): it needs one
+#: API key and no cloud account, which is the lowest barrier for someone opening
+#: this repo for the first time.
 DEFAULT_MODEL_ID = {
     # Nova Lite: cheap, fast, and good enough for the SQL-and-summarize work this
     # agent does. Step up to us.amazon.nova-pro-v1:0 if answer quality is the issue.

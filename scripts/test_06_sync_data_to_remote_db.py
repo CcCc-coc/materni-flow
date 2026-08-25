@@ -42,7 +42,7 @@ def main():
         print(f"  {table_name}: {row_count:,} rows")
     print(f"  total: {sum(result['tables'].values()):,} rows")
     print("=" * 68)
-    print("Now verify with: .venv/bin/python scripts/test_07_verify_remote_data.py")
+    print("Now verify with: mise run verify-db")
 
 
 if __name__ == "__main__":

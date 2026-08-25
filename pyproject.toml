@@ -32,10 +32,17 @@ dependencies = [
 
 [project.optional-dependencies]
 
-# LLM provider SDKs, one extra per non-default LLM_PROVIDER value.
-# "bedrock" (the default) needs nothing extra: boto3 is already a core dependency.
-# Install only the one you use, e.g. `uv sync --extra anthropic`.
-# Note `mise run inst-python-deps` runs `uv sync --all-extras`, which installs all of them.
+# LLM provider SDKs, one extra per LLM_PROVIDER value other than "bedrock"
+# (bedrock needs nothing extra: boto3 is already a core dependency).
+#
+# In practice all of them get installed: `mise run inst-python-deps` runs
+# `uv sync --all-extras`, and `mise run export` writes requirements.txt with
+# --all-extras, which is what Vercel installs. That is deliberate -- it keeps
+# LLM_PROVIDER an environment variable rather than a build-time decision, so a
+# deployment can switch models without changing how it was built.
+#
+# They are still separate extras so someone who wants a minimal install can
+# take just one, e.g. `uv sync --extra openai`.
 anthropic = [
     "strands-agents[anthropic]>=1.50.2,<2.0.0",         # LLM_PROVIDER=anthropic
     "anthropic>=0.121.0,<1.0.0",

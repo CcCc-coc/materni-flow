@@ -188,7 +188,9 @@ class Config:
 
     Attributes:
         llm_provider: Which LLM backend to talk to. One of :class:`LlmProviderEnum`.
-            Defaults to ``bedrock``.
+            Defaults to ``openai``, which needs only an ``OPENAI_API_KEY``.
+            Bedrock needs an AWS account, and not everyone picking this repo up
+            has one.
         model_id: Model identifier for the selected provider. When None, the
             provider's default from ``DEFAULT_MODEL_ID`` is filled in.
         max_tokens: Maximum tokens the model may generate in one response.
@@ -217,7 +219,7 @@ class Config:
     """
 
     # --- LLM ---
-    llm_provider: str = dataclasses.field(default=LlmProviderEnum.BEDROCK.value)
+    llm_provider: str = dataclasses.field(default=LlmProviderEnum.OPENAI.value)
     model_id: str | None = dataclasses.field(default=None)
     max_tokens: int = dataclasses.field(default=8192)
     # --- AWS (used by the bedrock provider) ---

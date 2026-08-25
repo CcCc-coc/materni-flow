@@ -14,9 +14,14 @@ from agent_app.config.conf_00_def import Config
 
 class TestConfig:
     def test_defaults(self):
-        """A bare Config() fills in the selected provider's default model."""
+        """A bare Config() fills in the selected provider's default model.
+
+        The default is ``openai`` rather than ``bedrock`` on purpose: it needs
+        one API key and no cloud account, which is the lowest barrier for
+        someone opening this repo for the first time.
+        """
         config = Config()
-        assert config.llm_provider == "bedrock"
+        assert config.llm_provider == "openai"
         assert config.model_id  # filled in by __post_init__
 
     def test_unknown_provider(self):
@@ -29,16 +34,16 @@ class TestConfig:
         assert Config(llm_provider="anthropic", anthropic_api_key="k").llm_api_key == "k"
         assert Config(llm_provider="openai", openai_api_key="k").llm_api_key == "k"
         assert Config(llm_provider="google", google_api_key="k").llm_api_key == "k"
-        assert Config().llm_api_key is None
+        assert Config(llm_provider="bedrock").llm_api_key is None
 
     def test_validate(self):
         """validate() checks only the selected provider's credential."""
-        Config(aws_region="us-east-1").validate()  # bedrock needs a region
-        Config(llm_provider="openai", openai_api_key="k").validate()
+        Config(openai_api_key="k").validate()  # the default provider
+        Config(llm_provider="bedrock", aws_region="us-east-1").validate()
         with pytest.raises(ValueError):
-            Config().validate()  # bedrock, no region
+            Config().validate()  # openai, no key
         with pytest.raises(ValueError):
-            Config(llm_provider="openai").validate()  # no key
+            Config(llm_provider="bedrock").validate()  # no region
 
     def test_factories(self):
         """Each factory returns a usable Config."""

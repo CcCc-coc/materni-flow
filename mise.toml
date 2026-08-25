@@ -43,8 +43,14 @@ description = "🔎 Confirm the remote schema matches local, table by table"
 run = ".venv/bin/python scripts/test_07_verify_remote_data.py"
 
 [tasks.export]
-description = "💾 Export Core Python dependencies to requirements.txt via uv"
-run = "uv export --format requirements-txt --no-dev --no-emit-project --no-hashes --no-annotate --no-emit-package pywin32 --no-emit-package colorama --no-emit-package tzdata | sed 's/ ; platform_machine ==.*or.*//' > requirements.txt"
+description = "💾 Export Python dependencies (all providers) to requirements.txt"
+# --all-extras on purpose: requirements.txt is what the Vercel Python runtime
+# installs, and a deployment that shipped only one provider's SDK would make
+# LLM_PROVIDER a build-time decision instead of an environment variable. Every
+# provider SDK is pure Python and small next to boto3, so shipping all four
+# costs little and lets a deployment switch models by editing one dashboard
+# variable and redeploying.
+run = "uv export --format requirements-txt --all-extras --no-dev --no-emit-project --no-hashes --no-annotate --no-emit-package pywin32 --no-emit-package colorama --no-emit-package tzdata | sed 's/ ; platform_machine ==.*or.*//' > requirements.txt"
 
 [tasks.check]
 description = "🔍 Check the repo agrees with data/dataset.toml (run after a dataset swap)"
