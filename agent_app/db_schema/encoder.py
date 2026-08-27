@@ -1,14 +1,17 @@
 # -*- coding: utf-8 -*-
 
 """
-This module provides utilities for mapping SQLAlchemy type objects to simplified
-type representations suitable for LLM consumption. It handles both generic SQLAlchemy
-types (e.g., String, Integer) and SQL standard types (e.g., VARCHAR, BIGINT).
+Encoding: the models in :mod:`.model` -> the compact string the agent is shown.
+
+Pure string formatting, no database access. The format trades SQL DDL's verbosity
+for a fraction of the tokens while keeping every fact the agent needs in order to
+write a correct query: names, types, nullability, keys, and which column points
+at which.
 """
 
 import textwrap
 
-from ..constants import ObjectTypeEnum, TableTypeEnum, LLMColumnConstraintEnum
+from ..constants import LLMColumnConstraintEnum
 
 from .model import (
     ColumnInfo,
@@ -85,13 +88,6 @@ def encode_column_info(
     return text
 
 
-TABLE_TYPE_NAME_MAPPING: dict[str, str] = {
-    ObjectTypeEnum.TABLE.value: TableTypeEnum.TABLE.value,
-    ObjectTypeEnum.VIEW.value: TableTypeEnum.VIEW.value,
-    ObjectTypeEnum.MATERIALIZED_VIEW.value: TableTypeEnum.MATERIALIZED_VIEW.value,
-}
-
-
 def encode_table_info(
     table_info: TableInfo,
 ) -> str:
@@ -145,7 +141,7 @@ def encode_table_info(
         col_str = encode_column_info(table_info, col)
         columns.append(f"{TAB}{col_str},")
     columns_def = "\n".join(columns)
-    text = f"{TABLE_TYPE_NAME_MAPPING[table_info.object_type]} {table_info.name}(\n{columns_def}\n)"
+    text = f"{table_info.table_type.value} {table_info.name}(\n{columns_def}\n)"
     return text
 
 
@@ -211,7 +207,7 @@ def encode_schema_info(
         table_str = encode_table_info(table)
         tables.append(textwrap.indent(table_str, prefix=TAB))
     tables_def = "\n".join(tables)
-    if schema_info.name:  # pragma: no cover
+    if schema_info.name:
         schema_name = schema_info.name
     else:
         schema_name = "default"

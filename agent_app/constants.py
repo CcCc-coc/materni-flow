@@ -92,25 +92,17 @@ class LLMTypeEnum(BetterStrEnum):
     NULL = "null"  # Null Type, represents no value
 
 
-class ObjectTypeEnum(BetterStrEnum):
-    """
-    Database object types for categorizing different database entities.
-    Used in schema introspection and metadata processing to identify object types.
-    """
-
-    FOREIGN_KEY = "foreign key"
-    COLUMN = "column"
-    TABLE = "table"
-    VIEW = "view"
-    MATERIALIZED_VIEW = "materialized view"
-    SCHEMA = "schema"
-    DATABASE = "database"
-
-
 class TableTypeEnum(BetterStrEnum):
     """
-    Database table types for distinguishing between tables, views, and materialized views.
-    Used in schema introspection and metadata categorization for proper object identification.
+    What kind of table-like object a reflected relation is.
+
+    The only distinction the schema encoder draws, and the values are the labels
+    the LLM actually sees -- ``Table Product(...)``, ``View SalesReport(...)``.
+
+    There used to be a second, broader ``ObjectTypeEnum`` (column, schema,
+    database, foreign key) alongside this one, plus a dict translating between
+    the two. Nothing read the extra members: every model knew its own kind
+    statically, so the field only ever held the value its class already implied.
     """
 
     TABLE = "Table"

@@ -207,9 +207,20 @@ the build too, since the check script never parses the TOML's icon fields.
 
 **db_schema/ Directory:**
 
+Three steps in one direction — reflect, model, encode — and nothing flows back.
+
 | File | What It Does | When to Modify |
 |------|--------------|----------------|
-| (multiple files) | Extracts and encodes database schema in LLM-optimized format | When changing schema representation format or adding support for new database types. |
+| `extractor.py` | SQLAlchemy metadata -> the models. Owns `SQLALCHEMY_TYPE_MAPPING`, the compression from SQL types to the LLM vocabulary | When a reflected type comes out as a raw dialect spelling instead of a compact one. |
+| `model.py` | The intermediate representation | **Only together with the encoder line that emits the new field.** Every field here has a reader; extracting one nobody encodes reads as a promise the output does not keep. |
+| `encoder.py` | The models -> the compact string the agent is shown. Pure formatting, no database access | When changing how the schema is presented to the LLM. Re-run `scripts/test_04_print_database_schema.py` and eyeball the diff — this string is the agent's entire picture of the database. |
+| `api.py` | Public re-exports | When adding a function the rest of the app calls. |
+
+Scoped to what this app runs on. `DbTypeEnum` lists the two engines with code
+paths (SQLite seed, PostgreSQL serving) rather than the ten it once advertised —
+a menu of unimplemented options reads as support that does not exist. The type
+mapping is the deliberate exception: a missing key degrades to the dialect's own
+spelling rather than failing, so breadth there costs nothing.
 
 ### Class Hierarchy
 
@@ -340,13 +351,27 @@ so a placeholder there shadows a working local profile.
 tests_python/
 ├── config/
 │   └── test_config_conf_00_def.py  # Tests for Config class
+├── db_schema/
+│   ├── test_db_schema_encoder.py   # Tests for encoder.py
+│   └── test_db_schema_extractor.py # Tests for extractor.py
 ├── one/
 │   ├── test_one_one_00_main.py     # Tests for One class
 │   ├── test_one_one_01_config.py   # Tests for ConfigMixin
 │   └── test_one_one_02_db.py       # Tests for DbMixin
 ├── test_api.py                     # Tests for api.py
+├── test_source_code.py             # Tests for source_code.py (the TDD lesson)
 └── test_utils.py                   # Tests for utilities
 ```
+
+**No test opens a network connection.** The `db_schema` tests build
+`sa.MetaData` by hand and reflect through in-memory SQLite, which is enough
+because the extractor only ever touches SQLAlchemy objects. What genuinely needs
+PostgreSQL — `search_path` pinning, the remote sync — is exercised by the
+numbered scripts in `scripts/`, not by pytest.
+
+**Use a fictional domain in test fixtures** (`acme`, `widget`, `part`), never
+this dataset's real table names. A test asserting on `loan` silently becomes a
+lie the next time the dataset is swapped.
 
 **Node.js Tests:**
 - Location: `tests_node/`
