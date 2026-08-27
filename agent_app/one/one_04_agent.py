@@ -195,7 +195,7 @@ class AgentMixin:
             Only SELECT queries are supported. Use get_database_schema first to
             understand available tables and columns before constructing queries.
         """
-        return self.execute_and_print_result(sql=sql)
+        return self.execute_sql_query(sql=sql)
 
     @tool(
         name="write_debug_report",

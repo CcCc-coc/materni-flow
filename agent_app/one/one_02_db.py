@@ -13,7 +13,8 @@ from ..project_config import project_config
 from ..db_schema.api import new_schema_info
 from ..db_schema.api import new_database_info
 from ..db_schema.api import encode_database_info
-from ..sql_utils import execute_and_print_result
+from ..sql_utils import new_sqlite_engine
+from ..sql_utils import execute_sql_query
 
 if T.TYPE_CHECKING:  # pragma: no cover
     from .one_00_main import One
@@ -25,31 +26,12 @@ class DbMixin:
     @cached_property
     def local_sqlite_engine(self: "One") -> sa.Engine:
         """
-        Create a SQLite engine connected to the local database file.
+        The seed database: the dataset as shipped, and the source the sync reads.
 
-        The two event listeners are what make the agent's read-only guarantee
-        hold on SQLite. ``execute_and_print_result`` protects the data by always
-        rolling back, which relies on a transaction actually being open -- and
-        pysqlite decides that by sniffing the statement's first keyword. It does
-        not recognise ``WITH``, so a CTE-prefixed write runs in autocommit and
-        lands on disk with nothing to roll back.
-
-        Turning ``isolation_level`` off stops the driver guessing, and emitting
-        ``BEGIN`` ourselves means every statement -- CTE-prefixed writes and DDL
-        included -- is inside a transaction that the caller can discard. This is
-        the recipe from SQLAlchemy's own pysqlite notes.
+        This mixin picks *which* database; :func:`~agent_app.sql_utils.new_sqlite_engine`
+        knows how to open one so that the agent's read-only guarantee holds on it.
         """
-        engine = sa.create_engine(f"sqlite:///{path_enum.path_sqlite_db}")
-
-        @sa.event.listens_for(engine, "connect")
-        def _disable_pysqlite_implicit_begin(dbapi_connection, _):
-            dbapi_connection.isolation_level = None
-
-        @sa.event.listens_for(engine, "begin")
-        def _emit_explicit_begin(connection):
-            connection.exec_driver_sql("BEGIN")
-
-        return engine
+        return new_sqlite_engine(str(path_enum.path_sqlite_db))
 
     def _new_postgres_engine(self: "One", schema_name: str | None = None) -> sa.Engine:
         """
@@ -190,9 +172,9 @@ class DbMixin:
             )
         return encoded
 
-    def execute_and_print_result(self: "One", sql: str) -> str:
+    def execute_sql_query(self: "One", sql: str) -> str:
         """Execute a SELECT query and return results as a Markdown table."""
-        return execute_and_print_result(
+        return execute_sql_query(
             engine=self.engine,
             sql=sql,
         )

@@ -1,16 +1,48 @@
 # -*- coding: utf-8 -*-
 
-import typing as T
-import sys
+"""
+Small helpers with no project dependencies.
+
+Only what a second module needs. A helper with one caller belongs next to that
+caller, where it can be read without a jump.
+"""
+
 import re
-import textwrap
+import sys
+from functools import lru_cache
 
 
 def debug(s: str):
     """
-    Print debug message to stderr (visible in server logs, not in response).
+    Print a debug message to stderr.
+
+    stderr rather than stdout on purpose: on Vercel stdout is part of the
+    response stream, so anything printed there can reach the browser. stderr
+    only ever reaches the server log.
     """
     print(s, file=sys.stderr)
+
+
+#: Characters that make a pattern a regex rather than a shell-style wildcard.
+#: ``*`` is excluded because it is legal in both and means the same thing.
+_REGEX_METACHARACTERS = r"[.+?^${}()|[\]\\]"
+
+
+@lru_cache(maxsize=256)
+def _compile_pattern(pattern: str) -> re.Pattern:
+    """
+    Compile one include/exclude pattern.
+
+    Cached because schema reflection matches the same handful of patterns once
+    per table, and compiling is the expensive half of :func:`match`.
+    """
+    if re.search(_REGEX_METACHARACTERS, pattern.replace("*", "")):
+        # Already a regex, use it as written.
+        regex = pattern
+    else:
+        # A wildcard pattern: escape everything, then put `*` back as `.*`.
+        regex = re.escape(pattern).replace(r"\*", ".*")
+    return re.compile(regex, re.IGNORECASE)
 
 
 def match(
@@ -19,116 +51,43 @@ def match(
     exclude: list[str],
 ) -> bool:
     """
-    Match a name against include and exclude lists using wildcard or regex patterns.
+    Decide whether a name survives an include/exclude filter.
 
-    The include/exclude pattern system works like a two-stage filter where name
-    must pass both inclusion and exclusion criteria to be selected for processing.
+    Used to keep a table out of the schema the agent is shown without dropping
+    it from the database.
 
-    Pattern Types:
+    Patterns are shell-style wildcards (``"widget*"``, ``"*_tmp"``) unless they
+    contain regex metacharacters, in which case they are treated as regexes
+    (``"^part_\\d{4}$"``). Matching is case-insensitive and must cover the whole
+    name.
 
-    - Wildcard patterns: Use * to match any characters (e.g., ``"EMPLOYEE*"``, ``"*_TEMP"``)
-    - Regex patterns: Automatically detected when regex metacharacters are present
-      (e.g., ``"^EMP.*"``, ``".*_TABLE$"``, ``"[A-Z]+_\\d+"``)
+    The rules, in the order they are applied:
 
-    Matching Rules:
+    1. Matching any ``exclude`` pattern rejects the name outright.
+    2. An empty ``include`` list accepts everything else.
+    3. Otherwise the name must match at least one ``include`` pattern.
 
-    - Default inclusion: When include list is empty, all names are included by default
-    - Include matching: When include patterns exist, a name must match ANY include
-      pattern (logical OR) to be considered
-    - Exclude override: If a name matches ANY exclude pattern, it's rejected
-      regardless of include matches
-    - Case insensitive: All pattern matching is case-insensitive
-
-    :param name: The name to match (e.g., table name, column name)
-    :param include: List of patterns to include. Empty list means include all.
-    :param exclude: List of patterns to exclude. Takes precedence over include.
-
-    Returns:
-        bool: True if the name matches the criteria, False otherwise.
+    :param name: The name to test, e.g. a table name.
+    :param include: Patterns to keep. Empty means keep all.
+    :param exclude: Patterns to drop. Takes precedence over ``include``.
 
     Examples:
-        >>> # Include all employee tables
-        >>> match("EMPLOYEES", ["EMPLOYEE*"], [])
+        >>> match("widget", ["widget*"], [])
         True
-        >>> match("EMPLOYEE_HISTORY", ["EMPLOYEE*"], [])
-        True
-        >>> match("MANAGERS", ["EMPLOYEE*"], [])
+        >>> match("widget_tmp", [], ["*_tmp"])
         False
-
-        >>> # Include all, but exclude temporary tables
-        >>> match("USERS", [], ["*_TEMP", "*_TMP"])
-        True
-        >>> match("USERS_TEMP", [], ["*_TEMP", "*_TMP"])
-        False
-
-        >>> # Include specific tables with regex
-        >>> match("EMP_2023", ["^EMP_\\d{4}$"], [])
-        True
-        >>> match("EMP_ARCHIVE", ["^EMP_\\d{4}$"], [])
-        False
-
-        >>> # Complex filtering: include employee/manager tables, exclude history
-        >>> match("EMPLOYEE_CURRENT", ["EMPLOYEE*", "MANAGER*"], ["*_HISTORY"])
-        True
-        >>> match("EMPLOYEE_HISTORY", ["EMPLOYEE*", "MANAGER*"], ["*_HISTORY"])
-        False
-
-        >>> # Case insensitive matching
-        >>> match("employees", ["EMPLOYEES"], [])
-        True
-        >>> match("EMPLOYEES", ["employees"], [])
+        >>> match("part_2023", [r"^part_\\d{4}$"], [])
         True
     """
-
-    # Convert wildcard patterns to regex patterns
-    def pattern_to_regex(pattern: str) -> T.Pattern:
-        # Check if pattern contains regex metacharacters (excluding *)
-        # If it does, treat it as a regex pattern, otherwise treat * as wildcard
-        regex_chars = r"[.+?^${}()|[\]\\]"
-        has_regex = bool(re.search(regex_chars, pattern.replace("*", "")))
-
-        if has_regex:
-            # It's a regex pattern, compile as-is
-            regex_pattern = pattern
-        else:
-            # It's a wildcard pattern, escape everything except *
-            regex_pattern = re.escape(pattern)
-            # Replace escaped \* with .* for wildcard matching
-            regex_pattern = regex_pattern.replace(r"\*", ".*")
-
-        # Compile with case-insensitive flag, use fullmatch to match entire string
-        compiled = re.compile(regex_pattern, re.IGNORECASE)
-        return compiled
-
-    # Convert all patterns to compiled regex objects
-    include_patterns = [pattern_to_regex(p) for p in include]
-    exclude_patterns = [pattern_to_regex(p) for p in exclude]
-
-    # Check exclude patterns first - if any match, return False
-    for pattern in exclude_patterns:
-        if pattern.fullmatch(name):
+    for pattern in exclude:
+        if _compile_pattern(pattern).fullmatch(name):
             return False
 
-    # If no include patterns, everything is included by default
-    if not include_patterns:
+    if not include:
         return True
 
-    # If include patterns exist, name must match at least one
-    for pattern in include_patterns:
-        if pattern.fullmatch(name):
+    for pattern in include:
+        if _compile_pattern(pattern).fullmatch(name):
             return True
 
     return False
-
-
-def dedent(text: str) -> str:
-    """
-    Dedent a string by removing common leading whitespace.
-
-    This is useful for cleaning up multi-line strings that may have inconsistent
-    indentation levels.
-
-    :param text: The input string to dedent.
-    :return: A dedented version of the input string.
-    """
-    return textwrap.dedent(text).strip()

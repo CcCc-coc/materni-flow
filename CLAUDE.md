@@ -174,8 +174,9 @@ the build too, since the check script never parses the TOML's icon fields.
 | `paths.py` | Defines all file/directory paths as `PathEnum`, including the system prompt | When adding new files (prompts, data files, output paths). Add path here first, then use `path_enum.your_new_path` everywhere. Paths are source-tree facts, so they are never named in config. Never add one speculatively: an entry with no reader rots into a pointer at a directory that no longer exists. |
 | `runtime.py` | Detects runtime environment (local vs vercel) | When adding a new deployment target (e.g., AWS Lambda). Add new enum value and detection logic. |
 | `constants.py` | Shared enums: the LLM provider list, and the schema-encoding vocabulary | When adding an enum a *second* module needs. A constant with one reader belongs next to that reader, not here. |
+| `utils.py` | Helpers with no project dependencies: `debug` (stderr, never stdout) and `match` (include/exclude patterns) | Same rule as `constants.py` — only what a *second* module needs. |
 | `project_config.py` | Typed reader over `data/dataset.toml`; also owns the `project_name` derivations (`_snake`, `_slug`, `prefix_table_name`) | When Python needs a new dataset value. If it varies by environment it belongs in `config/conf_00_def.py`; if only the frontend reads it, `data/site.toml`. |
-| `sql_utils.py` | Pure functions for SQL execution and formatting | When changing how SQL results are formatted or adding new query validation rules. |
+| `sql_utils.py` | Pure functions for SQL execution and formatting. Owns one promise: a query run through `execute_sql_query` cannot change the database | When changing how SQL results are formatted or adding new query validation rules. Every failure is *returned as text*, never raised — the caller is an LLM, and a traceback ends its turn. |
 | `ai_sdk_adapter.py` | Converts Vercel AI SDK messages <-> Strands Agent messages, and generates the SSE event stream back to the browser | When the frontend message format changes. **Not** when switching LLM provider — this file is provider-agnostic and must stay that way; provider code belongs in `one_04_agent.py`. |
 | `vendor/vercel_ai_sdk.py` | Pydantic data model for the AI SDK request body. Vendored from `vercel-ai-sdk-mate`, deliberately lenient so a new AI SDK release cannot break request parsing | When the frontend starts sending a message part type the backend needs to read: add the model class and one line to `PART_MODEL_BY_TYPE`. Keep it a pure data model — no provider logic. |
 
@@ -234,7 +235,7 @@ One (one_00_main.py)
 │   ├── self.remote_postgres_engine -> PostgreSQL (NeonDB)
 │   ├── self.engine                -> Auto-selects based on runtime
 │   ├── self.database_schema_str   -> LLM-optimized schema string
-│   └── self.execute_and_print_result(sql) -> Markdown table
+│   └── self.execute_sql_query(sql)        -> Markdown table
 │
 ├── Boto3Mixin (one_03_boto3.py)
 │   ├── self.boto_ses              -> boto3.Session
@@ -265,7 +266,8 @@ does.
 **Pure Functions (sql_utils.py):**
 - `format_result(result)` - Format SQL result as Markdown table
 - `ensure_valid_select_query(query)` - Validate SELECT statement
-- `execute_and_print_result(engine, sql)` - Execute query and return Markdown
+- `execute_sql_query(engine, sql)` - Execute a read-only query, return Markdown
+- `new_sqlite_engine(path)` - Open SQLite so that the rollback guarantee holds
 
 ### Key Singletons
 

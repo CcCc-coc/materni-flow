@@ -2,12 +2,10 @@
 # for more info: https://coverage.readthedocs.io/en/latest/config.html
 [run]
 omit =
-    learn_smb_lending_lens/docs/*
-    learn_smb_lending_lens/tests/*
-    learn_smb_lending_lens/_version.py
-    learn_smb_lending_lens/paths.py
-    learn_smb_lending_lens/ai_sdk_adapter.py
-    learn_smb_lending_lens/multi_round_bedrock_runtime_chat_manager.py
+    # Test helpers, not code under test.
+    agent_app/tests/*
+    # Third-party code copied in, not written here.
+    agent_app/vendor/*
 
 [report]
 # Regexes for lines to exclude from consideration

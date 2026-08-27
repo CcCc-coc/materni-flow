@@ -7,9 +7,9 @@ class TestDbMixin:
     def test_database_schema_str(self):
         _ = one.database_schema_str
 
-    def test_execute_and_print_result(self):
+    def test_execute_sql_query(self):
         sql = "SELECT 1;"
-        _ = one.execute_and_print_result(sql)
+        _ = one.execute_sql_query(sql)
 
 
 if __name__ == "__main__":

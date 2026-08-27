@@ -72,7 +72,7 @@ def tool_execute_sql_query(self, sql: str) -> str:
     Returns:
         A Markdown-formatted table with query results.
     """
-    return self.execute_and_print_result(sql=sql)
+    return self.execute_sql_query(sql=sql)
 ```
 
 **各部分说明：**

@@ -373,12 +373,12 @@ def database_schema_str(self) -> str:
 
 **用途：** AI Agent 调用 `get_database_schema` 工具时，返回这个字符串。AI 看到它就知道数据库有哪些表、哪些列。
 
-### 2. execute_and_print_result — 执行 SQL 并格式化结果
+### 2. execute_sql_query — 执行 SQL 并格式化结果
 
 ```python
-def execute_and_print_result(self, sql: str) -> str:
+def execute_sql_query(self, sql: str) -> str:
     """执行 SELECT 查询，返回 Markdown 表格"""
-    return execute_and_print_result(engine=self.engine, sql=sql)
+    return execute_sql_query(engine=self.engine, sql=sql)
 ```
 
 这个函数做三件事：
@@ -421,7 +421,7 @@ AI 看到 Schema，生成 SQL:
            ↓
 AI Agent 调用 execute_sql_query 工具
            ↓
-one.execute_and_print_result(sql) 被调用
+one.execute_sql_query(sql) 被调用
            ↓
 执行 SQL，结果格式化为 Markdown 表格
            ↓
@@ -442,10 +442,10 @@ class TestDbMixin:
         _ = one.database_schema_str
         # 能跑通就说明 Schema 提取成功
 
-    def test_execute_and_print_result(self):
+    def test_execute_sql_query(self):
         """测试 SQL 执行"""
         sql = "SELECT 1;"
-        _ = one.execute_and_print_result(sql)
+        _ = one.execute_sql_query(sql)
         # 能跑通就说明数据库连接和查询都正常
 ```
 
@@ -465,7 +465,7 @@ mise run test-python
 | `local_sqlite_engine` | 同上 | 本地 SQLite 连接 |
 | `remote_postgres_engine` | 同上 | 远程 PostgreSQL 连接 |
 | `database_schema_str` | 同上 | 获取 LLM 友好的 Schema 字符串 |
-| `execute_and_print_result` | 同上 | 执行 SQL 返回 Markdown 表格 |
+| `execute_sql_query` | 同上 | 执行 SQL 返回 Markdown 表格 |
 | Model | `db_schema/model.py` | 定义 Schema 数据结构 |
 | Extractor | `db_schema/extractor.py` | 从数据库提取元数据 |
 | Encoder | `db_schema/encoder.py` | 把元数据编码成紧凑字符串 |
@@ -475,6 +475,6 @@ mise run test-python
 1. **连接数据库** → Engine
 2. **提取结构** → Model + Extractor
 3. **压缩给 AI** → Encoder
-4. **执行查询** → execute_and_print_result
+4. **执行查询** → execute_sql_query
 
 这套系统让 AI Agent 能够"看懂"数据库，然后自主生成并执行 SQL 查询。

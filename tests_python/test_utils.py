@@ -1,6 +1,15 @@
 # -*- coding: utf-8 -*-
 
-from agent_app.utils import match
+from agent_app.utils import debug, match
+
+
+class TestDebug:
+    def test_writes_to_stderr_not_stdout(self, capsys):
+        """On Vercel stdout is the response stream; a debug line must not land there."""
+        debug("hello")
+        captured = capsys.readouterr()
+        assert captured.err == "hello\n"
+        assert captured.out == ""
 
 
 class TestMatch:
