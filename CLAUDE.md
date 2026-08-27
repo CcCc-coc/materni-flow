@@ -74,7 +74,7 @@ file:
 
 | | `.env.defaults` | `.env` |
 |---|---|---|
-| Holds | `SCHEMA_NAME`, LLM provider, region, quota caps | API keys, AWS keys, DB host/user/password/name |
+| Holds | `SCHEMA_NAME`, LLM provider/model, region, DB port, the whole quota block | API keys, AWS keys, DB host/user/password/name |
 | Secret | No | **Yes** |
 | In Git | **Yes** | No |
 | AI may read | Yes | **No** — `deny` in `.claude/settings.json` |
