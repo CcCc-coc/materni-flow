@@ -15,8 +15,9 @@ from agent_app.api import one  # Main singleton instance
 ### Directory Structure
 
 ```
-data/                        # EVERYTHING a dataset swap rewrites, and nothing else.
-├── dataset.toml             #   The handful of values Python reads.
+data/                        # EVERY AUTHORED ARTIFACT a dataset swap rewrites.
+│                            #   Content only -- the one config value a swap
+│                            #   changes (SCHEMA_NAME) is in .env.defaults.
 ├── site.toml                #   Every sentence the frontend says, incl. the 12
 │                            #   kickstart questions and the 4 capability cards.
 ├── business-context.md      #   The long-form explainer behind the home page.
@@ -26,7 +27,6 @@ data/                        # EVERYTHING a dataset swap rewrites, and nothing e
 agent_app/                   # Python package. Name is deliberately generic and
 ├── api.py                   #   never changes when the dataset changes.
 ├── paths.py
-├── project_config.py        # Typed reader over data/dataset.toml
 ├── runtime.py
 ├── constants.py
 ├── sql_utils.py
@@ -68,33 +68,55 @@ components/
 
 ### The Two Kinds of "Config"
 
-Two things in this repo are called config. They change for different reasons and
-must not be mixed:
+Two files feed `agent_app/config/`. **The line between them is whether the value
+is a secret**, because that is what decides who — and which AI — may open the
+file:
 
-| | `data/` | `.env` → `agent_app/config/` |
+| | `.env.defaults` | `.env` |
 |---|---|---|
-| Holds | Project identity, business copy, table order | API keys, DB credentials, LLM provider |
-| Differs per | **dataset** | **machine** |
-| In Git | Yes | No |
-| Read by | Next.js *and* Python | Python only |
+| Holds | `SCHEMA_NAME`, LLM provider, region, quota caps | API keys, AWS keys, DB host/user/password/name |
+| Secret | No | **Yes** |
+| In Git | **Yes** | No |
+| AI may read | Yes | **No** — `deny` in `.claude/settings.json` |
+| AI may edit | Yes — this is what a dataset swap changes | **No** |
+| Precedence | Loaded second; fills in the gaps | Loaded **first**; wins |
 
-Rotating an API key must not touch the project's name; pointing the repo at a
-new dataset must not touch anyone's credentials.
+Rotating an API key must not touch the schema name; pointing the repo at a new
+dataset must not touch anyone's credentials.
 
-**The test for which layer a value belongs to: does it vary by environment?**
-`agent_app/project_config.py` reads `data/dataset.toml` and nothing in it
-varies by environment. Local, Vercel, and CI all serve the same dataset, so they
-all get the same answer. `agent_app/config/conf_00_def.py` holds everything that
-*does* differ per machine. A value must not appear in both, not even with an
-environment variable as an "escape hatch": that gives it two homes and
-eventually two answers. `project_name` used to be duplicated that way and is
-now only in `project_config`.
+There is deliberately **no `.env.defaults.example`**. The file is committed, so
+it *is* the reference. A gitignored-plus-template arrangement would put
+`SCHEMA_NAME` outside version control, make every clone re-enter it, and hide an
+AI's swap edits from review — which is the opposite of the point.
 
-**`data/` is split by consumer, not by topic.** The frontend and the backend
-read disjoint sets of keys, so one shared file was two unrelated files stapled
-together. `site.toml` is read only by Next.js, `dataset.toml` only by Python.
-Before adding a value, ask which runtime consumes it; if the answer is "both",
-say so out loud, because today nothing does.
+`data/` is the third leg and holds no config at all: only authored content
+(copy, prompt, explainer, seed).
+
+**The test for which file a value belongs in: is it a secret?** Not "does it
+vary by environment" — that used to be the question, when the split was
+`data/dataset.toml` vs `.env`, and it produced a whole TOML file plus a reader
+module for what ended up being one string. The split that earns its keep is the
+one that decides *who may touch the file*:
+
+- `.env` holds credentials. It is gitignored, and `.claude/settings.json` denies
+  an AI both `Read` and `Edit` on it.
+- `.env.defaults` holds everything that is not a credential, including the
+  dataset's `SCHEMA_NAME`. It is committed, so a change shows up in `git diff`
+  like any other, and an AI doing a dataset swap may edit it freely.
+
+`.env` is loaded first and wins, so any committed default can be overridden on
+one machine by repeating the key in `.env` — that is how a checkout points at a
+staging schema without editing a committed file.
+
+A value still must not have two homes *within* a layer. `project_name` was once
+duplicated between `Config` and the dataset config and is gone entirely;
+`schemaName` and `project.name` were two names for one thing and are now one.
+
+**`data/` is content, not config.** Everything in it is authored prose, copy, or
+data: the frontend's strings, the explainer, the system prompt, the SQLite seed.
+Nothing in `agent_app/` parses a config file out of it. Before adding something
+there, ask whether a human wrote it as content; if it is a setting, it goes in
+`.env.defaults`.
 
 **Why the site copy is TOML rather than TypeScript.** It used to be
 `config/site.ts`, and the argument for that was real: the compiler checked the
@@ -143,15 +165,15 @@ in a component.
 | The 4 capability cards (home page *and* agent page) | `[[capabilities]]` in `data/site.toml` |
 | The 12 kickstart questions, with their render quota | `[[chat.suggestedActions]]` in `data/site.toml` |
 | The long-form "what problem does this solve" explainer | `data/business-context.md` |
-| Table prefix, DB display name, table order | `data/dataset.toml` |
+| The PostgreSQL schema name | `SCHEMA_NAME` in `.env.defaults` |
 | Agent's domain knowledge | `data/system-prompt.md` |
 | The data itself | `data/data.sqlite.example` |
 | Dataset-specific write tools | `@tool` methods in `one_04_agent.py` |
 
 The only entry not in `data/` is the last one, because a write tool is code.
 
-Run `mise run check` afterwards. It fails on a `tableInsertOrder` that
-disagrees with the SQLite file, a prompt that queries a nonexistent table,
+Run `mise run check` afterwards. It fails on a seed whose foreign keys form a
+cycle (or that has no tables at all), a prompt that queries a nonexistent table,
 missing content files, and a kickstart question whose `render` disagrees with
 its own wording. Right after a swap also run it with the outgoing domain's
 vocabulary, which is a one-off argument rather than committed state:
@@ -175,7 +197,6 @@ the build too, since the check script never parses the TOML's icon fields.
 | `runtime.py` | Detects runtime environment (local vs vercel) | When adding a new deployment target (e.g., AWS Lambda). Add new enum value and detection logic. |
 | `constants.py` | Shared enums: the LLM provider list, and the schema-encoding vocabulary | When adding an enum a *second* module needs. A constant with one reader belongs next to that reader, not here. |
 | `utils.py` | Helpers with no project dependencies: `debug` (stderr, never stdout) and `match` (include/exclude patterns) | Same rule as `constants.py` — only what a *second* module needs. |
-| `project_config.py` | Typed reader over `data/dataset.toml`; also owns the `project_name` derivations (`_snake`, `_slug`, `prefix_table_name`) | When Python needs a new dataset value. If it varies by environment it belongs in `config/conf_00_def.py`; if only the frontend reads it, `data/site.toml`. |
 | `sql_utils.py` | Pure functions for SQL execution and formatting. Owns one promise: a query run through `execute_sql_query` cannot change the database | When changing how SQL results are formatted or adding new query validation rules. Every failure is *returned as text*, never raised — the caller is an LLM, and a traceback ends its turn. |
 | `ai_sdk_adapter.py` | Converts Vercel AI SDK messages <-> Strands Agent messages, and generates the SSE event stream back to the browser | When the frontend message format changes. **Not** when switching LLM provider — this file is provider-agnostic and must stay that way; provider code belongs in `one_04_agent.py`. |
 | `vendor/vercel_ai_sdk.py` | Pydantic data model for the AI SDK request body. Vendored from `vercel-ai-sdk-mate`, deliberately lenient so a new AI SDK release cannot break request parsing | When the frontend starts sending a message part type the backend needs to read: add the model class and one line to `PART_MODEL_BY_TYPE`. Keep it a pure data model — no provider logic. |
@@ -204,7 +225,6 @@ the build too, since the check script never parses the TOML's icon fields.
 | `system-prompt.md` | System prompt for the BI agent | When changing agent behavior, adding tool usage instructions, or updating workflow guidelines. The five rendering sections are copied verbatim from `.claude/skills/swap-dataset-cn/ref/system-prompt-render-blocks.md`; change them in both places or neither. |
 | `site.toml` | Every sentence the UI says, the 4 capability cards, the 12 kickstart questions | When changing any user-visible string. Never inline copy in a component. |
 | `business-context.md` | The long-form explainer behind the home page | When the domain explanation changes. At most one mermaid diagram in the file. |
-| `dataset.toml` | Table prefix, DB display name, table insert order | When adding a table, or pointing at a new dataset. |
 
 **db_schema/ Directory:**
 
@@ -275,7 +295,8 @@ does.
 from agent_app.api import one           # Main app instance
 from agent_app.paths import path_enum   # All paths
 from agent_app.runtime import runtime   # Runtime detection
-from agent_app.project_config import project_config  # data/dataset.toml
+
+one.config.schema_name                 # SCHEMA_NAME, from .env.defaults
 ```
 
 ### Agent Framework
@@ -295,7 +316,8 @@ from agent_app.project_config import project_config  # data/dataset.toml
 
 **Core Configuration Files:**
 - `data/site.toml` - All frontend copy and identity (swapped per dataset)
-- `data/dataset.toml` - The values Python reads (swapped per dataset)
+- `.env.defaults` - Committed, non-secret config incl. `SCHEMA_NAME`. AI-editable
+- `.env` - Secrets. Gitignored, and denied to AI in `.claude/settings.json`
 - `mise.toml` - Project tasks and tool versions (Python 3.12, Node 24, uv, pnpm)
 - `pyproject.toml` - Python dependencies and project metadata
 - `package.json` - Node.js dependencies
@@ -445,26 +467,35 @@ avoids that entirely.
 
 **Two databases, two naming schemes:**
 
-| | Local | Remote |
+| | Local seed | What the agent reads |
 |---|---|---|
 | Engine | SQLite `tmp/data.sqlite` | PostgreSQL (NeonDB) |
-| Table names | `loan`, `customer`, … | `smbll_loan`, `smbll_customer`, … |
-| Used by | local dev + tests | Vercel deployment |
+| Table names | `loan`, `customer`, … | `loan`, `customer`, … — **identical** |
+| Used by | the sync's source, and tests | every environment, laptop included |
 
-The remote instance is **shared with other projects**, so every table this project
-owns is prefixed with `config.project_name_snake` (from `project.name` in
-`data/dataset.toml`). Foreign
-keys are rewritten to match, and the sync script only ever touches prefixed
-tables — other projects' tables are never dropped. `database_schema_str` likewise
-reflects only prefixed tables when running remotely, so the agent never sees
-another project's schema.
+The remote instance is **shared with other projects**, and the isolation is a
+PostgreSQL **schema**, not a table-name prefix: `SCHEMA_NAME` in
+`.env.defaults`. Table names are the same on both sides, and that is the
+whole point — an earlier revision prefixed every table (`smbll_loan`), which
+made the name the agent saw depend on which engine was behind it, so every SQL
+example in the system prompt was right in one environment and wrong in the
+other, with nothing failing loudly.
 
-Dependency order lives in `data/dataset.toml` under
-`database.tableInsertOrder`, exposed to Python as `TABLE_INSERT_ORDER` in
-`agent_app/tests/db_sync.py`: inserts walk it forwards, drops walk it backwards.
-Add a new table there, in the right position, or the sync breaks —
-`mise run check` compares the list against the SQLite file and fails on a
-mismatch in either direction.
+Foreign keys are rewritten into the schema, and the sync only ever touches its
+own schema — other projects' tables are never dropped. `database_schema_str`
+reflects only that schema, so the agent never sees another project's tables.
+
+Dependency order is **computed, not configured**: `table_insert_order()` in
+`agent_app/tests/db_sync.py` is a thin name over SQLAlchemy's
+`metadata.sorted_tables`, itself a topological sort of the reflected foreign
+keys. Inserts walk it forwards, drops walk it backwards. **Adding a table needs
+no config change** — reflect it and the order updates itself.
+
+There used to be a hand-written `tableInsertOrder` list plus a check comparing
+it against the seed. Both are gone: a hand-copied topological sort is a value
+that can be wrong, and the only thing that check could catch was someone copying
+it wrong. `mise run check` now verifies the thing derivation *cannot* fix — that
+the foreign keys admit an order at all, i.e. contain no cycle.
 
 **Schema Reference:**
 - Run `.venv/bin/python scripts/test_04_print_database_schema.py` to print the schema.

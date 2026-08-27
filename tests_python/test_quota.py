@@ -18,7 +18,7 @@ from agent_app.quota import ATTR_INVOKE
 from agent_app.quota import ATTR_OUTPUT_TOKEN
 from agent_app.quota import QuotaExceededError
 from agent_app.quota import check_quota
-from agent_app.quota import get_app_id
+from agent_app.quota import SCAFFOLD_ID, get_app_id
 from agent_app.quota import get_usage
 from agent_app.quota import increment_usage
 
@@ -52,6 +52,7 @@ class StubSession:
 
 class StubConfig:
     def __init__(self, **overrides):
+        self.schema_name = "acme_widgets"
         self.dynamodb_table_name_quota = "quota-table"
         self.quota_max_invoke_per_month = 100
         self.quota_max_input_token_per_month = 1_000
@@ -61,16 +62,23 @@ class StubConfig:
 
 
 class TestAppId:
-    def test_shape_is_project_and_month(self):
-        """The key namespaces by project so one table can serve several."""
+    def test_shape_is_scaffold_dataset_and_month(self):
+        """
+        Three colon-separated parts, so one table can serve many deployments and
+        a human reading the console can tell which row is whose.
+        """
         moment = datetime.datetime(2026, 3, 9, tzinfo=datetime.timezone.utc)
-        app_id = get_app_id(moment)
-        assert app_id.endswith("-2026-03")
+        config = StubConfig()
+        scaffold, dataset, month = get_app_id(config, moment).split(":")
+        assert scaffold == SCAFFOLD_ID
+        assert dataset == "acme_widgets"
+        assert month == "2026-03"
 
     def test_month_rolls_over(self):
         """A new month is a new row, so usage resets without anyone acting."""
-        jan = get_app_id(datetime.datetime(2026, 1, 31, tzinfo=datetime.timezone.utc))
-        feb = get_app_id(datetime.datetime(2026, 2, 1, tzinfo=datetime.timezone.utc))
+        config = StubConfig()
+        jan = get_app_id(config, datetime.datetime(2026, 1, 31, tzinfo=datetime.timezone.utc))
+        feb = get_app_id(config, datetime.datetime(2026, 2, 1, tzinfo=datetime.timezone.utc))
         assert jan != feb
 
 

@@ -7,7 +7,7 @@ This is the confirmation step after ``test_06_sync_data_to_remote_db.py``. That
 script reports what it *believes* it wrote; this one goes back to the remote
 database and checks what is actually there.
 
-Remote tables live in the PostgreSQL schema named in ``data/dataset.toml`` and
+Remote tables live in the PostgreSQL schema named by ``SCHEMA_NAME`` in ``.env.defaults`` and
 carry the same names as the local ones, so each local table is compared against
 its namesake inside that schema. Other projects live in other schemas and are
 never looked at.
@@ -34,8 +34,7 @@ import sys
 import sqlalchemy as sa
 
 from agent_app.api import one
-from agent_app.project_config import project_config
-from agent_app.tests.db_sync import TABLE_INSERT_ORDER
+from agent_app.tests.db_sync import table_insert_order
 
 
 def count_rows(engine: sa.Engine, table_name: str, schema: str | None = None) -> int:
@@ -44,8 +43,8 @@ def count_rows(engine: sa.Engine, table_name: str, schema: str | None = None) ->
 
     Args:
         engine: SQLAlchemy engine to query.
-        table_name: Table to count. Taken from the hardcoded TABLE_INSERT_ORDER
-            list, never from user input, so interpolating it is safe here.
+        table_name: Table to count. Reflected from the local database, never
+            from user input, so interpolating it is safe here.
         schema: The PostgreSQL schema it lives in. ``None`` for local SQLite,
             which has no schemas.
 
@@ -66,7 +65,11 @@ def main() -> int:
     """
     local_engine = one.local_sqlite_engine
     remote_engine = one.remote_postgres_engine
-    schema_name = project_config.schema_name
+    schema_name = one.config.schema_name
+
+    local_metadata = sa.MetaData()
+    local_metadata.reflect(bind=local_engine)
+    tables = table_insert_order(local_metadata)
 
     print("=" * 76)
     print("Verifying remote PostgreSQL data against local SQLite")
@@ -78,7 +81,7 @@ def main() -> int:
     rows = []
     problems = []
 
-    for table_name in TABLE_INSERT_ORDER:
+    for table_name in tables:
         local_count = count_rows(local_engine, table_name)
 
         if table_name not in remote_tables:

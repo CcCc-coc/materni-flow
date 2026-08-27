@@ -9,7 +9,6 @@ import sqlalchemy as sa
 
 from ..paths import path_enum
 from ..constants import DbTypeEnum
-from ..project_config import project_config
 from ..db_schema.api import new_schema_info
 from ..db_schema.api import new_database_info
 from ..db_schema.api import encode_database_info
@@ -123,7 +122,7 @@ class DbMixin:
         dataset ships and that the sync reads, exposed as
         :attr:`local_sqlite_engine`.
         """
-        return self._new_postgres_engine(schema_name=project_config.schema_name)
+        return self._new_postgres_engine(schema_name=self.config.schema_name)
 
     @cached_property
     def database_schema_str(self: "One") -> str:
@@ -144,33 +143,33 @@ class DbMixin:
         # The schema goes on the MetaData, not only on reflect(): the encoder
         # labels the block with `metadata.schema`, and without it the agent is
         # told it is looking at a schema called "default".
-        metadata = sa.MetaData(schema=project_config.schema_name)
-        metadata.reflect(bind=self.engine, schema=project_config.schema_name)
+        metadata = sa.MetaData(schema=self.config.schema_name)
+        metadata.reflect(bind=self.engine, schema=self.config.schema_name)
         schema_info = new_schema_info(
             engine=self.engine,
             metadata=metadata,
-            schema_name=project_config.schema_name,
+            schema_name=self.config.schema_name,
         )
         database_info = new_database_info(
-            name=project_config.database_display_name,
+            # Labelled with the schema name: there is one schema, and a
+            # second hand-written name for it was one more thing to keep
+            # in step for no reader.
+            name=self.config.schema_name,
             db_type=DbTypeEnum.POSTGRESQL,
             schemas=[
                 schema_info,
             ],
         )
-        encoded = encode_database_info(database_info=database_info)
-
-        expected = project_config.table_insert_order
-        missing = [t for t in expected if t not in encoded]
-        if missing:
+        if not schema_info.tables:
             raise RuntimeError(
-                f"PostgreSQL schema {project_config.schema_name!r} is missing "
-                f"{len(missing)} of {len(expected)} table(s): "
-                f"{', '.join(missing[:5])}{'...' if len(missing) > 5 else ''}. "
-                f"Run `.venv/bin/python scripts/test_06_sync_data_to_remote_db.py` "
+                f"PostgreSQL schema {self.config.schema_name!r} has no tables. "
+                f"An absent schema and an empty one look identical to the "
+                f"reflector, so this is almost certainly a database that was "
+                f"never synced. Run "
+                f"`.venv/bin/python scripts/test_06_sync_data_to_remote_db.py` "
                 f"to publish the SQLite seed into it."
             )
-        return encoded
+        return encode_database_info(database_info=database_info)
 
     def execute_sql_query(self: "One", sql: str) -> str:
         """Execute a SELECT query and return results as a Markdown table."""

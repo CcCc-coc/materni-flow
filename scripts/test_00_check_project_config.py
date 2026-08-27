@@ -62,7 +62,7 @@ from pathlib import Path
 import sqlalchemy as sa
 
 from agent_app.paths import path_enum
-from agent_app.project_config import project_config
+from agent_app.tests.db_sync import table_insert_order
 
 
 #: Directories worth scanning for retired vocabulary: everything that is code or
@@ -206,33 +206,41 @@ def sqlite_table_names() -> set[str]:
 
 def check_table_insert_order(report: Report, db_tables: set[str]) -> bool:
     """
-    Fail if ``database.tableInsertOrder`` and the SQLite file disagree.
+    Fail if the seed's foreign keys admit no insert order at all.
 
-    Both directions matter. A table in the database but missing from the list
-    silently never reaches the remote deployment; a table in the list but
-    missing from the database blows up mid-sync, halfway through writing.
+    The order itself is no longer configured -- the sync reads it off
+    ``metadata.sorted_tables`` -- so there is no list left to disagree with the
+    file. What can still go wrong is a foreign-key *cycle*: two tables that each
+    require the other to exist first. SQLAlchemy raises on it, and the honest
+    place to hit that is here rather than halfway through writing the remote
+    database.
+
+    An empty seed is the other failure: it reflects cleanly and syncs nothing.
     """
-    configured = project_config.table_insert_order
-
-    missing_from_config = sorted(db_tables - set(configured))
-    missing_from_db = sorted(set(configured) - db_tables)
-
-    for name in missing_from_config:
+    if not db_tables:
         report.error(
             "table-order",
-            f"table {name!r} exists in the database but is absent from "
-            f"database.tableInsertOrder — it would never sync to the remote DB.",
+            f"{path_enum.path_sqlite_db.name} has no tables. "
+            f"Re-seed it with: mise run setup-db",
         )
-    for name in missing_from_db:
+        report.section("table insert order (0 tables)", False)
+        return False
+
+    metadata = sa.MetaData()
+    metadata.reflect(bind=sa.create_engine(f"sqlite:///{path_enum.path_sqlite_db}"))
+    try:
+        order = table_insert_order(metadata)
+    except sa.exc.CircularDependencyError as e:
         report.error(
             "table-order",
-            f"database.tableInsertOrder lists {name!r}, which does not exist in "
-            f"{path_enum.path_sqlite_db.name} — the sync would fail on it.",
+            f"the seed's foreign keys form a cycle, so no insert order can "
+            f"satisfy them: {e}",
         )
+        report.section("table insert order (cycle)", False)
+        return False
 
-    ok = not missing_from_config and not missing_from_db
-    report.section(f"table insert order ({len(configured)} tables)", ok)
-    return ok
+    report.section(f"table insert order ({len(order)} tables)", True)
+    return True
 
 
 def check_prompt_tables(report: Report, db_tables: set[str]) -> bool:

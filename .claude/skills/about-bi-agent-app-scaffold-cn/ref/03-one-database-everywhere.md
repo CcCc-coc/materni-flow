@@ -47,7 +47,8 @@ customer              ->      schema <schemaName> 里的 customer
 哪个引擎, 于是提示词里每一段 SQL 在一个环境对, 在另一个环境错. schema 把命名空间从表名上
 移走了, 所以 agent 看到的名字永远不变.
 
-schema 名在 `data/dataset.toml` 的 `database.schemaName`. 用数据集名, 下划线, 63 字符以内.
+schema 名在 `.env.defaults` 的 `SCHEMA_NAME`. 用数据集名, 下划线, 63 字符以内.
+`Config` 加载时用 `SCHEMA_NAME_PATTERN` 校验, 写错当场报错.
 
 ## search_path 有三种钉法, 只有一种是对的
 
@@ -103,7 +104,7 @@ WHERE c.relkind = 'r' AND n.nspname = :schema
 ```
 
 **换数据集之后记得清理上一个数据集留下的表.** 它们不会被新的同步碰到 (同步只管本 schema
-里 `tableInsertOrder` 列出的表), 会一直占着配额. 这个仓库真发生过: 前缀时代的 10 张
+里那些表), 会一直占着配额. 这个仓库真发生过: 前缀时代的 10 张
 `smbll_*` 表在 `public` 里躺着占了 11MB, 整库 30MB 里有 11MB 是死数据.
 
 ## 写 SQL 时的方言清单

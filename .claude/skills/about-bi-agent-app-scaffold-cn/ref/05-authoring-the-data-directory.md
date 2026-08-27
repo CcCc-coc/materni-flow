@@ -6,23 +6,27 @@
 
 ---
 
-## `dataset.toml` — 后端读的那几个值
+## `.env.defaults` — 后端读的那一个值
 
-```toml
-[project]
-name = "smbll"                    # 这个部署在 LLM 花费配额里的标识, 不再命名任何数据库对象
+严格说它不在 `data/` 里, 但换数据集时必须改它, 所以放在这篇的最前面.
 
-[database]
-schemaName = "..."                # PostgreSQL schema 名: 小写, 下划线, <= 63 字符
-displayName = "..."               # 只是给 agent 看的标签, 不必对应任何真实库名
-tableInsertOrder = [...]          # 外键依赖顺序, 父表在前
+```bash
+SCHEMA_NAME="..."   # PostgreSQL schema 名: 小写字母/数字/下划线, 首字符不能是数字, <= 63
 ```
 
-`tableInsertOrder` 是**两个方向的唯一真相**: 插入正着走, 删除倒着走. 从一个列表推导两个
-方向, 是它们不会漂移的原因. `mise run check` 拿它对撞 SQLite 种子, 两个方向都验 —— 多了
-一张或少了一张都当场报.
+`SCHEMA_NAME` 是**这个数据集唯一的标识符**: 它既隔离共用 Neon 实例里的表, 也是
+`agent_app/quota.py` 给月度花费分区用的 key. 以前还有一个 `[project] name` 干后半件事,
+那是表名前缀时代的残留 —— 一个东西两个名字, 就是两个要同步维护的东西.
 
-**不要手写这个顺序**, 从种子文件的外键关系拓扑排序出来.
+规则由 `Config.__post_init__` 的 `SCHEMA_NAME_PATTERN` 在启动时强制执行, 写错当场报错,
+不会拖到某条查询深处才炸.
+
+**建表顺序不用写.** 以前 `dataset.toml` 里有一份手写的 `tableInsertOrder`, 现在是算出来
+的 —— `agent_app/tests/db_sync.py` 的 `table_insert_order()` 直接读 SQLAlchemy 的
+`metadata.sorted_tables`, 那本来就是按外键做的拓扑排序. 加一张表不需要改任何配置.
+
+`.env.defaults` 进 Git, AI 可以自由编辑; `.env` 装密钥, 进 gitignore, 而且
+`.claude/settings.json` 里 deny 掉了 AI 的读和写. 换数据集改前者, 永远不碰后者.
 
 ---
 

@@ -103,10 +103,12 @@ SQLite 和 PostgreSQL 的数据类型表示方式不同：
 
 ### 插入顺序
 
-根据外键依赖关系手动排列：
+**不用手写。** `table_insert_order(local_metadata)` 直接读 SQLAlchemy 的
+`metadata.sorted_tables`，那本来就是按外键做的拓扑排序。下面是它对某个数据集算出来的
+结果，长这个样子（这段示例用的是一个已经退役的数据集，只是为了看清形状）：
 
 ```python
-TABLE_INSERT_ORDER = [
+table_insert_order(local_metadata) == [
     # 独立表（没有外键依赖）
     "patient",
     "provider",
@@ -156,7 +158,7 @@ local_metadata.reflect(bind=local_engine)
 #### 步骤 2：读取所有本地数据
 
 ```python
-for table_name in TABLE_INSERT_ORDER:
+for table_name in insert_order:
     result = conn.execute(sa.text(f"SELECT * FROM {table_name}"))
     rows = result.fetchall()
     local_data[table_name] = {"columns": ..., "rows": ...}
@@ -167,7 +169,7 @@ for table_name in TABLE_INSERT_ORDER:
 #### 步骤 3：删除远程数据库的所有表
 
 ```python
-for table_name in reversed(TABLE_INSERT_ORDER):
+for table_name in reversed(insert_order):
     conn.execute(sa.text(f"DROP TABLE IF EXISTS {table_name} CASCADE"))
 ```
 

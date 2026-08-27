@@ -26,7 +26,7 @@ App 的机制. 但换数据集要改的东西**全部在 `data/` 一个目录里
 
 | 文件 | 装什么 | 谁读 |
 | :--- | :--- | :--- |
-| `data/dataset.toml` | 表前缀, 库显示名, 建表顺序 | Python |
+| `.env.defaults` | `SCHEMA_NAME` —— 后端唯一要改的一行 (不在 `data/` 里) | Python |
 | `data/site.toml` | 界面上说的每一句话, 4 张能力卡, 12 条 kickstart | Next.js |
 | `data/business-context.md` | 首页那个 "这解决什么问题" 弹窗的正文 | Next.js |
 | `data/system-prompt.md` | agent 的领域大脑 | 提示词 |
@@ -131,8 +131,8 @@ ls tmp/dataset/*.sqlite
 ```bash
 cp tmp/dataset/<name>.sqlite data/data.sqlite.example
 mise run setup-db      # 播种到 tmp/data.sqlite
-# 填 data/dataset.toml 的 schemaName 和 tableInsertOrder
-mise run check         # 顺序对不对, 当场就报
+# 填 .env.defaults 的 SCHEMA_NAME (建表顺序是算出来的, 不用填)
+mise run check         # 种子有没有表, 外键成不成环, 当场就报
 mise run sync-db       # 发布到 PostgreSQL 的本项目 schema
 mise run verify-db     # 逐表对行数
 ```
@@ -307,13 +307,11 @@ warn, 最后没人看. **顺序是零成本的, 检查是有成本且不可靠�
 | :--- | :--- | :--- |
 | `data/system-prompt.md` | 第 2 步 | 整份重写, 含 Analysis Index |
 
-**B. 配置.** 两个 TOML, 按读者分: 后端读 `dataset.toml`, 前端读 `site.toml`.
+**B. 配置.** 后端一行, 前端一个 TOML.
 
 | 文件 | 要改的 key | 来源 |
 | :--- | :--- | :--- |
-| `data/dataset.toml` | `project.name` (远程表前缀, 要短) | 用户提供或从品牌名缩写 |
-| | `database.displayName` | 数据集名 |
-| | `database.tableInsertOrder` | er_document 的外键依赖顺序, 父表在前 |
+| `.env.defaults` | `SCHEMA_NAME` (PostgreSQL schema 名, 也是配额分区 key) | 数据集名转成合法标识符: 小写字母/数字/下划线, 首字符非数字, <= 63 |
 | `data/site.toml` | `[brand]` (displayName, logoPrefix, logoAccent, footerName) | **用户提供品牌名** |
 | | `[seo]` (title, description, keywords) | summary |
 | | `[[capabilities]]` × 4 (icon, title, subtitle, tooltip) | 提示词的四条主线, 见下 |
@@ -469,7 +467,9 @@ B 组.
 这几样任何业务文档里都不会有, 开工前先问用户. 不要自己编了就往下走:
 
 - **品牌名 / 产品名**: 决定 `displayName`, `logo.prefix` + `logo.accent` (会被拆成两种颜色), `footerName`
-- **`project.name` 短标识**: 远程 Postgres 的表前缀, 多项目共用一个库靠它隔离, 越短越好
+- **`database.schemaName`**: 远程 Postgres 的 schema 名, 多项目共用一个库靠它隔离 (不是表
+  前缀 —— 表名两边必须一样). 也是 `quota.py` 的配额分区 key. 必须是合法标识符: 小写字母/
+  数字/下划线, 首字符不能是数字, <= 63 字符; 写错了 `ProjectConfig` 加载时就报
 - **agent 的名字**: chat 页面里它怎么称呼自己
 - **配色方向**: 可以从行业推断 (金融偏藏青, 医疗偏青绿), 但要让用户确认
 
@@ -644,7 +644,6 @@ mise run verify-db
 .venv/bin/python - <<'EOF'
 import sqlalchemy as sa
 from agent_app.api import one
-from agent_app.project_config import project_config
 
 sql = sa.text('''
     SELECT pg_size_pretty(COALESCE(SUM(pg_total_relation_size(c.oid)), 0)) AS ours,
@@ -655,7 +654,7 @@ sql = sa.text('''
     WHERE c.relkind = 'r' AND n.nspname = :schema
 ''')
 with one.remote_postgres_engine.connect() as conn:
-    r = conn.execute(sql, {"schema": project_config.schema_name}).one()
+    r = conn.execute(sql, {"schema": one.config.schema_name}).one()
 print(f"我们这 {r.n_tables} 张表占 {r.ours}; 整库 {r.whole_db} / 500 MB")
 EOF
 ```

@@ -24,12 +24,19 @@ Configurable, because it varies by deployment: the on/off flag, the table name,
 and the three caps. All live in ``.env`` and are read through ``Config``.
 
 Fixed, because it does not: the item schema below, and the partition key, which
-is ``<project name>-YYYY-MM``. The project name comes from
-``data/dataset.toml`` -- the same identifier that namespaces this project's
-tables in the shared Postgres. One DynamoDB table can hold the counters for
-several projects for the same reason one Postgres database can hold their
-tables, and giving that identifier a second home in ``.env`` would eventually
-give it two different answers.
+is ``<scaffold>:<dataset>:<YYYY-MM>``. One DynamoDB table can hold the counters
+for many deployments for the same reason one Postgres database can hold their
+tables, so the key has to say which deployment it is counting, and it says so in
+two parts:
+
+- the **scaffold**, :data:`SCAFFOLD_ID` -- a constant, because it identifies
+  this codebase and does not change when the dataset does;
+- the **dataset**, ``config.schema_name`` -- from ``SCHEMA_NAME`` in the
+  committed ``.env.defaults``, because that is exactly what does change.
+
+Neither is duplicated anywhere. A value with two homes eventually has two
+different answers, and for a spend counter that means a cap that silently
+stops applying.
 
 Why raw boto3 and not an ORM
 ----------------------------
@@ -46,11 +53,16 @@ three numbers.
 import typing as T
 import datetime
 
-from .project_config import project_config
-
 if T.TYPE_CHECKING:  # pragma: no cover
     from .config.conf_00_def import Config
 
+
+#: Identifies this scaffold in a quota table it may share with other codebases.
+#:
+#: A constant rather than config: it is a fact about *this repository*, not about
+#: the dataset it currently serves, so a dataset swap must not touch it. Change
+#: it only if the scaffold itself is forked or renamed.
+SCAFFOLD_ID = "learn-bi-agent-app-scaffold"
 
 #: The DynamoDB attribute names. Fixed on purpose -- see the module docstring.
 ATTR_INVOKE = "total_invoke"
@@ -62,19 +74,24 @@ class QuotaExceededError(RuntimeError):
     """Raised when the current month's usage has hit a configured cap."""
 
 
-def get_app_id(now: datetime.datetime | None = None) -> str:
+def get_app_id(config: "Config", now: datetime.datetime | None = None) -> str:
     """
     Build the partition key for the current (or given) UTC month.
 
-    Shape is ``<project name>-YYYY-MM``, so a new month starts from zero without
-    anyone having to reset anything, and several projects can share one table.
+    Shape is ``<scaffold>:<dataset>:<YYYY-MM>``, so a new month starts from zero
+    without anyone having to reset anything, and many deployments can share one
+    table.
+
+    ``:`` separates the three parts because neither a slug nor a schema name can
+    contain one, while both can contain the ``-`` and ``_`` that appear inside
+    them. A key you can split back apart is one you can read in the console.
 
     Returns:
-        The partition key, e.g. ``"acme-2026-08"``.
+        The partition key, e.g. ``"learn-bi-agent-app-scaffold:acme_widgets:2026-08"``.
     """
     if now is None:
         now = datetime.datetime.now(datetime.timezone.utc)
-    return f"{project_config.project_name_snake}-{now.year:04d}-{now.month:02d}"
+    return f"{SCAFFOLD_ID}:{config.schema_name}:{now.year:04d}-{now.month:02d}"
 
 
 def _table(boto_ses: T.Any, config: "Config") -> T.Any:
@@ -102,7 +119,7 @@ def get_usage(
         ``{"total_invoke": int, "total_input_token": int, "total_output_token": int}``
     """
     if app_id is None:
-        app_id = get_app_id()
+        app_id = get_app_id(config)
     item = _table(boto_ses, config).get_item(Key={"app_id": app_id}).get("Item") or {}
     return {
         ATTR_INVOKE: int(item.get(ATTR_INVOKE, 0)),
@@ -128,7 +145,7 @@ def increment_usage(
     overlap, and on a public deployment they will.
     """
     if app_id is None:
-        app_id = get_app_id()
+        app_id = get_app_id(config)
     _table(boto_ses, config).update_item(
         Key={"app_id": app_id},
         UpdateExpression=(
@@ -157,7 +174,7 @@ def check_quota(
         The current counters, when none of the caps has been reached.
     """
     if app_id is None:
-        app_id = get_app_id()
+        app_id = get_app_id(config)
     usage = get_usage(boto_ses, config, app_id)
     for attr, cap, label in (
         (ATTR_INVOKE, config.quota_max_invoke_per_month, "invoke"),

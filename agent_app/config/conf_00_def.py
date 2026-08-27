@@ -30,8 +30,8 @@ What does NOT belong here
 
 Anything that is the same in every environment. The project's name, the tables
 it owns, and the database it describes are properties of the *dataset*, not of
-the machine, so they live in :mod:`agent_app.project_config` and are read from
-``data/dataset.toml``. Duplicating such a value here, even with an environment
+the machine, so they live in the committed ``.env.defaults`` and are loaded by
+:func:`load_env_files` alongside ``.env``. Duplicating such a value here, even with an environment
 variable as an escape hatch, gives it two homes and eventually two answers.
 
 How it works
@@ -95,14 +95,44 @@ selected provider's credential is missing.
 """
 
 import os
+import re
 import dataclasses
 
+from ..paths import path_enum
 from ..runtime import runtime
 from ..constants import LlmProviderEnum, DEFAULT_MODEL_ID
 
 
 #: The placeholder ``.env.example`` uses for values the reader has to fill in.
 PLACEHOLDER = "..."
+
+#: What PostgreSQL accepts unquoted as a schema name, which is the promise
+#: ``.env.defaults`` already makes in the comment above ``SCHEMA_NAME``.
+#: Enforcing it matters twice over: an illegal name fails deep inside a query
+#: with an unhelpful message, and the value is interpolated into a
+#: ``SET LOCAL search_path`` statement in ``one/one_02_db.py``.
+SCHEMA_NAME_PATTERN = re.compile(r"^[a-z_][a-z0-9_]{0,62}$")
+
+
+def load_env_files() -> None:  # pragma: no cover
+    """
+    Load ``.env`` then ``.env.defaults``, in that order.
+
+    ``load_dotenv`` does not overwrite a variable that is already set, so the
+    first file to define a key wins. Reading ``.env`` first is therefore what
+    makes it the override layer: put a key in your own ``.env`` and the
+    committed default stops applying to your machine.
+
+    Both files are loaded on Vercel too. ``.env`` will not be there, but
+    ``.env.defaults`` is committed and ships with the deployment, so the schema
+    name arrives without anyone re-entering it in the dashboard -- while a
+    dashboard variable still wins, because Vercel sets it in the real
+    environment before this runs.
+    """
+    from dotenv import load_dotenv
+
+    load_dotenv(path_enum.path_env)
+    load_dotenv(path_enum.path_env_defaults)
 
 
 def get_env(name: str) -> str | None:  # pragma: no cover
@@ -187,6 +217,10 @@ class Config:
     ``config`` singleton for normal application code.
 
     Attributes:
+        schema_name: The PostgreSQL schema this dataset's tables live in, and
+            the only identifier the dataset has. From ``SCHEMA_NAME`` in the
+            committed ``.env.defaults``; overridable per machine in ``.env`` to
+            point one checkout at a staging schema.
         llm_provider: Which LLM backend to talk to. One of :class:`LlmProviderEnum`.
             Defaults to ``openai``, which needs only an ``OPENAI_API_KEY``.
             Bedrock needs an AWS account, and not everyone picking this repo up
@@ -218,6 +252,8 @@ class Config:
         quota_max_output_token_per_month: Cap on output tokens per calendar month.
     """
 
+    # --- Dataset ---
+    schema_name: str = dataclasses.field(default="")
     # --- LLM ---
     llm_provider: str = dataclasses.field(default=LlmProviderEnum.OPENAI.value)
     model_id: str | None = dataclasses.field(default=None)
@@ -245,11 +281,26 @@ class Config:
 
     def __post_init__(self):
         """
-        Normalize the provider and fill in its default model ID.
+        Normalize the provider, fill in its default model ID, check the schema name.
 
         Doing this here (rather than in the factories) means a hand-built
         ``Config()`` in a test behaves exactly like one built from the environment.
+
+        The schema name is checked at start-up rather than at first use because
+        the alternative failure is a query error from deep inside PostgreSQL,
+        several layers away from the typo that caused it.
+
+        Raises:
+            ValueError: on an unknown provider, or a schema name PostgreSQL
+                would not accept.
         """
+        if self.schema_name and not SCHEMA_NAME_PATTERN.fullmatch(self.schema_name):
+            raise ValueError(
+                f"Illegal SCHEMA_NAME {self.schema_name!r}. It must be a "
+                f"PostgreSQL identifier -- lowercase letters, digits and "
+                f"underscores, not starting with a digit, at most 63 "
+                f"characters. Set it in .env.defaults."
+            )
         self.llm_provider = (self.llm_provider or "").strip().lower()
         if self.llm_provider not in DEFAULT_MODEL_ID:
             raise ValueError(
@@ -309,11 +360,10 @@ class Config:
         ``~/.aws/credentials``, so passing them through would let a placeholder in
         ``.env`` shadow a perfectly good local profile.
         """
-        from dotenv import load_dotenv
-
-        load_dotenv()
+        load_env_files()
 
         return cls(
+            schema_name=get_env("SCHEMA_NAME") or "",
             llm_provider=get_env("LLM_PROVIDER") or LlmProviderEnum.BEDROCK.value,
             model_id=get_env("LLM_MODEL_ID"),
             aws_region=get_env("AWS_REGION") or "us-east-1",
@@ -343,8 +393,16 @@ class Config:
 
         Serverless has no ``~/.aws``, so AWS credentials must come from environment
         variables. The database is always the remote Postgres instance here.
+
+        ``.env.defaults`` is still loaded: it is committed, so it ships with the
+        deployment and supplies the schema name without anyone re-entering it in
+        the Vercel dashboard. A dashboard variable still wins, because Vercel
+        sets it in the real environment before this runs.
         """
+        load_env_files()
+
         return cls(
+            schema_name=get_env("SCHEMA_NAME") or "",
             llm_provider=get_env("LLM_PROVIDER") or LlmProviderEnum.BEDROCK.value,
             model_id=get_env("LLM_MODEL_ID"),
             aws_region=get_env("AWS_REGION") or "us-east-1",

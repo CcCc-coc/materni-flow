@@ -29,34 +29,39 @@ self-contained and never reaches across into another project's tables.
 Ordering
 --------
 
-``TABLE_INSERT_ORDER`` is the single source of truth for dependency order:
-parents first, children after. It is not written here — it comes from
-``data/dataset.toml``, so that swapping the dataset means editing one TOML file
-rather than hunting for a list buried in a sync module. Everything else is
-derived from it —
+Dependency order is **computed, not configured**: SQLAlchemy's
+``metadata.sorted_tables`` is already a topological sort of the reflected
+foreign keys, and :func:`table_insert_order` is a thin name over it.
 
-- **inserting** walks the list forwards, so a row's parents already exist;
+- **inserting** walks it forwards, so a row's parents already exist;
 - **dropping** walks it backwards, so no table is dropped while another still
   references it.
 
-Deriving both directions from one list is what keeps them from drifting apart.
+There used to be a hand-written list in a config file, plus a check that
+compared it against the seed file. Both are gone: a hand-copied topological sort
+is a value that can be wrong, and the only thing the check could catch was
+someone copying it wrong. Reading it off the same metadata the sync already
+reflects removes the value and the check together.
 """
 
 import typing as T
 
 import sqlalchemy as sa
 
-from ..project_config import project_config
 
-#: Table insertion order based on foreign key dependencies: parents first, so a
-#: row's parents already exist by the time it is inserted. Drop order is the
-#: reverse — see the module docstring.
-#:
-#: Defined in ``data/dataset.toml`` under ``database.tableInsertOrder``.
-#: ``mise run check`` verifies it against the tables actually present in
-#: ``data/data.sqlite.example``, so a table added to the dataset but forgotten here
-#: fails loudly instead of silently vanishing from the remote database.
-TABLE_INSERT_ORDER = project_config.table_insert_order
+def table_insert_order(metadata: "sa.MetaData") -> list[str]:
+    """
+    Table names in foreign-key dependency order: parents first.
+
+    ``sorted_tables`` is SQLAlchemy's own topological sort, so this is the order
+    inserts must follow and the reverse of the order drops must follow.
+
+    Raises:
+        sqlalchemy.exc.CircularDependencyError: if the schema has a foreign-key
+            cycle, which no insert order can satisfy.
+    """
+    return [table.name for table in metadata.sorted_tables]
+
 
 #: Rows per executemany round trip. Sending a six-figure table in one
 #: statement risks exceeding the driver's parameter limit and buffers the whole
@@ -122,27 +127,10 @@ def build_remote_metadata(
     Returns:
         A new MetaData bound to ``schema_name``, ready for ``create_all()``.
 
-    Raises:
-        ValueError: If the source file lacks a table the config names.
     """
     remote_metadata = sa.MetaData(schema=schema_name)
 
-    # The source file and dataset.toml can disagree -- most often because the
-    # data generator was re-run after a schema change and nobody updated
-    # `tableInsertOrder`. Reported as a bare KeyError on whichever table happened
-    # to be missing, that costs a real debugging session before anyone suspects
-    # the config. Name the actual problem instead.
-    missing = [t for t in TABLE_INSERT_ORDER if t not in local_metadata.tables]
-    if missing:
-        raise ValueError(
-            f"Source database is missing {len(missing)} table(s) named in "
-            f"data/dataset.toml: {', '.join(missing)}. "
-            f"It holds {sorted(local_metadata.tables)} instead. "
-            f"Rebuild it from the dataset's data generator, or fix "
-            f"`database.tableInsertOrder`."
-        )
-
-    for table_name in TABLE_INSERT_ORDER:
+    for table_name in table_insert_order(local_metadata):
         local_table = local_metadata.tables[table_name]
         new_columns = []
 
@@ -214,17 +202,12 @@ def sync_sqlite_to_postgres(
     local_metadata = sa.MetaData()
     local_metadata.reflect(bind=local_engine)
 
-    local_table_names = set(local_metadata.tables.keys())
-    missing_tables = set(TABLE_INSERT_ORDER) - local_table_names
-    if missing_tables:
+    insert_order = table_insert_order(local_metadata)
+    if not insert_order:
         raise ValueError(
-            f"Missing tables in local database: {sorted(missing_tables)}. "
-            f"Re-seed it with: mise run setup-db"
+            "Local database has no tables. Re-seed it with: mise run setup-db"
         )
-
-    extra_tables = local_table_names - set(TABLE_INSERT_ORDER)
-    if extra_tables:
-        log(f"  Warning: extra local tables, will be ignored: {sorted(extra_tables)}")
+    log(f"  {len(insert_order)} tables, dependency order: {', '.join(insert_order)}")
 
     # Step 2: Read every row out of local, in dependency order.
     #
@@ -236,7 +219,7 @@ def sync_sqlite_to_postgres(
     log("Reading data from local SQLite...")
     local_data = {}
     with local_engine.connect() as conn:
-        for table_name in TABLE_INSERT_ORDER:
+        for table_name in insert_order:
             local_table = local_metadata.tables[table_name]
             result = conn.execute(sa.select(local_table))
             rows = [dict(row._mapping) for row in result]
@@ -257,7 +240,7 @@ def sync_sqlite_to_postgres(
             log(f"Schema ready: {schema_name}")
 
         log("Dropping remote tables (reverse dependency order)...")
-        for table_name in reversed(TABLE_INSERT_ORDER):
+        for table_name in reversed(insert_order):
             qualified = f'"{schema_name}"."{table_name}"'
             conn.execute(sa.text(f"DROP TABLE IF EXISTS {qualified}{cascade}"))
             log(f"  Dropped: {table_name}")
@@ -266,13 +249,13 @@ def sync_sqlite_to_postgres(
     log("Creating remote tables...")
     remote_metadata = build_remote_metadata(local_metadata, schema_name)
     remote_metadata.create_all(remote_engine)
-    log(f"  Created {len(TABLE_INSERT_ORDER)} tables.")
+    log(f"  Created {len(insert_order)} tables.")
 
     # Step 5: Insert, parents first, batched.
     log("Inserting data into remote PostgreSQL...")
     summary = {}
     with remote_engine.begin() as conn:
-        for table_name in TABLE_INSERT_ORDER:
+        for table_name in insert_order:
             rows = local_data[table_name]
 
             if not rows:
@@ -313,7 +296,7 @@ def reset_remote_database(verbose: bool = True) -> dict:
     return sync_sqlite_to_postgres(
         local_engine=one.local_sqlite_engine,
         remote_engine=one.remote_postgres_engine,
-        schema_name=project_config.schema_name,
+        schema_name=one.config.schema_name,
         verbose=verbose,
     )
 

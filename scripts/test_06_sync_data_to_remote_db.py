@@ -3,7 +3,7 @@
 """
 Sync local SQLite database to remote PostgreSQL (NeonDB).
 
-Remote tables live in the PostgreSQL schema named in ``data/dataset.toml``, so
+Remote tables live in the PostgreSQL schema named by ``SCHEMA_NAME`` in ``.env.defaults``, so
 this project can share one NeonDB instance with others without colliding:
 local ``widget`` becomes remote ``acme_widget``, and its foreign keys are rewritten
 to match.
@@ -23,7 +23,6 @@ Verify the result afterwards with:
 """
 
 from agent_app.api import one
-from agent_app.project_config import project_config
 from agent_app.tests.db_sync import reset_remote_database
 
 
@@ -31,7 +30,7 @@ def main():
     """Run the sync operation."""
     print("=" * 68)
     print("Syncing local SQLite to remote PostgreSQL (NeonDB)")
-    print(f"PostgreSQL schema: {project_config.schema_name}")
+    print(f"PostgreSQL schema: {one.config.schema_name}")
     print("=" * 68)
 
     result = reset_remote_database(verbose=True)

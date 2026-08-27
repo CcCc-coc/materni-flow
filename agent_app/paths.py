@@ -5,8 +5,8 @@ Every path this package needs, in one place.
 
 Paths are facts about the source tree, not configuration: a dataset swap rewrites
 the *contents* of ``data/``, never the filenames. So nothing here is routed
-through ``data/dataset.toml`` or ``.env`` -- doing that once bought nothing and
-forced a circular import between this module and ``project_config``.
+through configuration -- doing that once bought nothing and forced a circular
+import between this module and the config that named the path.
 
 Add a path here first, then refer to it as ``path_enum.your_new_path`` everywhere
 else. Do not add one speculatively: an entry with no reader silently rots into a
@@ -24,6 +24,14 @@ class PathEnum:
     # Coverage report, written by agent_app.tests.helper.
     dir_htmlcov = dir_project_root / "htmlcov"
 
+    # Configuration, split by whether it is a secret.
+    #
+    # ``.env`` is gitignored and holds credentials; ``.env.defaults`` is
+    # committed and holds everything that is not a secret, the dataset's schema
+    # name included. ``.env`` is loaded first and wins. See ``config/conf_00_def.py``.
+    path_env = dir_project_root / ".env"
+    path_env_defaults = dir_project_root / ".env.defaults"
+
     # Everything a dataset swap rewrites, in one directory.
     #
     # A swap replaces the contents of ``data/`` and nothing else: the config
@@ -35,7 +43,6 @@ class PathEnum:
     # Not to be confused with ``agent_app/config/``, which holds secrets from
     # ``.env`` and varies per machine rather than per dataset.
     dir_data = dir_project_root / "data"
-    path_dataset_toml = dir_data / "dataset.toml"
 
     # Read by the frontend, never parsed here. Named so that the preflight
     # check can verify they exist without importing TypeScript.

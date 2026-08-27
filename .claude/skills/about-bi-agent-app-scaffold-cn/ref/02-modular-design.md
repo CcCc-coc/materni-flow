@@ -23,18 +23,22 @@
 
 ---
 
-## 1. 数据分离: 所有会变的东西, 一个目录
+## 1. 数据分离: 所有会变的内容, 一个目录
 
 ```
 data/
-├── dataset.toml          后端读: PostgreSQL schema 名, 建表顺序
 ├── site.toml             前端读: 界面上说的每一句话
 ├── business-context.md   首页那个"这解决什么问题"弹窗的正文
 ├── system-prompt.md      agent 的领域大脑
 └── data.sqlite.example   数据本体的种子
 ```
 
-**换数据集 = 重写这一个目录.** 这是整个设计里最重要的一条边界.
+**换数据集 = 重写这一个目录, 外加 `.env.defaults` 里的一行 `SCHEMA_NAME`.**
+这是整个设计里最重要的一条边界.
+
+`data/` 里**没有配置**, 全是人写的内容: 文案, 提示词, 解释, 种子数据. 那唯一一行配置留在
+`.env.defaults` 而不是搬进来, 是因为那个文件是按"是不是密钥"切的, 而这条边界还管着另一件
+事: AI 能不能改它. 详见第 5 节.
 
 它以前不是这样: 配置在 `config/`, 提示词在 `agent_app/prompts/`, kickstart 问题在
 `data/`, 数据库种子在仓库根目录. 四个地方, 而且和脚手架代码混在一起. 那种布局下, 一次
@@ -45,8 +49,9 @@ data/
 
 ### 按读者切, 不按主题切
 
-`dataset.toml` 只有 Python 读, `site.toml` 只有 TypeScript 读. 它们曾经是同一个文件, 而
-那个文件其实是两份不相关的配置钉在一起 —— 两个运行时读的 key 集合完全不重叠.
+`site.toml` 只有 TypeScript 读, 后端一个字节都不碰它; 后端的配置在 `.env.defaults`.
+它们曾经是同一个文件, 而那个文件其实是两份不相关的配置钉在一起 —— 两个运行时读的 key
+集合完全不重叠.
 
 所以规矩是: **加一个值之前, 先问哪个运行时消费它.** 如果答案是"两个都要", 把这件事说
 出来, 因为今天没有任何一个值是这样.
@@ -141,8 +146,7 @@ Python 包叫 `agent_app`, 不叫 `smb_lending_anything`. 这个名字是故意�
 | 位置 | 职责 |
 | :--- | :--- |
 | `agent_app/paths.py` | 所有路径, 集中一处. 路径是源码树的事实, 所以不进配置 |
-| `agent_app/project_config.py` | 读 `data/dataset.toml` 的类型化入口 |
-| `agent_app/config/` | 读 `.env` 的密钥和凭据. **和上一行完全不同的东西** |
+| `agent_app/config/` | 读 `.env` 和 `.env.defaults`, 是后端唯一的配置入口 |
 | `agent_app/one/one_0*.py` | 按关注点切开的 mixin: 配置, 数据库, boto3, agent |
 | `agent_app/sql_utils.py` | 纯函数, 拿 `engine` 当第一个参数, 不依赖类 |
 | `agent_app/db_schema/` | 把库结构编码成 LLM 好读的紧凑格式 |
@@ -151,14 +155,24 @@ Python 包叫 `agent_app`, 不叫 `smb_lending_anything`. 这个名字是故意�
 
 这是后端最容易搞错的一处:
 
-| | `data/dataset.toml` | `.env` -> `agent_app/config/` |
+| | `.env.defaults` | `.env` |
 | :--- | :--- | :--- |
-| 装什么 | 项目身份, schema 名, 建表顺序 | API key, 数据库密码, LLM provider |
-| 随什么变 | **数据集** | **机器** |
-| 进 Git 吗 | 进 | 不进 |
+| 装什么 | `SCHEMA_NAME`, LLM provider, region, 配额上限 | API key, AWS 密钥, 数据库 host/user/password/name |
+| 是密钥吗 | 不是 | **是** |
+| 进 Git 吗 | **进** | 不进 |
+| AI 能读吗 | 能 | **不能** —— `.claude/settings.json` 的 `deny` |
+| AI 能改吗 | 能, 换数据集改的就是它 | **不能** |
+| 加载顺序 | 后加载, 补空缺 | **先加载, 优先** |
 
-判据是一句话: **它会因为换一台机器而不同吗?** 会 -> `.env`; 不会 -> `dataset.toml`.
-一个值不能两边都有, 哪怕用环境变量做"逃生舱"也不行 —— 那等于给它两个家, 迟早两个答案.
+判据是一句话: **它是密钥吗?** 以前的判据是"会因为换一台机器而不同吗", 那时候的切分是
+`data/dataset.toml` 和 `.env`. 那条线也讲得通, 但它最后为了一个字符串养出了一整个 TOML
+文件加一个读取模块. **按密钥切的那条线能挣回成本, 因为它决定的是"谁能打开这个文件"** ——
+包括 AI 能不能.
+
+`.env` 先加载且优先, 所以任何 committed 默认值都能在单台机器上覆盖, 比如让一个 checkout
+指向 staging schema. 这个覆盖是设计, 不是逃生舱: 它发生在**同一个配置系统内部**, 只有一个
+读取者. 真正禁止的是同一个值躺在两个**不同的**配置系统里 —— `project_name` 曾经那样,
+现在整个没了.
 
 ### 通用代码里不许出现本数据集的例子
 

@@ -51,7 +51,7 @@ description = "💾 Export Python dependencies to requirements.txt (not used by 
 run = "uv export --format requirements-txt --no-dev --no-emit-project --no-hashes --no-annotate --no-emit-package pywin32 --no-emit-package colorama --no-emit-package tzdata | sed 's/ ; platform_machine ==.*or.*//' > requirements.txt"
 
 [tasks.check]
-description = "🔍 Check the repo agrees with data/dataset.toml (run after a dataset swap)"
+description = "🔍 Check the repo agrees with its config and its seed (run after a dataset swap)"
 run = ".venv/bin/python scripts/test_00_check_project_config.py"
 
 [tasks.test-python]
