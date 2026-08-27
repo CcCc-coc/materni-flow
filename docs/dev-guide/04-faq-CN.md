@@ -73,7 +73,7 @@ export const METADATA = {
 
 **需求：** 调整 Agent 的行为、工具使用指南或工作流程
 
-**修改位置：** `agent_app/prompts/bi-agent-system-prompt.md`
+**修改位置：** `data/system-prompt.md`
 
 ```markdown
 You are a helpful AI assistant for OB/GYN ward scheduling.
@@ -252,7 +252,7 @@ Vercel Dashboard → Deployments → 选择部署 → View Build Logs / Function
 | 网站标题/描述 | `lib/constants.ts` |
 | Landing Page 内容 | `app/(marketing)/_components/` |
 | Chat UI | `components/chat/` |
-| Agent System Prompt | `agent_app/prompts/bi-agent-system-prompt.md` |
+| Agent System Prompt | `data/system-prompt.md` |
 | AI 模型 | `agent_app/config/conf_00_def.py` |
 | Agent 工具 | `agent_app/one/one_04_agent.py` |
 | API 端点 | `api/index.py` |

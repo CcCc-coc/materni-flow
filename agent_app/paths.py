@@ -1,5 +1,18 @@
 # -*- coding: utf-8 -*-
 
+"""
+Every path this package needs, in one place.
+
+Paths are facts about the source tree, not configuration: a dataset swap rewrites
+the *contents* of ``data/``, never the filenames. So nothing here is routed
+through ``data/dataset.toml`` or ``.env`` -- doing that once bought nothing and
+forced a circular import between this module and ``project_config``.
+
+Add a path here first, then refer to it as ``path_enum.your_new_path`` everywhere
+else. Do not add one speculatively: an entry with no reader silently rots into a
+pointer at a directory that no longer exists.
+"""
+
 from pathlib import Path
 from functools import cached_property
 
@@ -8,23 +21,8 @@ class PathEnum:
     dir_package = Path(__file__).absolute().parent
     dir_project_root = dir_package.parent
 
-    # Virtual Environment
-    dir_venv = dir_project_root / ".venv"
-    dir_venv_bin = dir_venv / "bin"
-    path_venv_bin_pip = dir_venv_bin / "pip"
-    path_venv_bin_python = dir_venv_bin / "python"
-    path_venv_bin_pytest = dir_venv_bin / "pytest"
-
-    # Test
+    # Coverage report, written by agent_app.tests.helper.
     dir_htmlcov = dir_project_root / "htmlcov"
-    path_cov_index_html = dir_htmlcov / "index.html"
-    dir_unit_test = dir_project_root / "tests"
-    dir_int_test = dir_project_root / "tests_int"
-    dir_load_test = dir_project_root / "tests_load"
-
-    @cached_property
-    def dir_home(self) -> Path:
-        return Path.home()
 
     # Everything a dataset swap rewrites, in one directory.
     #
@@ -44,27 +42,8 @@ class PathEnum:
     path_site_toml = dir_data / "site.toml"
     path_business_context_md = dir_data / "business-context.md"
 
-    dir_prompts = dir_package / "prompts"
-    path_instruction_md = dir_prompts / "instruction.md"
-    path_knowledge_base_md = dir_prompts / "knowledge-base.md"
-
-    # The agent's system prompt. Fixed here rather than named in config: a
-    # dataset swap rewrites its contents, not its filename. Routing it through
-    # config bought nothing and forced a circular import between this module
-    # and ``project_config``.
+    # The agent's domain brain.
     path_bi_agent_system_prompt_md = dir_data / "system-prompt.md"
-
-    @cached_property
-    def instruction_content(self) -> str:
-        return self.path_instruction_md.read_text(encoding="utf-8")
-
-    @cached_property
-    def knowledge_base_content(self) -> str:
-        return self.path_knowledge_base_md.read_text(encoding="utf-8")
-
-    @cached_property
-    def path_bi_agent_system_prompt_content(self) -> str:
-        return self.path_bi_agent_system_prompt_md.read_text(encoding="utf-8")
 
     dir_tmp = dir_project_root / "tmp"
 
@@ -80,6 +59,11 @@ class PathEnum:
     # Never commit the working copy: tests and write tools mutate it.
     path_sqlite_db_example = dir_data / "data.sqlite.example"
     path_sqlite_db = dir_tmp / "data.sqlite"
+
+    @cached_property
+    def path_bi_agent_system_prompt_content(self) -> str:
+        """Read once per process; the prompt is re-read on every agent build."""
+        return self.path_bi_agent_system_prompt_md.read_text(encoding="utf-8")
 
 
 path_enum = PathEnum()

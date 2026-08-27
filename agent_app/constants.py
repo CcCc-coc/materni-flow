@@ -1,18 +1,23 @@
 # -*- coding: utf-8 -*-
 
 """
-Constant variables used in this project.
+Enums shared across modules.
+
+Two unrelated families live here, kept together only because this file is a
+zero-dependency leaf that everything else may import:
+
+- ``LlmProviderEnum`` / ``DEFAULT_MODEL_ID`` -- read by ``config/`` and
+  ``one/one_04_agent.py``.
+- The ``LLM*`` / ``ObjectTypeEnum`` / ``TableTypeEnum`` / ``DbTypeEnum`` vocabulary
+  -- read by ``db_schema/`` and ``one/one_02_db.py``.
+
+Nothing dataset-specific belongs here. A value that varies per machine goes to
+``config/conf_00_def.py``; one that varies per dataset goes to ``data/dataset.toml``.
 """
 
-import os
-
 from enum_mate.api import BetterStrEnum
-from pydantic import BaseModel, Field
-
-TAB = " " * 2
 
 
-# [startllmproviderenum]
 class LlmProviderEnum(BetterStrEnum):
     """
     Supported LLM backends for the BI agent.
@@ -52,7 +57,6 @@ DEFAULT_MODEL_ID = {
     LlmProviderEnum.OPENAI.value: "gpt-5.6-luna",
     LlmProviderEnum.GOOGLE.value: "gemini-3.5-flash-lite",
 }
-# [endllmproviderenum]
 
 
 class LLMColumnConstraintEnum(BetterStrEnum):
@@ -61,15 +65,11 @@ class LLMColumnConstraintEnum(BetterStrEnum):
     Used in schema encoding to reduce token usage while preserving essential constraint information.
     """
 
-    # relational database
     PK = "PK"  # Primary Key
     UQ = "UQ"  # Unique Key
     IDX = "IDX"  # Index
     FK = "FK"  # Foreign Key
     NN = "NN"  # Not Null
-    # aws redshift
-    DK = "DK"  # Distribution Key
-    SK = "SK"  # Sort Key
 
 
 class LLMTypeEnum(BetterStrEnum):
@@ -106,32 +106,6 @@ class ObjectTypeEnum(BetterStrEnum):
     SCHEMA = "schema"
     DATABASE = "database"
 
-    @property
-    def table_type(self) -> "TableTypeEnum":
-        return db_object_type_to_table_type_mapping[self]
-
-
-# [startdbtypeenum]
-class DbTypeEnum(BetterStrEnum):
-    """
-    Supported database system types for connection configuration.
-    Used in configuration validation and connection factory selection.
-    """
-
-    SQLITE = "sqlite"  # SQLite local databases
-    POSTGRESQL = "postgresql"  # PostgreSQL databases
-    MYSQL = "mysql"  # MySQL/MariaDB databases
-    MSSQL = "mssql"  # Microsoft SQL Server
-    ORACLE = "oracle"  # Oracle databases
-    AWS_REDSHIFT = "aws_redshift"  # Amazon Redshift data warehouses
-    SNOWFLAKE = "snowflake"  # Snowflake cloud databases
-    MONGODB = "mongodb"  # MongoDB with SQL interface
-    ELASTICSEARCH = "elasticsearch"  # Elasticsearch with SQL
-    OPENSEARCH = "opensearch"  # OpenSearch with SQL
-
-
-# [enddbtypeenum]
-
 
 class TableTypeEnum(BetterStrEnum):
     """
@@ -144,47 +118,15 @@ class TableTypeEnum(BetterStrEnum):
     MATERIALIZED_VIEW = "MaterializedView"
 
 
-db_object_type_to_table_type_mapping = {
-    ObjectTypeEnum.TABLE: TableTypeEnum.TABLE,
-    ObjectTypeEnum.VIEW: TableTypeEnum.VIEW,
-    ObjectTypeEnum.MATERIALIZED_VIEW: TableTypeEnum.MATERIALIZED_VIEW,
-}
-
-
-# [startconnectiontypeenum]
-class ConnectionTypeEnum(BetterStrEnum):
+class DbTypeEnum(BetterStrEnum):
     """
-    Connection types for database connections.
-    Used in database :class:`~mcp_ohmy_sql.config.conn.BaseConnection`
-    management to differentiate between different connection methods.
+    Database engines this scaffold actually runs against.
+
+    Deliberately short. It used to list ten engines copied in from elsewhere, nine
+    of which no code path could reach -- a menu of options that were never
+    implemented reads as support that does not exist. Add an entry when the code
+    path that uses it is added, not before.
     """
 
-    SQLALCHEMY = "sqlalchemy"  # SQLAlchemy connections
-    SNOWFLAKE = "snowflake"  # Snowflake
-    AWS_REDSHIFT = "aws_redshift"  # AWS Redshift
-
-
-# [endconnectiontypeenum]
-
-
-class EnvVar(BaseModel):
-    """
-    Environment variable wrapper with default value support.
-    Used for accessing environment variables throughout the application with fallback defaults.
-    """
-
-    name: str = Field()
-    default: str = Field(default="")
-
-    @property
-    def value(self) -> str:
-        return os.environ.get(self.name, self.default)
-
-
-class EnvVarEnum:
-    """
-    Collection of predefined environment variables used throughout the application.
-    Used for centralized environment variable management and configuration loading.
-    """
-
-    MCP_OHMY_SQL_CONFIG = EnvVar(name="MCP_OHMY_SQL_CONFIG")
+    SQLITE = "sqlite"  # local seed and sync source, tmp/data.sqlite
+    POSTGRESQL = "postgresql"  # what the agent reads in every environment

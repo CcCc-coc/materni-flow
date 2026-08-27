@@ -198,13 +198,15 @@ bedrock_runtime_client = session.client("bedrock-runtime")
 
 ---
 
-### `agent_app/prompts/` - Prompt 模板
+### `data/` - Prompt 模板
 
 | 文件 | 用途 |
 |------|------|
-| `bi-agent-system-prompt.md` | System Prompt，定义 AI Agent 的行为、工具使用指南和工作流程 |
+| `system-prompt.md` | System Prompt，定义 AI Agent 的行为、工具使用指南和工作流程 |
 
-这些文件通过 `paths.py` 加载，在 Agent 初始化时注入。
+这个文件通过 `paths.py` 加载，在 Agent 初始化时注入。它住在 `data/` 而不是
+`agent_app/` 里，因为它随数据集变：换一个业务领域就整个重写，而 `agent_app/`
+一行都不用改。
 
 ---
 

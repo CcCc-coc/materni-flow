@@ -204,7 +204,7 @@ But notice what's NOT here: there's no long explanation of why this matters, no 
 
 Now open the actual system prompt and read it with these concepts in mind:
 
-**File:** [agent_app/prompts/bi-agent-system-prompt.md](agent_app/prompts/bi-agent-system-prompt.md)
+**File:** [data/system-prompt.md](data/system-prompt.md)
 
 As you read, ask yourself:
 
@@ -282,7 +282,7 @@ Think of it like briefing an expert consultant. You don't explain accounting bas
 
 **System Prompt Location:**
 ```
-agent_app/prompts/bi-agent-system-prompt.md
+data/system-prompt.md
 ```
 
 **Prompt Structure:**

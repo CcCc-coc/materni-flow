@@ -8,7 +8,7 @@ types (e.g., String, Integer) and SQL standard types (e.g., VARCHAR, BIGINT).
 
 import textwrap
 
-from ..constants import TAB, ObjectTypeEnum, TableTypeEnum, LLMColumnConstraintEnum
+from ..constants import ObjectTypeEnum, TableTypeEnum, LLMColumnConstraintEnum
 
 from .model import (
     ColumnInfo,
@@ -16,6 +16,10 @@ from .model import (
     SchemaInfo,
     DatabaseInfo,
 )
+
+#: Indent unit for the encoded schema. A private formatting detail of this
+#: encoder, not a project-wide constant.
+TAB = " " * 2
 
 
 def encode_column_info(

@@ -153,7 +153,7 @@ def tool_assign_bed(self, admission_id: str, bed_id: str) -> str:
 
 **System Prompt** 是给 AI 的「工作手册」，定义它的角色、能力、行为规则。
 
-**文件位置：** `agent_app/prompts/bi-agent-system-prompt.md`
+**文件位置：** `data/system-prompt.md`
 
 ### Prompt 的关键组成部分
 
@@ -302,7 +302,7 @@ The database contains 11 tables for managing an OB/GYN ward:
 | 文件 | 内容 |
 |------|------|
 | `agent_app/one/one_04_agent.py` | Tool 定义和 Agent 创建 |
-| `agent_app/prompts/bi-agent-system-prompt.md` | System Prompt |
+| `data/system-prompt.md` | System Prompt |
 | `agent_app/write_operations.py` | 写操作纯函数 |
 | `scripts/test_04_print_database_schema.py` | 打印数据库结构 (直接读库, 无快照文件) |
 

@@ -14,7 +14,7 @@ Read the tutorial: [SMB Lending Lens - The System Prompt](https://github.com/eas
 
 Study the actual system prompt used by the BI Agent:
 
-**File:** [`agent_app/prompts/bi-agent-system-prompt.md`](agent_app/prompts/bi-agent-system-prompt.md)
+**File:** [`data/system-prompt.md`](data/system-prompt.md)
 
 As you read, identify:
 - Identity and scope (who is the agent?)
