@@ -10,6 +10,7 @@ the shape of what comes back. No environment mutation, no network, no I/O.
 import pytest
 
 from agent_app.config import SCHEMA_NAME_PATTERN, Config
+from agent_app.runtime import runtime
 
 
 class TestConfig:
@@ -50,6 +51,101 @@ class TestConfig:
         assert isinstance(Config.new_in_local_runtime(), Config)
         assert isinstance(Config.new_in_vercel_runtime(), Config)
         assert isinstance(Config.new(), Config)
+
+
+class TestFactories:
+    """
+    Two runtimes, one shared reader, exactly one difference between them.
+
+    ``new_from_env_var`` does the reading; the factories differ only in whether
+    they hand it AWS credentials. These tests pin that difference, because it is
+    the entire reason there are two factories rather than one.
+    """
+
+    def test_new_from_env_var_reads_the_environment(self, monkeypatch):
+        monkeypatch.setenv("SCHEMA_NAME", "acme_widgets")
+        monkeypatch.setenv("LLM_PROVIDER", "openai")
+        monkeypatch.setenv("DB_PORT", "5433")
+        monkeypatch.setenv("QUOTA_ENABLED", "true")
+        config = Config.new_from_env_var()
+        assert config.schema_name == "acme_widgets"
+        assert config.llm_provider == "openai"
+        assert config.db_port == 5433
+        assert config.quota_enabled is True
+
+    def test_new_from_env_var_never_reads_aws_credentials(self, monkeypatch):
+        """
+        The trap this guards: boto3 checks the environment BEFORE
+        ~/.aws/credentials, so a placeholder picked up here would shadow a
+        working local profile and Bedrock would fail with an opaque
+        UnrecognizedClientException.
+        """
+        monkeypatch.setenv("AWS_ACCESS_KEY_ID", "AKIAPLACEHOLDER")
+        monkeypatch.setenv("AWS_SECRET_ACCESS_KEY", "shhh")
+        config = Config.new_from_env_var()
+        assert config.aws_access_key_id is None
+        assert config.aws_secret_access_key is None
+
+    def test_overrides_win_over_the_environment(self, monkeypatch):
+        """How a runtime states its one difference, instead of copying the lot."""
+        monkeypatch.setenv("SCHEMA_NAME", "from_env")
+        assert Config.new_from_env_var(schema_name="acme_override").schema_name == (
+            "acme_override"
+        )
+
+    def test_local_leaves_aws_to_the_credential_chain(self, monkeypatch):
+        monkeypatch.setenv("AWS_ACCESS_KEY_ID", "AKIAPLACEHOLDER")
+        monkeypatch.setenv("AWS_SECRET_ACCESS_KEY", "shhh")
+        config = Config.new_in_local_runtime()
+        assert config.aws_access_key_id is None
+        assert config.aws_secret_access_key is None
+
+    def test_vercel_takes_aws_from_the_environment(self, monkeypatch):
+        """Serverless has no ~/.aws, so there is no chain to fall back to."""
+        monkeypatch.setenv("AWS_ACCESS_KEY_ID", "AKIAREAL")
+        monkeypatch.setenv("AWS_SECRET_ACCESS_KEY", "real")
+        config = Config.new_in_vercel_runtime()
+        assert config.aws_access_key_id == "AKIAREAL"
+        assert config.aws_secret_access_key == "real"
+
+    def test_new_dispatches_to_the_vercel_factory(self, monkeypatch):
+        """
+        `new()` exists only to pick a factory, and picking the Vercel one is the
+        half that never happens on a laptop. Forcing it here is what stops a
+        broken dispatch from shipping green.
+
+        `runtime` caches its answer, so the cache has to be dropped on the way
+        in and on the way out -- a stale True would leak into every later test.
+        """
+        runtime.__dict__.pop("_is_vercel", None)
+        try:
+            monkeypatch.setenv("VERCEL", "1")
+            monkeypatch.setenv("AWS_ACCESS_KEY_ID", "AKIAREAL")
+            monkeypatch.setenv("AWS_SECRET_ACCESS_KEY", "real")
+            assert runtime.is_vercel()
+            # Reading AWS from the environment is what only the Vercel factory
+            # does, so it is the proof of which branch ran.
+            assert Config.new().aws_access_key_id == "AKIAREAL"
+        finally:
+            runtime.__dict__.pop("_is_vercel", None)
+
+    def test_new_dispatches_to_the_local_factory(self, monkeypatch):
+        runtime.__dict__.pop("_is_vercel", None)
+        try:
+            monkeypatch.delenv("VERCEL", raising=False)
+            monkeypatch.setenv("AWS_ACCESS_KEY_ID", "AKIAPLACEHOLDER")
+            assert runtime.is_local()
+            assert Config.new().aws_access_key_id is None
+        finally:
+            runtime.__dict__.pop("_is_vercel", None)
+
+    def test_placeholder_reads_as_unset(self, monkeypatch):
+        """A .env copied from .env.example with "..." left in must not count."""
+        monkeypatch.setenv("AWS_ACCESS_KEY_ID", "...")
+        monkeypatch.setenv("AWS_SECRET_ACCESS_KEY", "...")
+        config = Config.new_in_vercel_runtime()
+        assert config.aws_access_key_id is None
+        assert config.aws_secret_access_key is None
 
 
 class TestSchemaName:

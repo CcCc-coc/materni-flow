@@ -364,99 +364,114 @@ class Config:
             )
 
     @classmethod
-    def new_in_local_runtime(cls):
+    def new_from_env_var(cls, **overrides) -> "Config":
+        """
+        Build a Config from ``os.environ``, whatever put the values there.
+
+        Reads nothing off disk. Every runtime shares this, because the mapping
+        from variable name to field is the same everywhere -- what differs
+        between runtimes is only *which* variables exist and where they came
+        from, and that is the caller's problem.
+
+        AWS credentials are the one thing deliberately absent. boto3 reads
+        ``AWS_ACCESS_KEY_ID`` / ``AWS_SECRET_ACCESS_KEY`` before it reads
+        ``~/.aws/credentials``, so reading them unconditionally would let a
+        placeholder in a local ``.env`` shadow a perfectly good profile. The
+        runtime that genuinely needs them passes them in.
+
+        :param overrides: Field values to use instead of the environment. The
+            runtime-specific bits go here, so the difference between two
+            runtimes reads as a short argument list rather than a second copy
+            of this whole call.
+        """
+        values = dict(
+            schema_name=get_env("SCHEMA_NAME") or "",
+            llm_provider=get_env("LLM_PROVIDER") or LlmProviderEnum.BEDROCK.value,
+            model_id=get_env("LLM_MODEL_ID"),
+            aws_region=get_env("AWS_REGION") or "us-east-1",
+            anthropic_api_key=get_env("ANTHROPIC_API_KEY"),
+            openai_api_key=get_env("OPENAI_API_KEY"),
+            google_api_key=get_env("GOOGLE_API_KEY"),
+            db_host=get_env("DB_HOST"),
+            db_port=get_env_int("DB_PORT"),
+            db_user=get_env("DB_USER"),
+            db_pass=get_env("DB_PASS"),
+            db_name=get_env("DB_NAME"),
+            quota_enabled=get_env_bool("QUOTA_ENABLED"),
+            dynamodb_table_name_quota=get_env("DYNAMODB_TABLE_NAME_QUOTA"),
+            quota_max_invoke_per_month=get_env_int("QUOTA_MAX_INVOKE_PER_MONTH") or 1000,
+            quota_max_input_token_per_month=(
+                get_env_int("QUOTA_MAX_INPUT_TOKEN_PER_MONTH") or 50_000_000
+            ),
+            quota_max_output_token_per_month=(
+                get_env_int("QUOTA_MAX_OUTPUT_TOKEN_PER_MONTH") or 10_000_000
+            ),
+        )
+        values.update(overrides)
+        return cls(**values)
+
+    @classmethod
+    def new_in_local_runtime(cls) -> "Config":
         """
         Build config for local development.
 
-        AWS credentials are deliberately NOT read from the environment here: boto3
-        checks ``AWS_ACCESS_KEY_ID`` / ``AWS_SECRET_ACCESS_KEY`` before it reads
-        ``~/.aws/credentials``, so passing them through would let a placeholder in
-        ``.env`` shadow a perfectly good local profile.
+        The extra step over :meth:`new_from_env_var` is reading the files: a
+        laptop keeps its settings in ``.env`` and ``.env.defaults`` rather than
+        in a real environment.
+
+        No AWS credentials are passed, so boto3 falls through to
+        ``~/.aws/credentials`` -- see :meth:`new_from_env_var`.
         """
         load_env_files()
-
-        return cls(
-            schema_name=get_env("SCHEMA_NAME") or "",
-            llm_provider=get_env("LLM_PROVIDER") or LlmProviderEnum.BEDROCK.value,
-            model_id=get_env("LLM_MODEL_ID"),
-            aws_region=get_env("AWS_REGION") or "us-east-1",
-            anthropic_api_key=get_env("ANTHROPIC_API_KEY"),
-            openai_api_key=get_env("OPENAI_API_KEY"),
-            google_api_key=get_env("GOOGLE_API_KEY"),
-            db_host=get_env("DB_HOST"),
-            db_port=get_env_int("DB_PORT"),
-            db_user=get_env("DB_USER"),
-            db_pass=get_env("DB_PASS"),
-            db_name=get_env("DB_NAME"),
-            quota_enabled=get_env_bool("QUOTA_ENABLED"),
-            dynamodb_table_name_quota=get_env("DYNAMODB_TABLE_NAME_QUOTA"),
-            quota_max_invoke_per_month=get_env_int("QUOTA_MAX_INVOKE_PER_MONTH") or 1000,
-            quota_max_input_token_per_month=(
-                get_env_int("QUOTA_MAX_INPUT_TOKEN_PER_MONTH") or 50_000_000
-            ),
-            quota_max_output_token_per_month=(
-                get_env_int("QUOTA_MAX_OUTPUT_TOKEN_PER_MONTH") or 10_000_000
-            ),
-        )
+        return cls.new_from_env_var()
 
     @classmethod
-    def new_in_vercel_runtime(cls):
+    def new_in_vercel_runtime(cls) -> "Config":
         """
         Build config for Vercel.
 
-        Serverless has no ``~/.aws``, so AWS credentials must come from environment
-        variables. The database is always the remote Postgres instance here.
+        Serverless has no ``~/.aws``, so AWS credentials have to come from the
+        environment; this is the runtime that passes them in.
 
-        ``.env.defaults`` is still loaded: it is committed, so it ships with the
-        deployment and supplies the schema name without anyone re-entering it in
-        the Vercel dashboard. A dashboard variable still wins, because Vercel
-        sets it in the real environment before this runs.
+        The files are read here too, which is easy to misread as pointless.
+        ``.env`` will not exist (``load_dotenv`` on a missing path is a no-op),
+        but ``.env.defaults`` is committed and ships with the deployment, so the
+        schema name arrives without anyone re-entering it in the Vercel
+        dashboard. A dashboard variable still wins, because Vercel sets it in the
+        real environment before any of this runs.
         """
         load_env_files()
-
-        return cls(
-            schema_name=get_env("SCHEMA_NAME") or "",
-            llm_provider=get_env("LLM_PROVIDER") or LlmProviderEnum.BEDROCK.value,
-            model_id=get_env("LLM_MODEL_ID"),
-            aws_region=get_env("AWS_REGION") or "us-east-1",
+        return cls.new_from_env_var(
             aws_access_key_id=get_env("AWS_ACCESS_KEY_ID"),
             aws_secret_access_key=get_env("AWS_SECRET_ACCESS_KEY"),
-            anthropic_api_key=get_env("ANTHROPIC_API_KEY"),
-            openai_api_key=get_env("OPENAI_API_KEY"),
-            google_api_key=get_env("GOOGLE_API_KEY"),
-            db_host=get_env("DB_HOST"),
-            db_port=get_env_int("DB_PORT"),
-            db_user=get_env("DB_USER"),
-            db_pass=get_env("DB_PASS"),
-            db_name=get_env("DB_NAME"),
-            quota_enabled=get_env_bool("QUOTA_ENABLED"),
-            dynamodb_table_name_quota=get_env("DYNAMODB_TABLE_NAME_QUOTA"),
-            quota_max_invoke_per_month=get_env_int("QUOTA_MAX_INVOKE_PER_MONTH") or 1000,
-            quota_max_input_token_per_month=(
-                get_env_int("QUOTA_MAX_INPUT_TOKEN_PER_MONTH") or 50_000_000
-            ),
-            quota_max_output_token_per_month=(
-                get_env_int("QUOTA_MAX_OUTPUT_TOKEN_PER_MONTH") or 10_000_000
-            ),
         )
 
     @classmethod
-    def new(cls):
+    def new(cls) -> "Config":
         """
-        Factory method that creates the appropriate Config for the current runtime.
+        The entry point: detect the runtime, then build the config for it.
 
-        This is the main entry point for creating Config instances. It automatically
-        detects the runtime environment and returns a properly configured instance.
+        This is the only place the runtime is consulted. Adding a deployment
+        target means adding an ``is_*`` method in :mod:`agent_app.runtime`, a
+        factory above, and a branch here -- and nothing anywhere else learns
+        that a new target exists.
 
         Returns:
-            Config: A Config instance configured for the detected runtime.
+            Config: configured for the detected runtime.
 
         Raises:
-            RuntimeError: If the runtime environment is not recognized.
+            RuntimeError: if the runtime is one this method has no branch for.
+                Unreachable today, since ``is_local`` is defined as "not
+                Vercel"; it exists so that adding a third target and forgetting
+                this function fails loudly instead of silently getting the
+                local config.
         """
         if runtime.is_local():
             return cls.new_in_local_runtime()
         elif runtime.is_vercel():
             return cls.new_in_vercel_runtime()
         else:  # pragma: no cover
-            raise RuntimeError
+            raise RuntimeError(
+                "No Config factory for the current runtime. Add a branch here "
+                "to agent_app/config.py."
+            )
