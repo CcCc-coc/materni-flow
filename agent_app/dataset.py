@@ -316,6 +316,26 @@ def build_remote_metadata(
     return remote_metadata
 
 
+def require_dialect(engine: sa.Engine, expected: str, role: str) -> None:
+    """
+    Refuse an engine that is not the database this code was written against.
+
+    Both engines are plain ``sa.Engine``, so nothing stops them being passed the
+    wrong way round -- and that mistake is silent until it is destructive: the
+    sync's first act is to DROP tables.
+
+    :raises ValueError: if ``engine`` speaks a different dialect.
+    """
+    actual = engine.dialect.name
+    if actual != expected:
+        raise ValueError(
+            f"The {role} engine is {actual!r}, but this function needs "
+            f"{expected!r}. Check the argument order: sync_sqlite_to_postgres "
+            f"reads from SQLite and writes to PostgreSQL, and it starts by "
+            f"dropping tables in whatever it was handed as the target."
+        )
+
+
 def sync_sqlite_to_postgres(
     local_engine: sa.Engine,
     remote_engine: sa.Engine,
@@ -348,8 +368,12 @@ def sync_sqlite_to_postgres(
         dict: ``{"success": True, "schema": ..., "tables": {name: row_count}}``
 
     Raises:
-        ValueError: If the local database is missing an expected table.
+        ValueError: If either engine is the wrong kind of database, or the local
+            one is empty.
     """
+    # Before anything else, because step 3 drops tables.
+    require_dialect(local_engine, "sqlite", "local")
+    require_dialect(remote_engine, "postgresql", "remote")
 
     def log(msg: str):
         if verbose:
@@ -391,19 +415,17 @@ def sync_sqlite_to_postgres(
     # inside it, children first.
     #
     # CASCADE also clears dependent objects outside our table set (a view someone
-    # built on top of these, say). It is PostgreSQL-only syntax, hence the guard —
-    # which is also what lets this function be tested against a SQLite stand-in.
-    is_postgres = remote_engine.dialect.name == "postgresql"
-    cascade = " CASCADE" if is_postgres else ""
+    # built on top of these, say). Both it and CREATE SCHEMA are PostgreSQL-only,
+    # and unconditional now: the dialect was checked at the top rather than
+    # quietly worked around here.
     with remote_engine.begin() as conn:
-        if is_postgres:
-            conn.execute(sa.schema.CreateSchema(schema_name, if_not_exists=True))
-            log(f"Schema ready: {schema_name}")
+        conn.execute(sa.schema.CreateSchema(schema_name, if_not_exists=True))
+        log(f"Schema ready: {schema_name}")
 
         log("Dropping remote tables (reverse dependency order)...")
         for table_name in reversed(insert_order):
             qualified = f'"{schema_name}"."{table_name}"'
-            conn.execute(sa.text(f"DROP TABLE IF EXISTS {qualified}{cascade}"))
+            conn.execute(sa.text(f"DROP TABLE IF EXISTS {qualified} CASCADE"))
             log(f"  Dropped: {table_name}")
 
     # Step 4: Recreate them, same names, inside the schema.

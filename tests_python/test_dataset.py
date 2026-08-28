@@ -278,6 +278,61 @@ class TestLocalSqliteEngine:
         assert names == ["widget"]
 
 
+class TestRequireDialect:
+    """
+    Both engines are plain ``sa.Engine``, so nothing in the type system stops
+    them being passed the wrong way round. The sync's third step drops tables,
+    so that mistake is silent right up until it is destructive.
+
+    Building an engine opens no connection, so none of this touches a database.
+    """
+
+    def test_the_right_dialect_passes(self):
+        dataset.require_dialect(sa.create_engine("sqlite://"), "sqlite", "local")
+
+    def test_the_wrong_dialect_is_refused(self):
+        engine = sa.create_engine("sqlite://")
+        with pytest.raises(ValueError, match="'sqlite'.*'postgresql'"):
+            dataset.require_dialect(engine, "postgresql", "remote")
+
+    def test_the_message_names_the_role_and_the_hazard(self):
+        """The reader is mid-sync; "wrong dialect" alone does not help."""
+        engine = sa.create_engine("sqlite://")
+        with pytest.raises(ValueError) as excinfo:
+            dataset.require_dialect(engine, "postgresql", "remote")
+        message = str(excinfo.value)
+        assert "remote" in message
+        assert "dropping tables" in message
+
+    def test_swapped_arguments_are_caught_before_anything_is_dropped(self):
+        """
+        The failure this exists for. Passing the engines the wrong way round
+        used to skip CREATE SCHEMA and CASCADE and then run DROP statements
+        against whatever it was handed -- which could be the local seed.
+        """
+        sqlite = sa.create_engine("sqlite://")
+        postgres = sa.create_engine("postgresql+psycopg2://u:p@localhost/db")
+        with pytest.raises(ValueError, match="local engine is 'postgresql'"):
+            dataset.sync_sqlite_to_postgres(
+                local_engine=postgres,
+                remote_engine=sqlite,
+                schema_name="acme_widgets",
+            )
+
+    def test_a_sqlite_target_is_refused(self):
+        """
+        There used to be an ``is_postgres`` flag that silently dropped CASCADE
+        and CREATE SCHEMA for a non-PostgreSQL target -- a fallback for a
+        SQLite-stand-in test that was never written.
+        """
+        with pytest.raises(ValueError, match="remote engine is 'sqlite'"):
+            dataset.sync_sqlite_to_postgres(
+                local_engine=sa.create_engine("sqlite://"),
+                remote_engine=sa.create_engine("sqlite://"),
+                schema_name="acme_widgets",
+            )
+
+
 class TestNotOnTheProductionPath:
     def test_the_app_does_not_import_the_authoring_layer(self):
         """
