@@ -55,6 +55,7 @@ dependencies = [
 test = [
     "pytest>=8.2.2,<9.0.0", # Testing framework
     "pytest-cov>=6.0.0,<7.0.0", # Coverage reporting
+    "moto>=5.2.3,<6.0.0", # Mock AWS Service
 ]
 
 [tool.setuptools.packages.find]
