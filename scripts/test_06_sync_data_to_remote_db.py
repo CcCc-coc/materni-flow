@@ -3,10 +3,10 @@
 """
 Sync local SQLite database to remote PostgreSQL (NeonDB).
 
-Remote tables live in the PostgreSQL schema named by ``SCHEMA_NAME`` in ``.env.defaults``, so
-this project can share one NeonDB instance with others without colliding:
-local ``widget`` becomes remote ``acme_widget``, and its foreign keys are rewritten
-to match.
+Remote tables live in the PostgreSQL schema named by ``SCHEMA_NAME`` in
+``.env.defaults``, so this project can share one NeonDB instance with others
+without colliding. **Table names are identical on both sides**; only the schema
+differs, and foreign keys are rewritten into it.
 
 This script is DESTRUCTIVE and idempotent - each run will:
 1. DROP this project's prefixed tables in reverse dependency order
@@ -23,7 +23,7 @@ Verify the result afterwards with:
 """
 
 from agent_app.api import one
-from agent_app.tests.db_sync import reset_remote_database
+from agent_app.dataset import reset_remote_database
 
 
 def main():
@@ -41,7 +41,7 @@ def main():
         print(f"  {table_name}: {row_count:,} rows")
     print(f"  total: {sum(result['tables'].values()):,} rows")
     print("=" * 68)
-    print("Now verify with: mise run verify-db")
+    print("Now verify with: scripts/test_07_verify_remote_data.py")
 
 
 if __name__ == "__main__":

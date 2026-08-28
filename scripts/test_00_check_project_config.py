@@ -61,8 +61,8 @@ from pathlib import Path
 
 import sqlalchemy as sa
 
+from agent_app.dataset import local_sqlite_engine, table_insert_order
 from agent_app.paths import path_enum
-from agent_app.tests.db_sync import table_insert_order
 
 
 #: Directories worth scanning for retired vocabulary: everything that is code or
@@ -198,10 +198,26 @@ def check_retired_terms(report: Report, terms: list[str]) -> bool:
 
 def sqlite_table_names() -> set[str]:
     """Reflect the local SQLite file and return its table names."""
-    engine = sa.create_engine(f"sqlite:///{path_enum.path_sqlite_db}")
     metadata = sa.MetaData()
-    metadata.reflect(bind=engine)
+    metadata.reflect(bind=local_sqlite_engine())
     return set(metadata.tables)
+
+
+def report_missing_database(report: Report) -> None:
+    """
+    Say the database is missing, once, instead of every consequence of it.
+
+    Without this the run emits one error per table the system prompt mentions
+    -- "the system prompt queries table 'loan', which does not exist" -- which
+    reads like the prompt is broken. On a fresh checkout it never was: nobody
+    has built the database yet, and that is the only thing worth saying.
+    """
+    report.error(
+        "database",
+        "The dataset database has no tables, so every check below it would be "
+        "noise. Build it with:\n         .venv/bin/python .claude/skills/about-bi-agent-app-scaffold-cn/scripts/teaching_cli.py gen-data",
+    )
+    report.section("database present", False)
 
 
 def check_table_insert_order(report: Report, db_tables: set[str]) -> bool:
@@ -220,17 +236,17 @@ def check_table_insert_order(report: Report, db_tables: set[str]) -> bool:
     if not db_tables:
         report.error(
             "table-order",
-            f"{path_enum.path_sqlite_db.name} has no tables. "
-            f"Re-seed it with: mise run setup-db",
+            "The dataset database has no tables. "
+            "Build it with:\n         .venv/bin/python .claude/skills/about-bi-agent-app-scaffold-cn/scripts/teaching_cli.py gen-data",
         )
         report.section("table insert order (0 tables)", False)
         return False
 
     metadata = sa.MetaData()
-    metadata.reflect(bind=sa.create_engine(f"sqlite:///{path_enum.path_sqlite_db}"))
+    metadata.reflect(bind=local_sqlite_engine())
     try:
         order = table_insert_order(metadata)
-    except sa.exc.CircularDependencyError as e:
+    except RuntimeError as e:
         report.error(
             "table-order",
             f"the seed's foreign keys form a cycle, so no insert order can "
@@ -439,8 +455,11 @@ def main(argv: list[str] | None = None) -> int:
     db_tables = sqlite_table_names()
 
     check_retired_terms(report, retired)
-    check_table_insert_order(report, db_tables)
-    check_prompt_tables(report, db_tables)
+    if db_tables:
+        check_table_insert_order(report, db_tables)
+        check_prompt_tables(report, db_tables)
+    else:
+        report_missing_database(report)
     check_content_files(report)
     check_render_quota(report)
 

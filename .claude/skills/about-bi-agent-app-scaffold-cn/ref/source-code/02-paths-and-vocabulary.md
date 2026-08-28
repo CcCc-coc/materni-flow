@@ -12,6 +12,10 @@
 把系统提示词的路径放进配置, 结果什么也没换来, 还造成了 `paths` 和读配置的模块之间的循环
 import.
 
+**数据集相关的路径不在这里.** 它们的文件名属于数据集, 所以是 discover 出来的, 代码在
+`agent_app/dataset.py` —— 那个模块整体是教学层, 会被删掉。`paths.py` 只放**这个源码树自己
+的事实**。
+
 **不要投机性地加条目.** 一个没有读者的路径会悄悄烂成一个指向不存在目录的指针 —— 这个仓库
 真发生过: `dir_unit_test` / `dir_int_test` / `dir_load_test` 指向 `tests/`, `tests_int/`,
 `tests_load/` 三个根本不存在的目录 (实际是 `tests_python/`), 而 `dir_prompts` 那一族指向

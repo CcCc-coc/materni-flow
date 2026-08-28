@@ -21,8 +21,13 @@ data/                        # EVERY AUTHORED ARTIFACT a dataset swap rewrites.
 ├── site.toml                #   Every sentence the frontend says, incl. the 12
 │                            #   kickstart questions and the 4 capability cards.
 ├── business-context.md      #   The long-form explainer behind the home page.
-├── system-prompt.md         #   The agent's domain brain.
-└── data.sqlite.example      #   Pristine seed, copied to tmp/data.sqlite.
+└── system-prompt.md         #   The agent's domain brain.
+
+dataset/                     # The dataset's own source material. Committed --
+├── 0*-*.md                  #   summary, business context, ER doc, SQL queries
+├── 04-*_data_generator*.py  #   ...but its OUTPUT is not: run the generator to
+├── requirements.txt         #   build <name>.sqlite and data/*.tsv locally.
+└── <name>.sqlite            #   gitignored; discovered by paths.py, not named.
 
 agent_app/                   # Python package. Name is deliberately generic and
 ├── api.py                   #   never changes when the dataset changes.
@@ -34,6 +39,10 @@ agent_app/                   # Python package. Name is deliberately generic and
 │
 ├── config.py                # Reads .env + .env.defaults. Nothing else parses
 │                            #   configuration; data/ holds content only.
+├── dataset.py               # TEACHING LAYER, meant to be deleted. Discovers
+│                            #   dataset/*.sqlite and its generator, runs the
+│                            #   generator, syncs to PostgreSQL. Nothing on the
+│                            #   production path imports it.
 ├── vendor/                  # Third-party code copied in, not installed.
 │   └── vercel_ai_sdk.py     #   AI SDK request-body data model. No project
 │                            #   logic goes in here.
@@ -166,7 +175,7 @@ in a component.
 | The long-form "what problem does this solve" explainer | `data/business-context.md` |
 | The PostgreSQL schema name | `SCHEMA_NAME` in `.env.defaults` |
 | Agent's domain knowledge | `data/system-prompt.md` |
-| The data itself | `data/data.sqlite.example` |
+| The data itself | `dataset/` — source docs plus the generator that builds `<name>.sqlite` |
 | Dataset-specific write tools | `@tool` methods in `one_04_agent.py` |
 
 The only entry not in `data/` is the last one, because a write tool is code.
@@ -250,7 +259,6 @@ One (one_00_main.py)
 │   └── self.config -> Config instance (from config.py)
 │
 ├── DbMixin (one_02_db.py)
-│   ├── self.local_sqlite_engine   -> SQLite (tmp/data.sqlite)
 │   ├── self.remote_postgres_engine -> PostgreSQL (NeonDB)
 │   ├── self.engine                -> Auto-selects based on runtime
 │   ├── self.database_schema_str   -> LLM-optimized schema string
@@ -348,7 +356,7 @@ AWS_REGION=us-east-1
 # OPENAI_API_KEY=sk-...          (requires: uv sync --extra openai)
 # GOOGLE_API_KEY=...             (requires: uv sync --extra gemini)
 
-# Unused locally (local runtime reads tmp/data.sqlite); needed for remote Postgres
+# Required everywhere: the agent reads PostgreSQL in every environment
 # DB_HOST=ep-xxx-pooler.us-east-1.aws.neon.tech
 # DB_PORT=5432
 # DB_USER=neondb_owner
@@ -409,7 +417,6 @@ lie the next time the dataset is swapped.
 - `mise run inst-python-deps` - Install Python dependencies
 - `mise run inst-node-deps` - Install Node.js dependencies
 - `mise run inst` - Install all dependencies (Python + Node.js)
-- `mise run setup-db` - Seed `tmp/data.sqlite` from the committed `data/data.sqlite.example`
 - `mise run test-python` - Run Python tests
 - `mise run test-node` - Run Node.js tests
 - `mise run test` - Run all tests (Python + Node.js)
@@ -467,9 +474,28 @@ avoids that entirely.
 
 | | Local seed | What the agent reads |
 |---|---|---|
-| Engine | SQLite `tmp/data.sqlite` | PostgreSQL (NeonDB) |
+| Engine | SQLite `dataset/<name>.sqlite` | PostgreSQL (NeonDB) |
 | Table names | `loan`, `customer`, … | `loan`, `customer`, … — **identical** |
 | Used by | the sync's source, and tests | every environment, laptop included |
+
+**The database is not in Git.** `dataset/` holds the source documents and the
+generator; running the generator produces `dataset/<name>.sqlite`, which
+`.gitignore` excludes along with `dataset/data/*.tsv`. A fresh checkout therefore
+has to build it:
+
+```bash
+.venv/bin/python .claude/skills/about-bi-agent-app-scaffold-cn/scripts/teaching_cli.py gen-data
+.venv/bin/python .claude/skills/about-bi-agent-app-scaffold-cn/scripts/teaching_cli.py sync-db
+```
+
+Those are **not** mise tasks on purpose: `mise.toml` runs the application, and
+none of this is the application. The teaching layer is a set of directories you
+delete, not lines to pick out of a shared config.
+
+`agent_app/paths.py` **discovers** that file rather than naming it — the
+filename belongs to the dataset, and naming it would make a swap edit
+`agent_app/`, which is the one thing that package is not supposed to need. Zero
+matches and several matches both raise, with the fix in the message.
 
 The remote instance is **shared with other projects**, and the isolation is a
 PostgreSQL **schema**, not a table-name prefix: `SCHEMA_NAME` in
@@ -521,7 +547,6 @@ them in sequence the first time, then individually as needed.
 | # | Script | What it does |
 |---|--------|--------------|
 | 00 | `test_00_check_project_config.py` | Verify the repo agrees with its config (also `mise run check`) |
-| 01 | `test_01_setup_sqlite_file.py` | Seed `tmp/data.sqlite` from `data/data.sqlite.example` (also `mise run setup-db`) |
 | 02 | `test_02_run_sql_locally.py` | Run the SQL in `test_02_run_sql_locally.sql` against local SQLite |
 | 03 | `test_03_run_sql_locally_cli.py` | Same, but takes `--sql "..."` on the command line |
 | 04 | `test_04_print_database_schema.py` | Print the LLM-optimized schema string |

@@ -6,6 +6,7 @@ omit =
     agent_app/tests/*
     # Third-party code copied in, not written here.
     agent_app/vendor/*
+    agent_app/dataset.py
 
 [report]
 # Regexes for lines to exclude from consideration

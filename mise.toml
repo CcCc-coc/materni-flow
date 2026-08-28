@@ -30,18 +30,6 @@ run = "pnpm install"
 description = "💾 Install all dependencies (Python + Node.js)"
 depends = ["inst-python-deps", "inst-node-deps"]
 
-[tasks.setup-db]
-description = "📥 Seed tmp/data.sqlite from the committed data/data.sqlite.example"
-run = ".venv/bin/python scripts/test_01_setup_sqlite_file.py"
-
-[tasks.sync-db]
-description = "☁️  Publish tmp/data.sqlite into this project's PostgreSQL schema"
-run = ".venv/bin/python scripts/test_06_sync_data_to_remote_db.py"
-
-[tasks.verify-db]
-description = "🔎 Confirm the remote schema matches local, table by table"
-run = ".venv/bin/python scripts/test_07_verify_remote_data.py"
-
 [tasks.export]
 description = "💾 Export Python dependencies to requirements.txt (not used by Vercel)"
 # Vercel does NOT read this. It reads pyproject.toml + uv.lock directly, and

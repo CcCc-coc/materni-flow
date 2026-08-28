@@ -67,18 +67,45 @@ schema 反射和 agent 的 SQL 工具都免费拿到.
 ## 数据从哪来, 到哪去
 
 ```
-数据集的 .sqlite  ──cp──>  data/data.sqlite.example   (种子, 进 Git)
+dataset/ 的生成器  ──run──>  dataset/<name>.sqlite     (种子, 不进 Git)
+      teaching_cli gen-data   │
                               │
-                     mise run setup-db
-                              ↓
-                        tmp/data.sqlite               (工作副本, 不进 Git)
-                              │
-                     mise run sync-db
+                   teaching_cli sync-db
                               ↓
                  PostgreSQL schema <schemaName>       (agent 唯一读的地方)
                               │
-                     mise run verify-db               (逐表对行数)
+                  teaching_cli verify-db            (逐表对行数)
 ```
+
+**数据库不进 Git.** `dataset/` 里进 Git 的是**源材料** (四份文档 + 生成器 +
+`requirements.txt`), 生成器的**产物** (`<name>.sqlite` 和 `data/*.tsv`) 被
+`dataset/.gitignore` 排除. 所以新 clone 第一件事是自己造一份:
+
+```bash
+.venv/bin/python .claude/skills/about-bi-agent-app-scaffold-cn/scripts/teaching_cli.py gen-data      # 装 dataset/requirements.txt, 然后跑生成器
+.venv/bin/python .claude/skills/about-bi-agent-app-scaffold-cn/scripts/teaching_cli.py sync-db       # 发布进本项目的 PostgreSQL schema
+.venv/bin/python .claude/skills/about-bi-agent-app-scaffold-cn/scripts/teaching_cli.py verify-db     # 逐表对行数
+```
+
+**它们不是 mise 任务, 这是故意的**: `mise.toml` 跑的是应用本身, 而这些都不是应用. 教学层
+是"删几个目录", 不该是"从共用配置里一行行挑出来删".
+
+这样做的理由是数据是**可再生的**, 而一个 7 MB 的二进制文件进 Git 之后每次重新生成都是一次
+不可读的 diff.
+
+`agent_app/paths.py` 用 **discovery** 找那个文件 (`dir_dataset.glob("*.sqlite")`), 而不是
+写死文件名 —— 文件名属于数据集, 写死它等于让换数据集要改 `agent_app/`, 而那正是这个包不该
+需要的事. 找到零个和找到多个都报错: 前者告诉你跑哪两条命令, 后者列出重名的文件, **绝不
+静默挑一个** —— 静默挑一个正是"服务了错误数据集"这种 bug 的来源.
+
+曾经在中间还有一层 `tmp/data.sqlite` 工作副本, 已经去掉了. 它存在的理由是"保护一份进了
+Git 的种子不被改坏", 而现在种子既不进 Git 也不金贵 —— 重建它是一条命令, 而且生成器是确定
+性的, 重跑拿到的是同样的行.
+
+**这一整套 (生成 + 同步) 都是教学层**, 代码在 `agent_app/dataset.py`, 依赖单独放在
+`dataset/requirements.txt` 而不是 `pyproject.toml`. 生产路径一行都不 import 它: agent 通过
+`one.engine` 读 PostgreSQL, 数据怎么进去的不是它的事. 删掉 `agent_app/dataset.py`、顶层
+`dataset/` 和那两个 mise 任务, 剩下的仍然是一个能跑的 app.
 
 **`sync-db` 和 `verify-db` 不是可选步骤.** 不同步就等于没有数据库: agent 的 schema 工具会
 反射到一个空 schema, 而**空 schema 和不存在的 schema 在反射器看来一模一样** —— agent 会

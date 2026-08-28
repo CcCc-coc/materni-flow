@@ -7,12 +7,10 @@ from functools import cached_property
 
 import sqlalchemy as sa
 
-from ..paths import path_enum
 from ..constants import DbTypeEnum
 from ..db_schema.api import new_schema_info
 from ..db_schema.api import new_database_info
 from ..db_schema.api import encode_database_info
-from ..sql_utils import new_sqlite_engine
 from ..sql_utils import execute_sql_query
 
 if T.TYPE_CHECKING:  # pragma: no cover
@@ -21,16 +19,6 @@ if T.TYPE_CHECKING:  # pragma: no cover
 
 class DbMixin:
     """Mixin providing database connection and query execution capabilities."""
-
-    @cached_property
-    def local_sqlite_engine(self: "One") -> sa.Engine:
-        """
-        The seed database: the dataset as shipped, and the source the sync reads.
-
-        This mixin picks *which* database; :func:`~agent_app.sql_utils.new_sqlite_engine`
-        knows how to open one so that the agent's read-only guarantee holds on it.
-        """
-        return new_sqlite_engine(str(path_enum.path_sqlite_db))
 
     def _new_postgres_engine(self: "One", schema_name: str | None = None) -> sa.Engine:
         """

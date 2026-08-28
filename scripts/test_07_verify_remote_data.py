@@ -34,7 +34,7 @@ import sys
 import sqlalchemy as sa
 
 from agent_app.api import one
-from agent_app.tests.db_sync import table_insert_order
+from agent_app.dataset import local_sqlite_engine, table_insert_order
 
 
 def count_rows(engine: sa.Engine, table_name: str, schema: str | None = None) -> int:
@@ -63,7 +63,7 @@ def main() -> int:
     Returns:
         0 if every table exists and matches local, 1 otherwise.
     """
-    local_engine = one.local_sqlite_engine
+    local_engine = local_sqlite_engine()
     remote_engine = one.remote_postgres_engine
     schema_name = one.config.schema_name
 

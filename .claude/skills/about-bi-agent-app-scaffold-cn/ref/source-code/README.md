@@ -12,7 +12,7 @@
 | [02-paths-and-vocabulary.md](02-paths-and-vocabulary.md) | 路径为什么不进配置, 枚举和小工具放哪 | `paths.py`, `constants.py`, `utils.py` |
 | [03-sql-execution.md](03-sql-execution.md) | 只读保证, 为什么不用关键词黑名单, Markdown 输出 | `sql_utils.py` |
 | [04-schema-encoding.md](04-schema-encoding.md) | 三步流水线 + 紧凑格式的完整规范 | `db_schema/` |
-| [05-database-sync.md](05-database-sync.md) | 表名一致, 插入顺序算而不配, 同步五步 | `tests/db_sync.py` |
+| [05-dataset-pipeline.md](05-dataset-pipeline.md) | **教学层, 会被删掉**. 生成, discover, 同步 | `dataset.py` |
 | [06-quota.md](06-quota.md) | 月度花费上限, partition key 为什么是三段 | `quota.py` |
 | [07-ai-sdk-adapter.md](07-ai-sdk-adapter.md) | SSE 协议形状, header 为什么和 generator 同住 | `ai_sdk_adapter.py` |
 | [08-agent-response.md](08-agent-response.md) | 最后一条消息不一定是答案, 三步为什么合成一个 | `agent_response.py`, `agent_debugger.py` |

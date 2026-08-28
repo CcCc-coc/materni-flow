@@ -6,6 +6,10 @@ Every path this package needs, in one place.
 Paths are facts about the source tree, not configuration: a swap rewrites the
 *contents* of ``data/``, never the filenames.
 
+Only paths that are facts about *this* source tree. Anything whose name belongs
+to the dataset is discovered in ``dataset.py`` instead, so that swapping a
+dataset never edits this package.
+
 Do not add a path speculatively. An entry with no reader silently rots into a
 pointer at a directory that no longer exists, which is what happened to every
 entry this module has ever lost.
@@ -45,10 +49,9 @@ class PathEnum:
     # Written by the agent's ``write_debug_report`` tool.
     path_debug_report_md = dir_tmp / "debug_report.md"
 
-    # Never commit the working copy: tests and write tools mutate it. The
-    # committed seed is copied over it by ``agent_app.tests.db_helper``.
-    path_sqlite_db_example = dir_data / "data.sqlite.example"
-    path_sqlite_db = dir_tmp / "data.sqlite"
+    # The interpreter this project installs into. Named here because
+    # ``dataset.py`` shells out to it to run the dataset's generator.
+    path_venv_python = dir_project_root / ".venv" / "bin" / "python"
 
     @cached_property
     def path_bi_agent_system_prompt_content(self) -> str:

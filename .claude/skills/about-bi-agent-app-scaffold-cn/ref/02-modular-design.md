@@ -30,10 +30,11 @@ data/
 ├── site.toml             前端读: 界面上说的每一句话
 ├── business-context.md   首页那个"这解决什么问题"弹窗的正文
 ├── system-prompt.md      agent 的领域大脑
-└── data.sqlite.example   数据本体的种子
 ```
 
-**换数据集 = 重写这一个目录, 外加 `.env.defaults` 里的一行 `SCHEMA_NAME`.**
+**换数据集 = 重写这一个目录, 外加 `dataset/` 和 `.env.defaults` 里的一行 `SCHEMA_NAME`.**
+
+数据本体不在 `data/` 里: 它在 `dataset/`, 由那个目录里的生成器造出来, 而且不进 Git.
 这是整个设计里最重要的一条边界.
 
 `data/` 里**没有配置**, 全是人写的内容: 文案, 提示词, 解释, 种子数据. 那唯一一行配置留在
@@ -205,8 +206,8 @@ loan            ->      schema fintech_smb_lending_pipeline_medium 里的 loan
 例子里 6 段在 PostgreSQL 上跑不通**, 而线上从来没崩过 —— agent 的 SQL 工具把数据库报错
 转成字符串还给模型, 症状只是答案变差.
 
-SQLite 没有消失, 它是**种子和同步源**: `data/data.sqlite.example` -> `tmp/data.sqlite` ->
-`mise run sync-db` 发布进 PostgreSQL schema.
+SQLite 没有消失, 它是**种子和同步源**: `dataset/<name>.sqlite` ->
+教学 CLI 的 `sync-db` 发布进 PostgreSQL schema.
 
 ---
 
