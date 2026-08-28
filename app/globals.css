@@ -24,8 +24,6 @@
   --destructive-foreground: 0 0% 100%;
   --input: 214 32% 91%;
   --ring: 217 91% 60%;
-
-  --radius: 12px;
 }
 
 @layer base {

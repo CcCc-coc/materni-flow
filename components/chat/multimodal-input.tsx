@@ -97,7 +97,7 @@ export function MultimodalInput({
       {/* Suggested Questions */}
       {messages.length === 0 && (
         <div className="flex flex-col gap-3">
-          <div className="border border-slate-200 p-3 bg-white rounded-xl">
+          <div className="bg-white border border-slate-200 rounded-xl p-4">
             <p className="font-display text-sm text-slate-500 text-center">
               {site.chat.suggestionsHint}
             </p>

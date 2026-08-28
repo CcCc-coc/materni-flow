@@ -80,7 +80,7 @@ export const PreviewMessage = ({
 
         <div
           className={cn(
-            "flex flex-col gap-2 max-w-[85%] sm:max-w-[75%] p-4 rounded-xl",
+            "flex flex-col gap-2 max-w-[85%] sm:max-w-[75%] rounded-xl p-4",
             message.role === "user"
               ? "bg-primary text-white"
               : "bg-white border border-slate-200"
@@ -150,7 +150,7 @@ export const ThinkingMessage = () => {
       <div className="flex gap-3 w-full justify-start">
         <AssistantAvatar />
 
-        <div className="p-4 bg-white border border-slate-200 rounded-xl">
+        <div className="bg-white border border-slate-200 rounded-xl p-4">
           <div className="flex items-center gap-2 text-slate-600">
             <span className="inline-block w-2 h-2 bg-brand rounded-full animate-pulse" />
             <span className="font-display text-sm">Thinking...</span>

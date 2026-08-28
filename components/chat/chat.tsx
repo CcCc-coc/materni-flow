@@ -74,7 +74,7 @@ export function Chat({ site }: { site: SiteConfig }) {
         {/* Context Banner */}
         {messages.length > 0 && isContextBannerVisible && (
           <div className="max-w-3xl mx-auto w-full">
-            <div className="border border-slate-200 p-4 bg-white rounded-xl">
+            <div className="bg-white border border-slate-200 rounded-xl p-4">
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-start gap-3 flex-1">
                   <AssistantAvatar size="md" />

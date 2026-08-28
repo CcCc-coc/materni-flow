@@ -1,7 +1,8 @@
 import type { Config } from "tailwindcss"
 
+// This app is light-only: there is no theme toggle, so no `darkMode` strategy
+// and no `dark:` variants anywhere in the tree.
 const config: Config = {
-  darkMode: ["class"],
   content: [
     "./pages/**/*.{js,ts,jsx,tsx,mdx}",
     "./components/**/*.{js,ts,jsx,tsx,mdx}",
@@ -71,12 +72,24 @@ const config: Config = {
         heading: ["var(--font-figtree)", "sans-serif"],
         inter: ["var(--font-inter)", "sans-serif"],
       },
-      borderRadius: {
-        lg: "var(--radius)",
-        md: "calc(var(--radius) - 2px)",
-        sm: "calc(var(--radius) - 4px)",
-        none: "0px",
-      },
+      /* Radius is a size ladder, and each step names a role:
+       *
+       *   rounded-full   pill        nav CTA, tech-stack tags
+       *   rounded-2xl    panel       home CTA, agent welcome card, the modal
+       *   rounded-xl     card        capability card, kickstart button, bubbles
+       *   rounded-lg     block       code block, table, chart, avatars, buttons
+       *   rounded-md/sm  inline      chart tooltip, legend swatches
+       *
+       * Nothing is extended here: these are Tailwind's own steps. There used to
+       * be a shadcn override (`lg: var(--radius)` and two more derived from it)
+       * which lifted `lg` from 8px to 12px -- the same value Tailwind already
+       * gives `xl`. Two class names for one value is why the ladder read as
+       * arbitrary in the components: half of the tree could pick either and
+       * still look right. It also coupled our own scale to a variable set for
+       * shadcn, so changing `--radius` would have split the design silently.
+       * Nothing needed it: every shadcn `rounded-md` in `components/ui/*` is
+       * overridden at its call site.
+       */
     },
   },
   plugins: [require("tailwindcss-animate")],
