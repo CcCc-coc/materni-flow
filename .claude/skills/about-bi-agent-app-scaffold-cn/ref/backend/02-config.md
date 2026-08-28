@@ -1,6 +1,12 @@
 # 配置是怎么读进来的
 
-对应代码: `agent_app/config.py`, `agent_app/runtime.py`
+> 一个 `Config` dataclass, 两个文件, 两个工厂. 所有"我跑在哪个环境"的判断集中在这一个
+> 模块里, 别处只读 `one.config.xxx`.
+
+**对应代码**: `agent_app/config.py`, `agent_app/runtime.py`
+
+**依赖**: `constants` (provider 枚举和默认 model ID), `paths` (两个 env 文件的位置),
+`runtime` —— 都在 [01](01-leaves.md).
 
 ---
 
@@ -15,7 +21,7 @@
 重复, 没人说得清两个环境到底差哪些配置, 而且漏掉一个判断就是一个 bug.
 
 Config Pattern 把**所有环境相关的判断集中到一个地方**. 别处只管读 `one.config.xxx`,
-不需要知道自己跑在哪。
+不需要知道自己跑在哪.
 
 **加一个配置项的完整步骤**:
 
@@ -24,11 +30,14 @@ Config Pattern 把**所有环境相关的判断集中到一个地方**. 别处�
 3. 在 `.env.defaults` (非密钥) 或 `.env.example` (密钥) 里记一笔
 4. 别处用 `one.config.your_new_field`
 
-不需要在任何别的地方加 `if runtime.is_xxx()`。
+不需要在任何别的地方加 `if runtime.is_xxx()`.
 
 ---
 
 ## 两个文件, 按"是不是密钥"切
+
+这条边界的**为什么**在 [architecture/07](../architecture/07-config-and-content.md);
+这里只讲代码怎么落实它.
 
 `load_env_files()` 依次读两个文件:
 
@@ -48,7 +57,7 @@ Config Pattern 把**所有环境相关的判断集中到一个地方**. 别处�
 
 判据的演变也值得记: 早先的切分是 `data/dataset.toml` 和 `.env`, 判据是"会因为换一台机器
 而不同吗". 那条线讲得通, 但它最后为了一个字符串养出了一整个 TOML 文件加一个读取模块.
-按密钥切的这条线能挣回成本, 因为它决定的是**谁能打开这个文件**, 包括 AI。
+按密钥切的这条线能挣回成本, 因为它决定的是**谁能打开这个文件**, 包括 AI.
 
 ---
 
@@ -66,16 +75,34 @@ new()                           按 runtime 分派
 - 本地**故意不读** `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY`. boto3 查环境变量早于
   `~/.aws/credentials`, 所以 `.env` 里一个占位符就能遮蔽一个好好的本地 profile, 报出来
   的是 `UnrecognizedClientException: The security token included in the request is invalid`
-  —— 一条完全指不到原因的错。
-- Vercel **必须读**: serverless 没有 `~/.aws`, 没有凭证链可以兜底。
+  —— 一条完全指不到原因的错.
+- Vercel **必须读**: serverless 没有 `~/.aws`, 没有凭证链可以兜底.
 
 用 `**overrides` 而不是布尔开关, 是为了让这个差异表现成调用点上的一小段参数列表, 而不是
-第二份 17 行的字段赋值。
+第二份 17 行的字段赋值.
 
 **Vercel 那边也调 `load_env_files()`, 这看起来多余但不是**: `.env` 在 Vercel 上不存在
 (`load_dotenv` 对不存在的路径是无害 no-op), 但 `.env.defaults` 是 committed 的, 跟着部署
-包上去, `SCHEMA_NAME` 靠它送达, 不用在面板里再填一遍。面板里设的变量仍然优先, 因为 Vercel
-在这之前就把它设进真实环境了。
+包上去, `SCHEMA_NAME` 靠它送达, 不用在面板里再填一遍. 面板里设的变量仍然优先, 因为 Vercel
+在这之前就把它设进真实环境了.
+
+---
+
+## 校验在 `__post_init__`, 不在工厂里
+
+三件事在 dataclass 的 `__post_init__` 里做, 不在两个工厂里:
+
+- `SCHEMA_NAME` 的形状 (小写字母/数字/下划线, 不以数字开头, <= 63)
+- `llm_provider` 归一化 (`strip().lower()`), 未知值直接报错
+- `model_id` 为空时填上这个 provider 的默认值
+- 打开了配额却没给表名 -> 报错
+
+**放在 `__post_init__` 是为了让测试里手搓的 `Config(...)` 和从环境变量建出来的走同一条路.**
+放在工厂里的话, 单测拿到的是一个没经过校验的对象, 于是测试通过而线上炸.
+
+这几条共同的目的是把"某个用户的第一次请求失败"变成"启动失败". 一个拼错的 schema 名如果不
+在这里拦, 表现出来是几层之外的一条 PostgreSQL 错误; 一个开了配额却没配表名的部署会**完全
+正常地启动**, 直到有人打第一个字.
 
 ---
 
@@ -83,30 +110,30 @@ new()                           按 runtime 分派
 
 一个很自然的写法是在模块底部写 `config = Config.new()`, 然后各处 `from agent_app.config
 import config`. 这个仓库**不这么做**, 而且早期的 docstring 曾经描述过一个并不存在的这样
-的单例。
+的单例.
 
-理由: 那会在 **import 时**读环境, 早于任何测试布置环境的机会。而 `ConfigMixin` 已经通过
-`one.config` 提供了懒加载的同一个东西。
+理由: 那会在 **import 时**读环境, 早于任何测试布置环境的机会. 而 `ConfigMixin` 已经通过
+`one.config` 提供了懒加载的同一个东西 —— 见 [08](08-the-one-object.md).
 
 ---
 
 ## runtime 检测
 
-`agent_app/runtime.py` 只回答一个问题: 我在哪跑。实质是一句
-`os.environ.get("VERCEL") == "1"`。
+`agent_app/runtime.py` 只回答一个问题: 我在哪跑. 实质是一句
+`os.environ.get("VERCEL") == "1"`.
 
 它保持独立模块而不是并进 `config.py`, 是因为它是一个**扩展点**: 加一个部署目标 (比如 AWS
-Lambda) 意味着这里加一个 `is_*` 方法, `config.py` 加一个工厂和一个分支, 别处一行不改。
+Lambda) 意味着这里加一个 `is_*` 方法, `config.py` 加一个工厂和一个分支, 别处一行不改.
 
 `Config.new()` 里那个 `else: raise RuntimeError` 今天**走不到** —— `is_local()` 定义就是
 `not is_vercel()`. 留着它是为了将来加第三个目标却忘了改 `new()` 时会响, 而不是静默拿到
-本地配置。
+本地配置.
 
 ---
 
 ## 选哪个 LLM provider
 
-每个进程只跟一个 LLM 后端说话, 由 `LLM_PROVIDER` 决定。各家鉴权方式不同, 所以只有**被选中
+每个进程只跟一个 LLM 后端说话, 由 `LLM_PROVIDER` 决定. 各家鉴权方式不同, 所以只有**被选中
 那个** provider 的凭证是必需的:
 
 ```
@@ -116,17 +143,19 @@ LLM_PROVIDER=openai      -> OPENAI_API_KEY
 LLM_PROVIDER=google      -> GOOGLE_API_KEY
 ```
 
-`Config.validate()` 在缺凭证时给一条能读的错误, 而不是等 SDK 抛。
+`Config.validate()` 在缺凭证时给一条能读的错误, 而不是等 SDK 抛. 它由 `one.model` 在构造
+模型之前调用, 所以配错在**建 agent 的时候**就炸, 不会拖到第一个用户提问.
 
-四家 SDK 都是 `pyproject.toml` 里的核心依赖, 所以换 provider 是改一个环境变量, 不是重装
-依赖也不是改部署配置。
+**只有 bedrock 开箱可用.** 另外三家的 SDK 是 `pyproject.toml` 里的 optional extra, 换过去
+要先 `uv sync --extra anthropic|openai|gemini` —— 这样一个用 Bedrock 的人不必下载三个用不到
+的厂商 SDK. 缺 SDK 时的报错在 [08](08-the-one-object.md) 里处理, 缺凭证时的报错在这里.
 
 ---
 
 ## `"..."` 当作未设置
 
 `.env.example` 里的占位符是 `"..."`. `load_dotenv` 不认识占位符这个概念 —— 一份从
-`.env.example` 抄来、`AWS_ACCESS_KEY_ID="..."` 忘了注释掉的 `.env`, 会给你一个已设置、
-非空、且没用的变量。
+`.env.example` 抄来, `AWS_ACCESS_KEY_ID="..."` 忘了注释掉的 `.env`, 会给你一个已设置,
+非空, 且没用的变量.
 
-`get_env()` 把这个值当成 unset 返回 `None`, 于是各家 SDK 能回退到自己的凭证链。
+`get_env()` 把这个值当成 unset 返回 `None`, 于是各家 SDK 能回退到自己的凭证链.

@@ -28,8 +28,11 @@ description: 这个仓库的事实标准. 它是什么性质的项目, 为什么
 
 | 你在做什么 | 读 |
 | :--- | :--- |
-| **要改 `agent_app/` 里某个模块** | [backend/README.md](ref/backend/README.md) 的索引表, 挑一篇 |
-| 要造数据集 / 同步到 PostgreSQL | `scripts/teaching_cli.py`, 说明在 [backend/05](ref/backend/05-dataset-pipeline.md) |
+| **要改 `agent_app/` 里某个模块** | [backend/README.md](ref/backend/README.md) 的索引表, 编号就是依赖顺序 |
+| **给 agent 加一个 tool**, 或者动 `one/` 里任何东西 | [backend/08](ref/backend/08-the-one-object.md) |
+| 改 `/api/chat` 的流程 | [backend/09](ref/backend/09-http-entry-point.md) |
+| 写测试, 或者要用 `# pragma: no cover` | [backend/10](ref/backend/10-testing.md) |
+| 要造数据集 / 同步到 PostgreSQL | `scripts/teaching_cli.py`, 说明在 [backend/11](ref/backend/11-dataset-pipeline.md) |
 
 `ref/operations/` —— 维护这个仓库的日常参考:
 

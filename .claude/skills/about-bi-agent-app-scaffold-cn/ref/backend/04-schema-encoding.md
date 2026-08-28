@@ -1,6 +1,12 @@
 # 库结构怎么编码给 LLM 看
 
-对应代码: `agent_app/db_schema/`
+> 把 SQLAlchemy 反射出来的库结构压成一段紧凑字符串, 让 agent 花七成更少的 token 看懂这个
+> 库. 三步单向流水线: 反射 -> 中间模型 -> 字符串.
+
+**对应代码**: `agent_app/db_schema/` (`extractor.py` `model.py` `encoder.py` `api.py`)
+
+**依赖**: `constants` (类型和约束的词汇表), `utils` (`match`) —— 都在 [01](01-leaves.md).
+唯一的使用者是 [08](08-the-one-object.md) 的 `database_schema_str`.
 
 ---
 
@@ -13,13 +19,13 @@ encoder.py      模型  ->  agent 看到的那段紧凑字符串
 api.py          对外的再导出
 ```
 
-没有反向流动。`extractor` 只碰 SQLAlchemy 对象, `encoder` 只做字符串拼接不碰数据库,
-中间那层是纯 pydantic 模型。
+没有反向流动. `extractor` 只碰 SQLAlchemy 对象, `encoder` 只做字符串拼接不碰数据库,
+中间那层是纯 pydantic 模型.
 
 **`model.py` 里每一个字段都有 encoder 这个读者.** 早先它逐字段镜像 SQLAlchemy 的 `Column`
 —— `autoincrement`, `computed`, `identity`, `deferrable`, `onupdate` 等十几个 —— 下游一个
-都不看。抽取一个没人编码的字段, 既费反射时间, 又像是给输出许了个不兑现的承诺。加字段要
-和发出它的那行 encoder 代码一起加。
+都不看. 抽取一个没人编码的字段, 既费反射时间, 又像是给输出许了个不兑现的承诺. 加字段要
+和发出它的那行 encoder 代码一起加.
 
 ---
 
@@ -67,7 +73,7 @@ Table Product(
 ```
 
 开头那个词是 `TableTypeEnum`: `Table` / `View` / `MaterializedView`. **这个标签就是告诉
-agent 哪些关系写不得。**
+agent 哪些关系写不得. **
 
 ### schema 和库
 
@@ -105,14 +111,14 @@ schema 名为空时 (SQLite 没有 schema) 显示成 `default`.
 
 ## 类型映射表
 
-`extractor.py` 的 `SQLALCHEMY_TYPE_MAPPING` 用 `__visit_name__` 做 key, 而不是用类。这样
+`extractor.py` 的 `SQLALCHEMY_TYPE_MAPPING` 用 `__visit_name__` 做 key, 而不是用类. 这样
 一个泛型类型和它的方言拼法能映到同一条: `sa.String` 的 visit name 是 `"string"`,
 `sa.VARCHAR` 是 `"VARCHAR"`, 对 agent 来说都是 `str`.
 
 **它比 PostgreSQL 需要的宽, 这是故意的.** 反射返回什么取决于方言, 而同步过程还要反射
-SQLite 种子, 所以 `BLOB` / `DATETIME` 这些条目有用。缺 key 不是错误 ——
+SQLite 种子, 所以 `BLOB` / `DATETIME` 这些条目有用. 缺 key 不是错误 ——
 `sqlalchemy_type_to_llm_type` 会退回方言原始拼写 —— 所以这张表是压缩辅助, 不是白名单,
-宽一点零成本。
+宽一点零成本.
 
 ---
 
