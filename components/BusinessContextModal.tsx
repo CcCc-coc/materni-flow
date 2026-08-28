@@ -77,13 +77,13 @@ export default function BusinessContextModal({
         // The backdrop closes on click, so a click that starts inside the panel
         // must not bubble up to it.
         onClick={(event) => event.stopPropagation()}
-        className="relative w-full max-w-3xl max-h-[85vh] flex flex-col rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-2xl outline-none"
+        className="relative w-full max-w-3xl max-h-[85vh] flex flex-col rounded-2xl bg-white border border-slate-200 shadow-2xl outline-none"
       >
         <button
           type="button"
           onClick={onClose}
           aria-label="Close"
-          className="absolute top-5 right-5 z-10 flex items-center justify-center w-9 h-9 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 hover:text-primary dark:hover:text-white transition-colors cursor-pointer"
+          className="absolute top-5 right-5 z-10 flex items-center justify-center w-9 h-9 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-primary transition-colors cursor-pointer"
         >
           <X className="w-5 h-5" />
         </button>
@@ -91,25 +91,25 @@ export default function BusinessContextModal({
         <div className="overflow-y-auto px-6 sm:px-10 py-8 sm:py-10">
           <h2
             id="business-context-title"
-            className="font-display text-3xl sm:text-4xl text-primary dark:text-white mb-3 pr-12"
+            className="font-display text-3xl sm:text-4xl text-primary mb-3 pr-12"
           >
             {labels.title}
           </h2>
-          <p className="text-base sm:text-lg text-slate-600 dark:text-slate-300 leading-relaxed">
+          <p className="text-base sm:text-lg text-slate-600 leading-relaxed">
             {labels.subtitle}
           </p>
 
-          <div className="w-16 h-1.5 bg-amber-500 rounded mt-7" />
+          <div className="w-16 h-1.5 bg-accent rounded mt-7" />
 
           {/* The shared Markdown component is sized for chat bubbles. This is a
               document, so the headings and body are scaled up here rather than
               by forking the renderer. */}
           <div
-            className="mt-8 text-base text-slate-600 dark:text-slate-300
-                       [&_h2]:font-display [&_h2]:text-xl [&_h2]:sm:text-2xl [&_h2]:font-normal
-                       [&_h2]:text-primary [&_h2]:dark:text-white [&_h2]:mt-10 [&_h2]:mb-3
-                       [&_h3]:text-lg [&_h3]:text-primary [&_h3]:dark:text-white [&_h3]:mt-6
-                       [&_li]:mb-2 [&_strong]:text-primary [&_strong]:dark:text-white"
+            className="mt-8 text-base text-slate-600
+ [&_h2]:font-display [&_h2]:text-xl [&_h2]:sm:text-2xl [&_h2]:font-normal
+ [&_h2]:text-primary [&_h2]: [&_h2]:mt-10 [&_h2]:mb-3
+ [&_h3]:text-lg [&_h3]:text-primary [&_h3]: [&_h3]:mt-6
+ [&_li]:mb-2 [&_strong]:text-primary [&_strong]:"
           >
             <Markdown>{markdown}</Markdown>
           </div>

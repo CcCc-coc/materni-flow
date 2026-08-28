@@ -37,24 +37,24 @@ export default function CapabilityCard({
     <ConceptTooltip
       text={capability.tooltip}
       align={align}
-      className={`group rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 cursor-help hover:border-blue-400 dark:hover:border-blue-500 transition-colors ${
-        compact ? "p-4" : "p-5"
+      className={`group rounded-xl bg-slate-50 border border-slate-200 cursor-help hover:border-brand-soft transition-colors ${
+ compact ?"p-4" : "p-5"
       } ${className}`}
     >
       <Icon
-        className={`text-blue-600 dark:text-blue-400 ${compact ? "w-5 h-5 mb-2" : "w-6 h-6 mb-3"}`}
+        className={`text-brand ${compact ?"w-5 h-5 mb-2" : "w-6 h-6 mb-3"}`}
         aria-hidden="true"
       />
       <p
-        className={`font-medium text-primary dark:text-white ${
-          compact ? "text-sm" : "text-sm"
+        className={`font-medium text-primary ${
+ compact ?"text-sm" : "text-sm"
         }`}
       >
         {capability.title}
       </p>
       <p
-        className={`text-slate-500 dark:text-slate-400 mt-0.5 leading-snug ${
-          compact ? "text-xs" : "text-xs"
+        className={`text-slate-500 mt-0.5 leading-snug ${
+ compact ?"text-xs" : "text-xs"
         }`}
       >
         {capability.subtitle}
@@ -63,7 +63,7 @@ export default function CapabilityCard({
           to hover over. Without it the hint is invisible. */}
       <span
         aria-hidden="true"
-        className="mt-3 block w-8 border-b border-dashed border-slate-300 dark:border-slate-600 group-hover:border-blue-500 transition-colors"
+        className="mt-3 block w-8 border-b border-dashed border-slate-300 group-hover:border-brand-light transition-colors"
       />
     </ConceptTooltip>
   )

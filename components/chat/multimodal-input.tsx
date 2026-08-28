@@ -97,8 +97,8 @@ export function MultimodalInput({
       {/* Suggested Questions */}
       {messages.length === 0 && (
         <div className="flex flex-col gap-3">
-          <div className="border border-slate-200 dark:border-slate-700 p-3 bg-white dark:bg-slate-900 rounded-xl">
-            <p className="font-display text-sm text-slate-500 dark:text-slate-400 text-center">
+          <div className="border border-slate-200 p-3 bg-white rounded-xl">
+            <p className="font-display text-sm text-slate-500 text-center">
               {site.chat.suggestionsHint}
             </p>
           </div>
@@ -121,15 +121,15 @@ export function MultimodalInput({
                         content: suggestedAction.action,
                       });
                     }}
-                    className="group text-left border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 hover:border-blue-400 dark:hover:border-blue-500 px-4 py-3 text-sm flex-1 gap-1 sm:flex-col w-full h-auto justify-start items-start transition-all cursor-pointer rounded-xl"
+                    className="group text-left border border-slate-200 bg-white hover:bg-slate-50 hover:border-brand-soft px-4 py-3 text-sm flex-1 gap-1 sm:flex-col w-full h-auto justify-start items-start transition-all cursor-pointer rounded-xl"
                   >
-                    <span className="font-display text-sm text-primary dark:text-white">
+                    <span className="font-display text-sm text-primary">
                       {suggestedAction.title}
                     </span>
                     {/* The glyph says what pressing this will draw. Nine of the
                         twelve produce a table, a flowchart, or a chart; without
                         a mark the only way to find out is to press one. */}
-                    <span className="flex items-center gap-1.5 text-xs text-blue-600 dark:text-blue-400 group-hover:text-blue-700 dark:group-hover:text-blue-300 leading-snug transition-colors">
+                    <span className="flex items-center gap-1.5 text-xs text-brand group-hover:text-brand-dark leading-snug transition-colors">
                       <RenderBadge render={suggestedAction.render} />
                       {suggestedAction.label}
                     </span>
@@ -150,9 +150,9 @@ export function MultimodalInput({
           onChange={handleInput}
           className={cn(
             "min-h-[24px] max-h-[calc(75dvh)] overflow-hidden resize-none !text-base",
-            "bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl",
-            "focus:border-blue-500 focus:ring-blue-500 focus:ring-2",
-            "text-primary dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500",
+            "bg-white border border-slate-200 rounded-xl",
+            "focus:border-brand-light focus:ring-brand-light focus:ring-2",
+            "text-primary placeholder:text-slate-400",
             "pr-12",
             className,
           )}
@@ -173,7 +173,7 @@ export function MultimodalInput({
 
         {isLoading ? (
           <Button
-            className="p-2 h-fit absolute bottom-2 right-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 cursor-pointer rounded-lg"
+            className="p-2 h-fit absolute bottom-2 right-2 bg-white border border-slate-200 hover:bg-slate-100 text-slate-700 cursor-pointer rounded-lg"
             onClick={(event) => {
               event.preventDefault();
               stop();
@@ -183,7 +183,7 @@ export function MultimodalInput({
           </Button>
         ) : (
           <Button
-            className="p-2 h-fit absolute bottom-2 right-2 bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-50 disabled:cursor-not-allowed transition-all cursor-pointer rounded-lg"
+            className="p-2 h-fit absolute bottom-2 right-2 bg-brand hover:bg-brand-dark text-white disabled:opacity-50 disabled:cursor-not-allowed transition-all cursor-pointer rounded-lg"
             onClick={(event) => {
               event.preventDefault();
               submitForm();

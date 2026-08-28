@@ -71,7 +71,7 @@ export function ChartFigure({ spec }: { spec: ChartSpec }) {
   const slot = plotWidth / categories.length
 
   return (
-    <figure className="viz-root my-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-[var(--viz-surface)] p-4">
+    <figure className="viz-root my-3 rounded-lg border border-slate-200 bg-[var(--viz-surface)] p-4">
       {title && (
         <figcaption className="mb-1 text-sm font-semibold text-[var(--viz-ink)]">
           {title}
@@ -255,7 +255,7 @@ export function ChartFigure({ spec }: { spec: ChartSpec }) {
 
           {hover !== null && (
             <div
-              className="pointer-events-none absolute top-0 rounded-md border border-slate-200 dark:border-slate-700 bg-[var(--viz-surface)] px-2 py-1 text-xs shadow-sm"
+              className="pointer-events-none absolute top-0 rounded-md border border-slate-200 bg-[var(--viz-surface)] px-2 py-1 text-xs shadow-sm"
               style={{
                 left: `${((plotLeft + slot * hover + slot / 2) / GEOM.width) * 100}%`,
                 transform: "translateX(-50%)",

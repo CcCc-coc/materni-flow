@@ -10,7 +10,7 @@
  */
 export function LoadingScreen({ label }: { label: string }) {
   return (
-    <div className="min-h-screen bg-white dark:bg-primary flex items-center justify-center">
+    <div className="min-h-screen bg-white flex items-center justify-center">
       <div className="flex flex-col items-center gap-8">
         <div className="relative">
           <div className="w-20 h-20 rounded-full border-4 border-secondary/20 border-t-secondary animate-spin" />
@@ -20,7 +20,7 @@ export function LoadingScreen({ label }: { label: string }) {
         </div>
 
         <div className="flex flex-col items-center gap-2">
-          <p className="font-display text-xl text-primary dark:text-white animate-pulse">{label}</p>
+          <p className="font-display text-xl text-primary animate-pulse">{label}</p>
           <div className="flex gap-1">
             {[0, 150, 300].map((delay) => (
               <span

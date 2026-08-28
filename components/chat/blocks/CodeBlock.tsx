@@ -13,13 +13,13 @@ export function CodeBlock({ source, language }: BlockProps) {
   return (
     <pre
       className={cn(
-        "bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700",
+        "bg-slate-100 border border-slate-200",
         "p-4 rounded-lg my-3 overflow-x-auto"
       )}
     >
       <code
         className={cn(
-          "text-sm font-mono text-primary dark:text-slate-100",
+          "text-sm font-mono text-primary",
           language && `language-${language}`
         )}
       >

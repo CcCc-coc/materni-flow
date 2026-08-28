@@ -22,10 +22,9 @@ function loadMermaid() {
         // disables HTML labels, and is the only reason rendering it via
         // dangerouslySetInnerHTML below is acceptable.
         securityLevel: "strict",
-        // darkMode is the "class" strategy here, and nothing currently adds
-        // `dark` to <html>, so this resolves to the light theme today. Reading
-        // the class anyway means it follows along if a theme provider lands.
-        theme: document.documentElement.classList.contains("dark") ? "dark" : "default",
+        // The app is light-only, so the diagram is too. It used to read a `dark`
+        // class off <html> that nothing ever set.
+        theme: "default",
         fontFamily: "inherit",
       })
       return mermaid
@@ -78,7 +77,7 @@ export function MermaidBlock({ source, language }: BlockProps) {
 
   return (
     <div
-      className="my-3 p-4 flex justify-center overflow-x-auto rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800"
+      className="my-3 p-4 flex justify-center overflow-x-auto rounded-lg border border-slate-200 bg-white"
       // Safe because of securityLevel: "strict" above.
       dangerouslySetInnerHTML={{ __html: svg }}
     />

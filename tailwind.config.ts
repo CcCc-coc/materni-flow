@@ -10,55 +10,48 @@ const config: Config = {
   ],
   theme: {
     extend: {
-      // The palette. Components name these rather than repeating a hex, so a
-      // rebrand is this file and nothing else. `primary` is the brand navy and
-      // doubles as the dark-mode page background -- the same colour by design,
-      // so it gets one name rather than two.
+      /* The palette. Components name these instead of repeating a hex or a raw
+       * Tailwind step, so a rebrand is this block and nothing else.
+       *
+       * Only the colours a rebrand actually changes live here. The neutral
+       * scale stays as Tailwind's own `slate-*`: it is a vocabulary every React
+       * developer already reads, and it survives a rebrand unchanged.
+       *
+       * Every value below is the exact hex of the Tailwind step it replaced, so
+       * introducing these names changed no pixel. */
       colors: {
+        /** Brand navy. Wordmark, headings, dark surfaces, the user bubble. */
         primary: {
-          DEFAULT: "#0A1628", // navy
-          foreground: "#FFFFFF",
-          light: "#1E3A5F", // navy-light
-          dark: "#050D17", // navy-dark
-        },
-        secondary: {
-          DEFAULT: "#3B82F6", // blue-500
+          DEFAULT: "#0A1628",
           foreground: "#FFFFFF",
         },
+        /** The action colour: links, the send button, focus rings, hover edges. */
+        brand: {
+          DEFAULT: "#2563EB", // was blue-600
+          dark: "#1D4ED8", // was blue-700, hover on a filled surface
+          light: "#3B82F6", // was blue-500, focus rings and hover borders
+          soft: "#60A5FA", // was blue-400
+          foreground: "#FFFFFF",
+        },
+        /** Gold. The one non-blue highlight: logo second half, active nav, rules. */
         accent: {
-          DEFAULT: "#F59E0B", // amber-500
+          DEFAULT: "#F59E0B", // was amber-500
           foreground: "#0A1628",
-          light: "#FBBF24", // amber-400
-          dark: "#D97706", // amber-600
         },
-        background: {
-          DEFAULT: "#FFFFFF",
-          dark: "#0A1628",
-        },
-        surface: {
-          DEFAULT: "#F8FAFC", // slate-50
-          dark: "#0F1D32",
-        },
+        /** Page and card backgrounds. */
+        background: "#FFFFFF",
+        foreground: "#0A1628",
+        surface: "#F8FAFC", // slate-50
+        border: "#E2E8F0", // slate-200, what `@apply border-border` resolves to
         muted: {
           DEFAULT: "#F1F5F9", // slate-100
           foreground: "#64748B", // slate-500
-          dark: "#1E293B",
         },
-        border: {
-          DEFAULT: "#E2E8F0", // slate-200
-          dark: "#334155",
-        },
-        // Fintech specific
-        "text-primary": "#0A1628", // navy
-        "text-secondary": "#1E3A5F", // navy-light
-        highlight: "#F59E0B", // amber-500 (gold)
-        "cta-button": "#3B82F6", // blue-500
-        "regular-button": "#0A1628", // navy
-        contrast: "#F59E0B", // amber-500
-        // shadcn/ui compatibility
+
+        // shadcn/ui primitives. Kept whole because `components/ui/*` and any
+        // component added with the shadcn CLI expect these exact names.
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
-        foreground: "hsl(var(--foreground))",
         destructive: {
           DEFAULT: "hsl(var(--destructive))",
           foreground: "hsl(var(--destructive-foreground))",
@@ -72,10 +65,6 @@ const config: Config = {
           foreground: "hsl(var(--card-foreground))",
         },
       },
-      // Nothing else is extended here on purpose. This file once also
-      // carried a fontSize scale, four keyframe animations and three
-      // shadows, none of which any component ever used -- a theme nobody
-      // reads reads as a design system, and it is not one.
       fontFamily: {
         display: ["var(--font-figtree)", "sans-serif"],
         body: ["var(--font-noto-sans)", "sans-serif"],

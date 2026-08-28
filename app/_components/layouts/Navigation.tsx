@@ -52,7 +52,7 @@ export default function Navigation({
           >
             <span className="font-display text-xl font-semibold tracking-tight">
               {logoPrefix}
-              <span className="text-amber-500">{logoAccent}</span>
+              <span className="text-accent">{logoAccent}</span>
             </span>
           </Link>
 
@@ -67,7 +67,7 @@ export default function Navigation({
                   <Link
                     key={item.href}
                     href={item.href}
-                    className="font-medium text-sm px-5 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-500 transition-colors cursor-pointer"
+                    className="font-medium text-sm px-5 py-2 bg-brand text-white rounded-lg hover:bg-brand-light transition-colors cursor-pointer"
                   >
                     Start Chat
                   </Link>
@@ -81,7 +81,7 @@ export default function Navigation({
                   className={`
                     font-medium text-sm transition-colors cursor-pointer
                     ${active
-                      ? "text-amber-500"
+                      ? "text-accent"
                       : "text-slate-300 hover:text-white"
                     }
                   `}
@@ -117,7 +117,7 @@ export default function Navigation({
                     <Link
                       key={item.href}
                       href={item.href}
-                      className="block font-medium text-base py-3 px-4 bg-blue-600 text-white text-center rounded-lg mx-4 cursor-pointer"
+                      className="block font-medium text-base py-3 px-4 bg-brand text-white text-center rounded-lg mx-4 cursor-pointer"
                       onClick={() => setIsMenuOpen(false)}
                     >
                       Start Chat
@@ -132,7 +132,7 @@ export default function Navigation({
                     className={`
                       block font-medium text-base py-3 px-4 transition-colors cursor-pointer
                       ${active
-                        ? "text-amber-500"
+                        ? "text-accent"
                         : "text-slate-300 hover:text-white"
                       }
                     `}

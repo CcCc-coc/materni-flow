@@ -26,29 +26,29 @@ export default function Hero({
   const { home, capabilities } = site
 
   return (
-    <section className="min-h-screen flex flex-col justify-center pt-24 pb-12 px-4 sm:px-6 lg:px-8 bg-white dark:bg-primary">
+    <section className="min-h-screen flex flex-col justify-center pt-24 pb-12 px-4 sm:px-6 lg:px-8 bg-white">
       <div className="max-w-4xl mx-auto w-full">
         {/* Title */}
         <div
-          className={`transition-all duration-700 delay-100 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-8"}`}
+          className={`transition-all duration-700 delay-100 ${isVisible ?"opacity-100 translate-y-0" : "opacity-0 -translate-y-8"}`}
         >
           <h1 className="font-display text-5xl sm:text-6xl lg:text-7xl leading-tight mb-4">
-            <span className="text-primary dark:text-white">{home.headline.prefix}</span>
-            <span className="text-blue-600 dark:text-blue-400">{home.headline.accent}</span>
+            <span className="text-primary">{home.headline.prefix}</span>
+            <span className="text-brand">{home.headline.accent}</span>
           </h1>
 
-          <p className="text-xl sm:text-2xl text-slate-500 dark:text-slate-400 mb-4">
+          <p className="text-xl sm:text-2xl text-slate-500 mb-4">
             {home.tagline}
           </p>
 
-          <div className="w-20 h-1.5 bg-amber-500 rounded mb-10" />
+          <div className="w-20 h-1.5 bg-accent rounded mb-10" />
         </div>
 
         {/* Description */}
         <div
-          className={`transition-all duration-700 delay-300 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
+          className={`transition-all duration-700 delay-300 ${isVisible ?"opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
         >
-          <p className="text-lg sm:text-xl text-slate-600 dark:text-slate-300 mb-5 leading-relaxed max-w-3xl">
+          <p className="text-lg sm:text-xl text-slate-600 mb-5 leading-relaxed max-w-3xl">
             {home.description}
           </p>
 
@@ -57,7 +57,7 @@ export default function Hero({
           <button
             type="button"
             onClick={() => setContextOpen(true)}
-            className="group inline-flex items-center gap-2 mb-10 px-4 py-2 rounded-full text-sm font-medium bg-slate-50 dark:bg-slate-800/50 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:border-blue-500 dark:hover:border-blue-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer"
+            className="group inline-flex items-center gap-2 mb-10 px-4 py-2 rounded-full text-sm font-medium bg-slate-50 text-slate-600 border border-slate-200 hover:border-brand-light hover:text-brand transition-colors cursor-pointer"
           >
             <BookOpen className="w-4 h-4" aria-hidden="true" />
             {home.businessContext.triggerLabel}
@@ -73,7 +73,7 @@ export default function Hero({
                 // Two columns on a phone: outer cards hang the bubble from
                 // their outer edge so it cannot run off screen.
                 align={index % 2 === 0 ? "start" : "end"}
-                className={`transition-all duration-500 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
+                className={`transition-all duration-500 ${isVisible ?"opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
               />
             ))}
           </div>
@@ -83,7 +83,7 @@ export default function Hero({
             {home.techStack.map((tech) => (
               <span
                 key={tech}
-                className="px-4 py-1.5 text-sm rounded-full bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700"
+                className="px-4 py-1.5 text-sm rounded-full bg-white text-slate-600 border border-slate-200"
               >
                 {tech}
               </span>
@@ -93,21 +93,21 @@ export default function Hero({
 
         {/* CTA Button */}
         <div
-          className={`transition-all duration-700 delay-500 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
+          className={`transition-all duration-700 delay-500 ${isVisible ?"opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
         >
           <Link
             href="/chat"
-            className="group flex items-center justify-between w-full p-6 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl hover:border-blue-500 dark:hover:border-blue-400 hover:shadow-lg transition-all duration-200 cursor-pointer"
+            className="group flex items-center justify-between w-full p-6 bg-white border border-slate-200 rounded-2xl hover:border-brand-light hover:shadow-lg transition-all duration-200 cursor-pointer"
           >
             <div>
-              <h3 className="font-display text-2xl sm:text-3xl text-primary dark:text-white mb-1">
+              <h3 className="font-display text-2xl sm:text-3xl text-primary mb-1">
                 {home.cta.title}
               </h3>
-              <p className="text-slate-500 dark:text-slate-400 text-sm sm:text-base">
+              <p className="text-slate-500 text-sm sm:text-base">
                 {home.cta.subtitle}
               </p>
             </div>
-            <div className="flex items-center justify-center w-14 h-14 rounded-full bg-slate-100 dark:bg-slate-700 group-hover:bg-blue-600 transition-colors">
+            <div className="flex items-center justify-center w-14 h-14 rounded-full bg-slate-100 group-hover:bg-brand transition-colors">
               <ArrowRight className="w-6 h-6 text-slate-400 group-hover:text-white group-hover:translate-x-1 transition-all" />
             </div>
           </Link>
@@ -115,9 +115,9 @@ export default function Hero({
 
         {/* Database Info */}
         <div
-          className={`mt-10 transition-all duration-700 delay-700 ${isVisible ? "opacity-100" : "opacity-0"}`}
+          className={`mt-10 transition-all duration-700 delay-700 ${isVisible ?"opacity-100" : "opacity-0"}`}
         >
-          <p className="text-sm text-slate-400 dark:text-slate-500">{home.blurb}</p>
+          <p className="text-sm text-slate-400">{home.blurb}</p>
         </div>
       </div>
 

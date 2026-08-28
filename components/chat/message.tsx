@@ -20,14 +20,14 @@ const ReasoningBlock = ({ text }: { text: string }) => {
   const previewText = text.length > 100 ? text.slice(0, 100) + "..." : text;
 
   return (
-    <div className="border border-amber-200 dark:border-amber-800 rounded-lg bg-amber-50 dark:bg-amber-950/30 overflow-hidden">
+    <div className="border border-amber-200 rounded-lg bg-amber-50 overflow-hidden">
       <button
         onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full px-3 py-2 flex items-center gap-2 text-left hover:bg-amber-100 dark:hover:bg-amber-900/30 transition-colors"
+        className="w-full px-3 py-2 flex items-center gap-2 text-left hover:bg-amber-100 transition-colors"
       >
         <svg
           className={cn(
-            "w-4 h-4 text-amber-600 dark:text-amber-400 transition-transform",
+            "w-4 h-4 text-amber-600 transition-transform",
             isExpanded && "rotate-90"
           )}
           fill="none"
@@ -36,18 +36,18 @@ const ReasoningBlock = ({ text }: { text: string }) => {
         >
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
         </svg>
-        <span className="text-xs font-medium text-amber-700 dark:text-amber-300">
+        <span className="text-xs font-medium text-amber-700">
           Thinking
         </span>
         {!isExpanded && (
-          <span className="text-xs text-amber-600 dark:text-amber-400 truncate flex-1">
+          <span className="text-xs text-amber-600 truncate flex-1">
             {previewText}
           </span>
         )}
       </button>
       {isExpanded && (
-        <div className="px-3 py-2 border-t border-amber-200 dark:border-amber-800">
-          <div className="text-xs text-amber-800 dark:text-amber-200 whitespace-pre-wrap">
+        <div className="px-3 py-2 border-t border-amber-200">
+          <div className="text-xs text-amber-800 whitespace-pre-wrap">
             {text}
           </div>
         </div>
@@ -83,7 +83,7 @@ export const PreviewMessage = ({
             "flex flex-col gap-2 max-w-[85%] sm:max-w-[75%] p-4 rounded-xl",
             message.role === "user"
               ? "bg-primary text-white"
-              : "bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700"
+              : "bg-white border border-slate-200"
           )}
         >
           {/* AI SDK v5: Use parts instead of content */}
@@ -103,7 +103,7 @@ export const PreviewMessage = ({
                       key={index}
                       className={cn(
                         message.role === "assistant"
-                          ? "text-primary dark:text-slate-100"
+                          ? "text-primary"
                           : "text-white"
                       )}
                     >
@@ -128,8 +128,8 @@ export const PreviewMessage = ({
 
         {/* User Avatar - Right side */}
         {message.role === "user" && (
-          <div className="w-8 h-8 flex items-center justify-center border border-slate-200 dark:border-slate-700 shrink-0 rounded-lg bg-slate-100 dark:bg-slate-800">
-            <User className="w-4 h-4 text-slate-500 dark:text-slate-400" aria-label="You" />
+          <div className="w-8 h-8 flex items-center justify-center border border-slate-200 shrink-0 rounded-lg bg-slate-100">
+            <User className="w-4 h-4 text-slate-500" aria-label="You" />
           </div>
         )}
       </div>
@@ -150,9 +150,9 @@ export const ThinkingMessage = () => {
       <div className="flex gap-3 w-full justify-start">
         <AssistantAvatar />
 
-        <div className="p-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl">
-          <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400">
-            <span className="inline-block w-2 h-2 bg-blue-600 rounded-full animate-pulse" />
+        <div className="p-4 bg-white border border-slate-200 rounded-xl">
+          <div className="flex items-center gap-2 text-slate-600">
+            <span className="inline-block w-2 h-2 bg-brand rounded-full animate-pulse" />
             <span className="font-display text-sm">Thinking...</span>
           </div>
         </div>

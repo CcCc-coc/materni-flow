@@ -15,15 +15,15 @@ export const Overview = ({ site }: { site: SiteConfig }) => {
       exit={{ opacity: 0, y: 20 }}
       transition={{ delay: 0.3 }}
     >
-      <div className="border border-slate-200 dark:border-slate-700 bg-white dark:bg-surface-dark rounded-2xl shadow-sm">
+      <div className="border border-slate-200 bg-white rounded-2xl shadow-sm">
         <div className="py-10 px-8">
           {/* Header */}
           <div className="flex flex-col items-center text-center mb-8">
-            <h2 className="font-display text-2xl sm:text-3xl text-primary dark:text-white mb-2">
-              <span className="text-blue-600 dark:text-blue-400">{chat.agent}</span>
+            <h2 className="font-display text-2xl sm:text-3xl text-primary mb-2">
+              <span className="text-brand">{chat.agent}</span>
             </h2>
 
-            <p className="text-slate-500 dark:text-slate-400 max-w-md">
+            <p className="text-slate-500 max-w-md">
               {chat.welcomeSubtitle}
             </p>
           </div>
@@ -50,8 +50,8 @@ export const Overview = ({ site }: { site: SiteConfig }) => {
           </div>
 
           {/* Example prompts */}
-          <div className="mt-6 pt-6 border-t border-slate-100 dark:border-slate-700">
-            <p className="text-xs text-slate-400 dark:text-slate-500 text-center">
+          <div className="mt-6 pt-6 border-t border-slate-100">
+            <p className="text-xs text-slate-400 text-center">
               {chat.tryExamples}
             </p>
           </div>

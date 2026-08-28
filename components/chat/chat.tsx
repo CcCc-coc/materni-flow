@@ -63,7 +63,7 @@ export function Chat({ site }: { site: SiteConfig }) {
   }, [messages.length]);
 
   return (
-    <div className="flex flex-col min-w-0 h-[calc(100dvh-64px)] bg-slate-50 dark:bg-primary">
+    <div className="flex flex-col min-w-0 h-[calc(100dvh-64px)] bg-slate-50">
       <div
         ref={messagesContainerRef}
         className="flex flex-col min-w-0 gap-4 flex-1 overflow-y-scroll pt-4 px-4"
@@ -74,20 +74,20 @@ export function Chat({ site }: { site: SiteConfig }) {
         {/* Context Banner */}
         {messages.length > 0 && isContextBannerVisible && (
           <div className="max-w-3xl mx-auto w-full">
-            <div className="border border-slate-200 dark:border-slate-700 p-4 bg-white dark:bg-slate-900 rounded-xl">
+            <div className="border border-slate-200 p-4 bg-white rounded-xl">
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-start gap-3 flex-1">
                   <AssistantAvatar size="md" />
                   <div className="flex-1">
-                    <h3 className="font-display text-sm text-primary dark:text-white">{site.chat.agent}</h3>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                    <h3 className="font-display text-sm text-primary">{site.chat.agent}</h3>
+                    <p className="text-xs text-slate-500 mt-1">
                       {site.chat.messages.welcomeMessage}
                     </p>
                   </div>
                 </div>
                 <button
                   onClick={() => setIsContextBannerVisible(false)}
-                  className="text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors shrink-0 cursor-pointer"
+                  className="text-slate-400 hover:text-slate-700 transition-colors shrink-0 cursor-pointer"
                   aria-label="Close"
                 >
                   <X className="w-5 h-5" />
@@ -113,7 +113,7 @@ export function Chat({ site }: { site: SiteConfig }) {
         />
       </div>
 
-      <div className="p-4 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-700">
+      <div className="p-4 bg-white border-t border-slate-200">
         <form className="flex mx-auto gap-2 w-full md:max-w-3xl">
           <MultimodalInput
             site={site}

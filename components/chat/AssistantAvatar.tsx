@@ -15,7 +15,7 @@ export function AssistantAvatar({ size = "sm" }: { size?: "sm" | "md" }) {
   return (
     <div
       className={cn(
-        "bg-blue-600 flex items-center justify-center shrink-0 rounded-lg",
+        "bg-brand flex items-center justify-center shrink-0 rounded-lg",
         size === "md" ? "w-10 h-10" : "w-8 h-8",
       )}
       aria-hidden="true"

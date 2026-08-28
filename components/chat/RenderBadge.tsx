@@ -32,7 +32,7 @@ export function RenderBadge({ render }: { render: RenderKind }) {
   const { Icon, label } = BADGES[render]
   return (
     <Icon
-      className="w-3.5 h-3.5 shrink-0 text-slate-400 dark:text-slate-500 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors"
+      className="w-3.5 h-3.5 shrink-0 text-slate-400 group-hover:text-brand transition-colors"
       role="img"
       aria-label={label}
     />
