@@ -30,8 +30,7 @@ def encode_column_info(
 
     Redundant markers are dropped -- a primary key is already not-null and
     indexed, a unique column is already indexed -- so the agent never reads a
-    fact twice. The full format is in
-    ``.claude/skills/about-bi-agent-app-scaffold-cn/ref/backend/04-schema-encoding.md``.
+    fact twice.
     """
     col_name = column_info.name
     col_type = column_info.llm_type.value if column_info.llm_type else column_info.type

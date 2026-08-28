@@ -61,7 +61,7 @@ normalize_render_blocks      answer    -> 把 <chart> 标签改写成围栏
 调提示词的措辞救不了这么小的模型, 而这个映射是无歧义的, 所以机械地做掉。已经在围栏里的
 内容不受影响: 那个正则要求标签独占一行。
 
-`RENDERABLE_BLOCKS` 是[渲染契约](../architecture/04-rendering-contract.md)三半中的一半, 另外两半是
+`RENDERABLE_BLOCKS` 是[渲染契约](../architecture/06-rendering-contract.md)三半中的一半, 另外两半是
 `components/chat/blocks/index.ts` 的查找表和 `data/system-prompt.md` 的指令。**加一种块要
 三处一起改。**
 

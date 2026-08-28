@@ -1,7 +1,7 @@
 # 后端代码为什么长这样
 
 `agent_app/` 各模块的设计说明。**代码里的注释只留工程上的 why 且很短** (规矩见
-[07-comments-explain-why.md](../architecture/07-comments-explain-why.md)), 模式讲解、格式规范、
+[09-comments-and-docs.md](../architecture/09-comments-and-docs.md)), 模式讲解、格式规范、
 历史包袱这些展开的内容在这里。
 
 两边都不完整, 加起来完整, 而且可以独立删除其中一边。

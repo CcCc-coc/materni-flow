@@ -2,7 +2,7 @@
 # pyproject.toml. The app never runs the generator, and keeping them apart is
 # what lets the teaching layer be deleted in one go.
 #
-# `mise run gen-data` installs these into .venv and then runs the generator.
+# The teaching CLI's `gen-data` installs these into .venv, then runs the generator.
 Faker>=40.1.2,<41.0.0
 polars>=1.36.1,<2.0.0
 # polars.to_pandas() is how the generator loads TSVs into SQLite, and that needs

@@ -61,7 +61,7 @@ from pathlib import Path
 
 import sqlalchemy as sa
 
-from agent_app.dataset import local_sqlite_engine, table_insert_order
+from agent_app.dataset import GEN_HINT, local_sqlite_engine, table_insert_order
 from agent_app.paths import path_enum
 
 
@@ -215,7 +215,7 @@ def report_missing_database(report: Report) -> None:
     report.error(
         "database",
         "The dataset database has no tables, so every check below it would be "
-        "noise. Build it with:\n         .venv/bin/python .claude/skills/about-bi-agent-app-scaffold-cn/scripts/teaching_cli.py gen-data",
+        f"noise. Build it with:\n         {GEN_HINT}",
     )
     report.section("database present", False)
 
@@ -237,7 +237,7 @@ def check_table_insert_order(report: Report, db_tables: set[str]) -> bool:
         report.error(
             "table-order",
             "The dataset database has no tables. "
-            "Build it with:\n         .venv/bin/python .claude/skills/about-bi-agent-app-scaffold-cn/scripts/teaching_cli.py gen-data",
+            f"Build it with:\n         {GEN_HINT}",
         )
         report.section("table insert order (0 tables)", False)
         return False

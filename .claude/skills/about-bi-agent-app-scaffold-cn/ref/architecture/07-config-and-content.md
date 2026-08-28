@@ -1,34 +1,94 @@
-# `data/` 下那几个文件怎么写
+# 配置与内容: 什么进环境变量, 什么进 `data/`
 
-换数据集就是重写这一个目录. 这篇讲每个文件里该写什么, 以及每个字段对应屏幕上的哪块东西.
+> 这个仓库要人填的东西分两类, 走两条完全不同的路: **后端配置**是环境变量, 从 `.env` 和
+> `.env.defaults` 一路走到 Vercel; **领域内容**是 `data/` 一个目录里的三个文件, 换领域就是
+> 重写它. 这篇讲两边各自装什么, 每个字段对应屏幕上的哪块东西.
 
-完整的执行顺序 (先写哪个后写哪个, 为什么) 在 `swap-dataset-cn` skill 里, 这篇只讲**形状**.
+## 两条路, 别走串
+
+| | 后端配置 | 领域内容 |
+| :--- | :--- | :--- |
+| 载体 | `.env` + `.env.defaults` (环境变量) | `data/` 下的 `site.toml`, `business-context.md`, `system-prompt.md` |
+| 谁读 | Python (`agent_app/config.py`) | 前端 TypeScript, 和 agent 的提示词 |
+| 是什么 | 连接信息, 开关, 上限, 数据集标识 | 人写的文案, 解释, 领域知识 |
+| 换数据集要动吗 | **只动一行** (`SCHEMA_NAME`) | **全部重写** |
+| 线上怎么到位 | Vercel 的 Environment Variables + 随部署带上去的 `.env.defaults` | 跟着代码一起部署 |
+
+**`data/` 里没有配置.** 里面每一个字节都是人写的内容. 一个新东西该往哪放, 就问它是"设置"
+还是"文案" —— 设置进 `.env.defaults`, 文案进 `data/`.
+
+完整的执行顺序 (换数据集时先写哪个后写哪个, 为什么) 在 `swap-dataset-cn` skill, 这篇只讲
+**形状**.
 
 ---
 
-## `.env.defaults` — 后端读的那一个值
+## 后端配置: 两个文件, 按"是不是密钥"切
 
-严格说它不在 `data/` 里, 但换数据集时必须改它, 所以放在这篇的最前面.
+| | `.env.defaults` | `.env` |
+| :--- | :--- | :--- |
+| 装什么 | `SCHEMA_NAME`, LLM provider 和 model, region, DB 端口, 整块配额设置 | API key, AWS 密钥, 数据库 host/user/password/name |
+| 是密钥吗 | 不是 | **是** |
+| 进 Git 吗 | **进** | 不进 |
+| AI 能读吗 | 能 | **不能** —— `.claude/settings.json` 里 `deny` |
+| AI 能改吗 | 能, 换数据集改的就是它 | **不能** |
+| 加载顺序 | 后加载, 补空缺 | **先加载, 优先** |
 
-```bash
-SCHEMA_NAME="..."   # PostgreSQL schema 名: 小写字母/数字/下划线, 首字符不能是数字, <= 63
+判据就一句: **它是密钥吗?**
+
+不是"会不会因为换台机器而不同" —— 那条线也讲得通, 但它最后为了一个字符串养出了一整个
+TOML 文件加一个读取模块 (那时候是 `data/dataset.toml`, 现在整个没了). 按密钥切的这条线
+能挣回成本, 因为它决定的是**谁能打开这个文件**, 包括 AI 能不能.
+
+所以: 轮换一个 API key 不该碰到 schema 名; 把仓库指向一个新数据集不该碰到任何人的凭据.
+
+**没有 `.env.defaults.example`, 这是故意的.** 那个文件本身进 Git, 它**就是**模板. 搞成
+"gitignore 加模板"的话, `SCHEMA_NAME` 就跑到版本控制外面去了, 每次 clone 都要重填一遍,
+而且 AI 换数据集的改动不会出现在 diff 里 —— 那正好是这套设计想要的反面.
+
+### 优先级是三层, 最上面那层在 Vercel
+
+```
+Vercel 的 Environment Variables      最高, 因为它在进程启动时就在 os.environ 里
+        ↓
+.env                                 本机的密钥和覆盖
+        ↓
+.env.defaults                        committed 的默认值, 补空缺
 ```
 
-`SCHEMA_NAME` 是**这个数据集唯一的标识符**: 它既隔离共用 Neon 实例里的表, 也是
-`agent_app/quota.py` 给月度花费分区用的 key. 以前还有一个 `[project] name` 干后半件事,
-那是表名前缀时代的残留 —— 一个东西两个名字, 就是两个要同步维护的东西.
+底层机制是一句话: `load_dotenv` **不覆盖已经设过的变量**. 所以先读 `.env` 再读
+`.env.defaults`, 前者就自动成了覆盖层; 而 Vercel 注入的变量比两个文件都早, 于是它赢在最
+上面.
 
-规则由 `Config.__post_init__` 的 `SCHEMA_NAME_PATTERN` 在启动时强制执行, 写错当场报错,
-不会拖到某条查询深处才炸.
+**部署时只有密钥需要手填.** `.env` 不进 Git, 所以它那些值要在 Vercel 的面板里逐个录进
+Environment Variables. `.env.defaults` 进 Git, **跟着部署一起上去**, 所以 `SCHEMA_NAME`
+这类值不用在面板里重录一遍. 想在线上临时改一个非密钥值, 在面板里加同名变量即可, 它压过
+文件.
 
-**建表顺序不用写.** 以前 `dataset.toml` 里有一份手写的 `tableInsertOrder`, 现在是算出来
-的 —— `agent_app/tests/db_sync.py` 的 `table_insert_order()` 直接读 SQLAlchemy 的
-`metadata.sorted_tables`, 那本来就是按外键做的拓扑排序. 加一张表不需要改任何配置.
+这个覆盖是**设计**, 不是逃生舱: 它发生在同一个配置系统内部, 只有一个读取者. 真正禁止的
+是同一个值躺在两个**不同的**配置系统里 —— `project_name` 曾经那样, 现在整个没了.
 
-`.env.defaults` 进 Git, AI 可以自由编辑; `.env` 装密钥, 进 gitignore, 而且
-`.claude/settings.json` 里 deny 掉了 AI 的读和写. 换数据集改前者, 永远不碰后者.
+### `SCHEMA_NAME` — 换数据集唯一要改的配置
+
+```bash
+SCHEMA_NAME="..."   # 小写字母/数字/下划线, 首字符不能是数字, <= 63 字符
+```
+
+它是**这个数据集唯一的标识符**, 同时干两件事: 隔离共用 Neon 实例里的表 (见
+[05](05-why-postgres-everywhere.md)), 以及给 `agent_app/quota.py` 的月度花费分区当 key.
+以前还有一个 `[project] name` 干后半件事, 那是表名前缀时代的残留 —— 一个东西两个名字, 就是
+两个要同步维护的东西.
+
+规则由 `Config.__post_init__` 里的 `SCHEMA_NAME_PATTERN` 在**启动时**强制执行, 写错当场
+报错, 不会拖到某条查询深处才炸.
+
+**建表顺序不用配.** 以前有一份手写的 `tableInsertOrder`, 现在是算出来的 ——
+`table_insert_order()` 直接读 SQLAlchemy 的 `metadata.sorted_tables`, 那本来就是按外键做的
+拓扑排序. 加一张表不需要改任何配置.
 
 ---
+
+换数据集就是重写下面这三个文件. 顺序上先写 `system-prompt.md` (它定义能力边界), 再写
+另外两个 —— 理由见 [08](08-what-guards-the-boundaries.md) 里那条"用顺序代替检查".
 
 ## `site.toml` — 界面上说的每一句话
 
@@ -81,7 +141,7 @@ SCHEMA_NAME="..."   # PostgreSQL schema 名: 小写字母/数字/下划线, 首�
 
 ### `[[chat.suggestedActions]]` 恰好 12 条, 四类各 3 条
 
-这是渲染契约的一半, 完整规则见 [04-rendering-contract.md](04-rendering-contract.md).
+这是渲染契约的一半, 完整规则见 [06-rendering-contract.md](06-rendering-contract.md).
 要点:
 
 - 第 1 条固定是 Introduction / "What can you do?", `render = "free"`
@@ -141,10 +201,10 @@ SCHEMA_NAME="..."   # PostgreSQL schema 名: 小写字母/数字/下划线, 首�
 | `## Derived Business Concepts` | 从 Index 里挑出外行会算错的, 给精确公式和 SQL |
 | `## Table Relationships` | 怎么 JOIN |
 | `## Key Status Codes` | 状态码取值 |
-| `## SQL Dialect` | PostgreSQL 方言清单, 见 [03](03-one-database-everywhere.md) |
+| `## SQL Dialect` | PostgreSQL 方言清单, 见 [05](05-why-postgres-everywhere.md) |
 | `## SQL Patterns` | 这个领域常用的查询骨架 |
 | `## Response Guidelines` | 回答的组织方式 |
-| **渲染层五节** | **逐字抄, 只换例子**, 见 [04](04-rendering-contract.md) |
+| **渲染层五节** | **逐字抄, 只换例子**, 见 [06](06-rendering-contract.md) |
 | `## Safety` | 只读, 不许写 |
 
 ### 覆盖靠索引, 篇幅靠取舍
@@ -156,7 +216,7 @@ SCHEMA_NAME="..."   # PostgreSQL schema 名: 小写字母/数字/下划线, 首�
 
 ### 写完必须把每段 SQL 对着真库跑一遍
 
-**而且必须走 PostgreSQL**, 不能拿本地 sqlite 验 —— 理由见 [03](03-one-database-everywhere.md),
+**而且必须走 PostgreSQL**, 不能拿本地 sqlite 验 —— 理由见 [05](05-why-postgres-everywhere.md),
 那正是这套流程踩过的坑.
 
 跑不通的例子比没有例子更糟: 模型会照抄, 然后在用户面前失败. 这一步还会顺带暴露"语法对但
