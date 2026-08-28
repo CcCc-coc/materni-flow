@@ -145,19 +145,13 @@ metadata.reflect(bind=self.engine, schema=self.config.schema_name)
 
 ### 三个踩出来的细节
 
-**一, provider SDK 是可选依赖, 不是核心依赖.**
+**一, 四家 SDK 全是核心依赖, 换 provider 不重装.**
 
-```
-LLM_PROVIDER=bedrock     开箱可用 (boto3 本来就是核心依赖)
-LLM_PROVIDER=anthropic   uv sync --extra anthropic
-LLM_PROVIDER=openai      uv sync --extra openai
-LLM_PROVIDER=google      uv sync --extra gemini
-```
-
-`strands.models` 对每家是懒 import 的, 所以没装的时候原始报错是一句
+`strands.models` 对每家是懒 import 的, 所以真的缺了 SDK 时原始报错是一句
 `ModuleNotFoundError: No module named 'anthropic'` —— 它没告诉你该干什么.
-`load_strands_model_class()` 把它换成一条带 `uv sync --extra ...` 的可执行指示,
-外加"或者切回 bedrock"这条退路.
+`load_strands_model_class()` 把它换成一条可执行的指示. 走到那条路径意味着 venv 和 lock 文件
+脱节了 (`mise run inst-python-deps` 修), 而**不是**意味着有什么东西需要 opt-in ——
+把 provider SDK 做成 extra 的理由见 [02](02-config.md).
 
 **二, OpenAI 用的是 `OpenAIResponsesModel`, 不是 chat-completions.**
 

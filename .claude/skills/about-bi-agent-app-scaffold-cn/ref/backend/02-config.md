@@ -145,9 +145,10 @@ LLM_PROVIDER=google      -> GOOGLE_API_KEY
 `Config.validate()` 在缺凭证时给一条能读的错误, 而不是等 SDK 抛. 它由 `one.model` 在构造
 模型之前调用, 所以配错在**建 agent 的时候**就炸, 不会拖到第一个用户提问.
 
-**只有 bedrock 开箱可用.** 另外三家的 SDK 是 `pyproject.toml` 里的 optional extra, 换过去
-要先 `uv sync --extra anthropic|openai|gemini` —— 这样一个用 Bedrock 的人不必下载三个用不到
-的厂商 SDK. 缺 SDK 时的报错在 [08](08-the-one-object.md) 里处理, 缺凭证时的报错在这里.
+**四家 SDK 全是核心依赖**, 所以换 provider 是改一个环境变量, 不是重装依赖也不是改部署
+配置. 把它们做成 extra 是很自然的想法 (用 Bedrock 的人何必下载三个用不到的 SDK), 但**extra
+按定义是 opt-in**: `uv sync` 不点名就一个都不装, 而 Vercel 的 Python 构建没有办法知道该点
+哪一个 —— 结果是一个部署起来之后连不上任何模型.
 
 ---
 

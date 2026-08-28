@@ -34,11 +34,14 @@ description: 这个仓库的事实标准. 它是什么性质的项目, 为什么
 | 写测试, 或者要用 `# pragma: no cover` | [backend/10](ref/backend/10-testing.md) |
 | 要造数据集 / 同步到 PostgreSQL | `scripts/teaching_cli.py`, 说明在 [backend/11](ref/backend/11-dataset-pipeline.md) |
 
-`ref/operations/` —— 维护这个仓库的日常参考:
+`ref/operations/` —— 怎么让它跑起来 (装依赖 -> 配置 -> 灌数据 -> 起服务):
 
 | 你在做什么 | 读 |
 | :--- | :--- |
-| 开发服务器起不来 / 杀不掉, 或者要动 `kill-dev-servers.py` | [01-dev-servers.md](ref/operations/01-dev-servers.md) |
+| **第一次把这个仓库跑起来** | [01-overview.md](ref/operations/01-overview.md) 的四步 |
+| 填 `.env`, 换 LLM provider, 打开配额 | [02-configuration.md](ref/operations/02-configuration.md) |
+| 造数据集, 同步 PostgreSQL, 换数据集之后重灌 | [03-the-database.md](ref/operations/03-the-database.md) |
+| 起 / 停开发服务器, 或者搞不清 mise 和 pnpm/uv 谁调谁 | [04-dev-servers.md](ref/operations/04-dev-servers.md) |
 
 `ref/frontend/` —— 界面必须做到什么, 以及那些 TypeScript 为什么这么写:
 

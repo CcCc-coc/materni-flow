@@ -15,24 +15,15 @@ if T.TYPE_CHECKING:  # pragma: no cover
     from .one_00_main import One
 
 
-#: Extra to install for each provider whose SDK is not a core dependency.
-#: Only ``bedrock`` works out of the box; the rest are opt-in so that a student
-#: using Bedrock never has to download three unused vendor SDKs.
-PROVIDER_INSTALL_EXTRA = {
-    LlmProviderEnum.ANTHROPIC.value: "anthropic",
-    LlmProviderEnum.OPENAI.value: "openai",
-    LlmProviderEnum.GOOGLE.value: "gemini",
-}
-
-
 def load_strands_model_class(class_name: str, provider: str):
     """
     Import a strands model class, with an actionable error when its SDK is missing.
 
-    ``strands.models`` lazy-imports each provider, so the vendor SDK is only
-    required when that provider is actually selected. Without this wrapper the
-    failure surfaces as a bare ``ModuleNotFoundError: No module named 'anthropic'``,
-    which does not tell you what to do about it.
+    Every provider SDK is a core dependency (see ``pyproject.toml``), so reaching
+    the error path means the virtualenv is out of step with the lock file rather
+    than that something is opt-in. ``strands.models`` lazy-imports each provider,
+    so without this wrapper that surfaces as a bare ``ModuleNotFoundError: No
+    module named 'anthropic'``, which does not say what to do about it.
 
     Args:
         class_name: The strands class to import, e.g. ``"AnthropicModel"``.
@@ -42,19 +33,20 @@ def load_strands_model_class(class_name: str, provider: str):
         The strands model class.
 
     Raises:
-        ImportError: If the provider's SDK is not installed.
+        ImportError: If the provider's SDK is not importable.
     """
     from strands import models
 
     try:
         return getattr(models, class_name)
     except (AttributeError, ImportError) as e:
-        extra = PROVIDER_INSTALL_EXTRA[provider]
         raise ImportError(
-            f"LLM_PROVIDER={provider!r} needs the {extra!r} SDK, which is not installed.\n"
-            f"Install it with:\n"
-            f"    uv sync --extra {extra}\n"
-            f"Or switch back to the default provider with LLM_PROVIDER=bedrock."
+            f"LLM_PROVIDER={provider!r} needs a vendor SDK that is not importable, "
+            f"even though it is a core dependency. The virtualenv is probably "
+            f"stale.\n"
+            f"Reinstall with:\n"
+            f"    mise run inst-python-deps\n"
+            f"Or switch provider with LLM_PROVIDER in .env.defaults."
         ) from e
 
 
