@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { User } from "lucide-react";
 import { useState } from "react";
 
+import { AssistantAvatar } from "./AssistantAvatar";
 import { Markdown } from "./markdown";
 import { cn } from "@/lib/utils";
 
@@ -59,9 +60,7 @@ export const PreviewMessage = ({
   message,
   append,
 }: {
-  chatId: string;
   message: UIMessage;
-  isLoading: boolean;
   append?: (message: any) => Promise<string | null | undefined>;
 }) => {
   return (
@@ -77,18 +76,13 @@ export const PreviewMessage = ({
           message.role === "user" ? "justify-end" : "justify-start"
         )}
       >
-        {/* AI Assistant Avatar - Left side */}
-        {message.role === "assistant" && (
-          <div className="w-8 h-8 flex items-center justify-center bg-blue-600 shrink-0 rounded-lg">
-            <span className="font-display text-xs text-white">AI</span>
-          </div>
-        )}
+        {message.role === "assistant" && <AssistantAvatar />}
 
         <div
           className={cn(
             "flex flex-col gap-2 max-w-[85%] sm:max-w-[75%] p-4 rounded-xl",
             message.role === "user"
-              ? "bg-[#0A1628] text-white"
+              ? "bg-primary text-white"
               : "bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700"
           )}
         >
@@ -109,7 +103,7 @@ export const PreviewMessage = ({
                       key={index}
                       className={cn(
                         message.role === "assistant"
-                          ? "text-[#0A1628] dark:text-slate-100"
+                          ? "text-primary dark:text-slate-100"
                           : "text-white"
                       )}
                     >
@@ -154,9 +148,7 @@ export const ThinkingMessage = () => {
       data-role={role}
     >
       <div className="flex gap-3 w-full justify-start">
-        <div className="w-8 h-8 flex items-center justify-center bg-blue-600 shrink-0 rounded-lg">
-          <span className="font-display text-xs text-white">AI</span>
-        </div>
+        <AssistantAvatar />
 
         <div className="p-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl">
           <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400">

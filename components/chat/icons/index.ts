@@ -1,13 +1,12 @@
 /**
- * Unified Icon System for Chat Components
+ * Hand-drawn icons for the composer.
  *
- * This directory contains all icon components used in the chat application.
- * All icons follow a consistent interface with `size` and `className` props.
+ * Everything else in the app uses `lucide-react`. These two stayed because they
+ * are drawn to sit inside the send button at a size lucide's grid does not hit
+ * cleanly. Do not grow this directory: a new icon belongs in `lib/icons.ts`.
  */
 
 export { ArrowUpIcon } from './ArrowUpIcon';
 export { StopIcon } from './StopIcon';
-export { LoaderIcon } from './LoaderIcon';
-export { SparklesIcon } from './SparklesIcon';
 
 export type { IconProps } from './ArrowUpIcon';

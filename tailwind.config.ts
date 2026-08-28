@@ -10,8 +10,11 @@ const config: Config = {
   ],
   theme: {
     extend: {
+      // The palette. Components name these rather than repeating a hex, so a
+      // rebrand is this file and nothing else. `primary` is the brand navy and
+      // doubles as the dark-mode page background -- the same colour by design,
+      // so it gets one name rather than two.
       colors: {
-        // Fintech Color System (Navy + Gold)
         primary: {
           DEFAULT: "#0A1628", // navy
           foreground: "#FFFFFF",
@@ -69,51 +72,21 @@ const config: Config = {
           foreground: "hsl(var(--card-foreground))",
         },
       },
+      // Nothing else is extended here on purpose. This file once also
+      // carried a fontSize scale, four keyframe animations and three
+      // shadows, none of which any component ever used -- a theme nobody
+      // reads reads as a design system, and it is not one.
       fontFamily: {
         display: ["var(--font-figtree)", "sans-serif"],
         body: ["var(--font-noto-sans)", "sans-serif"],
         heading: ["var(--font-figtree)", "sans-serif"],
         inter: ["var(--font-inter)", "sans-serif"],
       },
-      fontSize: {
-        "display-xl": ["clamp(4rem, 15vw, 12rem)", { lineHeight: "0.9", letterSpacing: "-0.02em" }],
-        "display-lg": ["clamp(3rem, 10vw, 8rem)", { lineHeight: "0.95", letterSpacing: "-0.02em" }],
-        "display-md": ["clamp(2rem, 6vw, 4rem)", { lineHeight: "1", letterSpacing: "-0.01em" }],
-      },
-      animation: {
-        "fade-in": "fadeIn 0.5s ease-in-out",
-        "slide-up": "slideUp 0.5s ease-out",
-        "slide-in-left": "slideInLeft 0.6s ease-out",
-        "slide-in-right": "slideInRight 0.6s ease-out",
-      },
-      keyframes: {
-        fadeIn: {
-          "0%": { opacity: "0" },
-          "100%": { opacity: "1" },
-        },
-        slideUp: {
-          "0%": { transform: "translateY(20px)", opacity: "0" },
-          "100%": { transform: "translateY(0)", opacity: "1" },
-        },
-        slideInLeft: {
-          "0%": { transform: "translateX(-30px)", opacity: "0" },
-          "100%": { transform: "translateX(0)", opacity: "1" },
-        },
-        slideInRight: {
-          "0%": { transform: "translateX(30px)", opacity: "0" },
-          "100%": { transform: "translateX(0)", opacity: "1" },
-        },
-      },
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
         none: "0px",
-      },
-      boxShadow: {
-        "fintech": "0 4px 6px -1px rgba(10, 22, 40, 0.1), 0 2px 4px -2px rgba(10, 22, 40, 0.1)",
-        "fintech-lg": "0 10px 15px -3px rgba(10, 22, 40, 0.1), 0 4px 6px -4px rgba(10, 22, 40, 0.1)",
-        "fintech-accent": "0 4px 6px -1px rgba(245, 158, 11, 0.2), 0 2px 4px -2px rgba(245, 158, 11, 0.1)",
       },
     },
   },

@@ -1,39 +1,35 @@
 "use client";
 
+import { AssistantAvatar } from "./AssistantAvatar";
 import { PreviewMessage, ThinkingMessage } from "./message";
 import { MultimodalInput } from "./multimodal-input";
 import { Overview } from "./overview";
 import { useScrollToBottom } from "@/hooks/use-scroll-to-bottom";
 import { useChat } from "@ai-sdk/react";
 import { toast } from "sonner";
+import { X } from "lucide-react";
 import { useState, useEffect } from "react";
 import type { SiteConfig } from "@/lib/site/schema";
 
 export function Chat({ site }: { site: SiteConfig }) {
-  const chatId = "001";
-
   const [input, setInput] = useState("");
   const [isContextBannerVisible, setIsContextBannerVisible] = useState(true);
 
   const {
     messages,
-    setMessages,
     sendMessage,
     status,
     stop,
   } = useChat({
-    onError: (error) => {
-      if (error.message.includes("Too many requests") || error.message.includes("Rate limit") || error.message.includes("429")) {
-        toast.error(site.chat.messages.rateLimited, { duration: 8000 });
-      } else {
-        toast.error(error.message);
-      }
-    },
+    // A spent quota is not an error: the backend answers it with an ordinary
+    // message so the user reads it in the conversation. Anything reaching here
+    // is a real transport or server failure.
+    onError: (error) => toast.error(error.message),
   });
 
   const isLoading = status === "streaming" || status === "submitted";
 
-  const handleSubmit = (e?: { preventDefault?: () => void }, options?: any) => {
+  const handleSubmit = (e?: { preventDefault?: () => void }) => {
     e?.preventDefault?.();
     if (input.trim()) {
       sendMessage({ text: input });
@@ -67,7 +63,7 @@ export function Chat({ site }: { site: SiteConfig }) {
   }, [messages.length]);
 
   return (
-    <div className="flex flex-col min-w-0 h-[calc(100dvh-64px)] bg-slate-50 dark:bg-[#0A1628]">
+    <div className="flex flex-col min-w-0 h-[calc(100dvh-64px)] bg-slate-50 dark:bg-primary">
       <div
         ref={messagesContainerRef}
         className="flex flex-col min-w-0 gap-4 flex-1 overflow-y-scroll pt-4 px-4"
@@ -81,17 +77,11 @@ export function Chat({ site }: { site: SiteConfig }) {
             <div className="border border-slate-200 dark:border-slate-700 p-4 bg-white dark:bg-slate-900 rounded-xl">
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-start gap-3 flex-1">
-                  <div className="w-10 h-10 bg-blue-600 flex items-center justify-center shrink-0 rounded-lg">
-                    <span className="font-display text-sm text-white">AI</span>
-                  </div>
+                  <AssistantAvatar size="md" />
                   <div className="flex-1">
-                    <h3 className="font-display text-sm text-[#0A1628] dark:text-white">{site.chat.agent}</h3>
+                    <h3 className="font-display text-sm text-primary dark:text-white">{site.chat.agent}</h3>
                     <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                      I'm here to help you with{" "}
-                      <span className="font-semibold text-blue-600 dark:text-blue-400">
-                        {site.chat.messages.welcomeMessage}
-                      </span>
-                      .
+                      {site.chat.messages.welcomeMessage}
                     </p>
                   </div>
                 </div>
@@ -100,9 +90,7 @@ export function Chat({ site }: { site: SiteConfig }) {
                   className="text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors shrink-0 cursor-pointer"
                   aria-label="Close"
                 >
-                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
+                  <X className="w-5 h-5" />
                 </button>
               </div>
             </div>
@@ -110,14 +98,8 @@ export function Chat({ site }: { site: SiteConfig }) {
         )}
 
         {/* Messages */}
-        {messages.map((message, index) => (
-          <PreviewMessage
-            key={message.id}
-            chatId={chatId}
-            message={message}
-            isLoading={isLoading && messages.length - 1 === index}
-            append={append}
-          />
+        {messages.map((message) => (
+          <PreviewMessage key={message.id} message={message} append={append} />
         ))}
 
         {isLoading &&
@@ -134,7 +116,6 @@ export function Chat({ site }: { site: SiteConfig }) {
       <div className="p-4 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-700">
         <form className="flex mx-auto gap-2 w-full md:max-w-3xl">
           <MultimodalInput
-            chatId={chatId}
             site={site}
             input={input}
             setInput={setInput}
@@ -142,7 +123,6 @@ export function Chat({ site }: { site: SiteConfig }) {
             isLoading={isLoading}
             stop={stop}
             messages={messages}
-            setMessages={setMessages}
             append={append}
           />
         </form>

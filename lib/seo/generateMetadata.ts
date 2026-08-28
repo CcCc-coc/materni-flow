@@ -1,6 +1,36 @@
 import { Metadata } from "next"
-import { SEOConfig } from "@/types"
+
 import { DEFAULT_SEO_CONFIG, COMMON_KEYWORDS } from "./config"
+
+/**
+ * What a page may say about itself. Everything is optional except the two lines
+ * every page must have; the rest falls back to the site-wide defaults, and the
+ * Open Graph and Twitter variants fall back to `title` / `description`.
+ */
+export interface SEOConfig {
+  title: string
+  description: string
+  keywords?: string[]
+
+  url?: string
+  siteName?: string
+
+  image?: string
+  imageWidth?: number
+  imageHeight?: number
+  imageAlt?: string
+
+  ogTitle?: string
+  ogDescription?: string
+  twitterTitle?: string
+  twitterDescription?: string
+
+  locale?: string
+  type?: "website" | "article"
+
+  noIndex?: boolean
+  noFollow?: boolean
+}
 
 export function generateSEOMetadata(config: SEOConfig): Metadata {
   // Page config wins over the site-wide defaults

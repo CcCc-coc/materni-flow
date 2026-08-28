@@ -3,17 +3,11 @@
 import type { ChatRequestOptions, UIMessage } from "ai";
 import { motion } from "framer-motion";
 import type React from "react";
-import {
-  useRef,
-  useEffect,
-  useCallback,
-  type Dispatch,
-  type SetStateAction,
-} from "react";
+import { useRef, useEffect, useCallback } from "react";
 import { toast } from "sonner";
 import { useLocalStorage, useWindowSize } from "usehooks-ts";
 
-import { cn, sanitizeUIMessages } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 
 import { ArrowUpIcon, StopIcon } from "./icons";
 import { RenderBadge } from "./RenderBadge";
@@ -22,26 +16,22 @@ import { Textarea } from "@/components/ui/textarea";
 import type { SiteConfig } from "@/lib/site/schema";
 
 export function MultimodalInput({
-  chatId,
   site,
   input,
   setInput,
   isLoading,
   stop,
   messages,
-  setMessages,
   append,
   handleSubmit,
   className,
 }: {
-  chatId: string;
   site: SiteConfig;
   input: string;
   setInput: (value: string) => void;
   isLoading: boolean;
   stop: () => void;
   messages: Array<UIMessage>;
-  setMessages: Dispatch<SetStateAction<Array<UIMessage>>>;
   append: (
     message: any,
     chatRequestOptions?: ChatRequestOptions,
@@ -133,7 +123,7 @@ export function MultimodalInput({
                     }}
                     className="group text-left border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 hover:border-blue-400 dark:hover:border-blue-500 px-4 py-3 text-sm flex-1 gap-1 sm:flex-col w-full h-auto justify-start items-start transition-all cursor-pointer rounded-xl"
                   >
-                    <span className="font-display text-sm text-[#0A1628] dark:text-white">
+                    <span className="font-display text-sm text-primary dark:text-white">
                       {suggestedAction.title}
                     </span>
                     {/* The glyph says what pressing this will draw. Nine of the
@@ -162,7 +152,7 @@ export function MultimodalInput({
             "min-h-[24px] max-h-[calc(75dvh)] overflow-hidden resize-none !text-base",
             "bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl",
             "focus:border-blue-500 focus:ring-blue-500 focus:ring-2",
-            "text-[#0A1628] dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500",
+            "text-primary dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500",
             "pr-12",
             className,
           )}
@@ -187,7 +177,6 @@ export function MultimodalInput({
             onClick={(event) => {
               event.preventDefault();
               stop();
-              setMessages((messages) => sanitizeUIMessages(messages));
             }}
           >
             <StopIcon size={16} />

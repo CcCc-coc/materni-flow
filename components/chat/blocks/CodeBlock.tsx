@@ -19,7 +19,7 @@ export function CodeBlock({ source, language }: BlockProps) {
     >
       <code
         className={cn(
-          "text-sm font-mono text-[#0A1628] dark:text-slate-100",
+          "text-sm font-mono text-primary dark:text-slate-100",
           language && `language-${language}`
         )}
       >

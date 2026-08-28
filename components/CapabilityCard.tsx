@@ -46,7 +46,7 @@ export default function CapabilityCard({
         aria-hidden="true"
       />
       <p
-        className={`font-medium text-[#0A1628] dark:text-white ${
+        className={`font-medium text-primary dark:text-white ${
           compact ? "text-sm" : "text-sm"
         }`}
       >

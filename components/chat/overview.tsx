@@ -15,11 +15,11 @@ export const Overview = ({ site }: { site: SiteConfig }) => {
       exit={{ opacity: 0, y: 20 }}
       transition={{ delay: 0.3 }}
     >
-      <div className="border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#0F1D32] rounded-2xl shadow-sm">
+      <div className="border border-slate-200 dark:border-slate-700 bg-white dark:bg-surface-dark rounded-2xl shadow-sm">
         <div className="py-10 px-8">
           {/* Header */}
           <div className="flex flex-col items-center text-center mb-8">
-            <h2 className="font-display text-2xl sm:text-3xl text-[#0A1628] dark:text-white mb-2">
+            <h2 className="font-display text-2xl sm:text-3xl text-primary dark:text-white mb-2">
               <span className="text-blue-600 dark:text-blue-400">{chat.agent}</span>
             </h2>
 

@@ -54,7 +54,7 @@ export const Markdown = ({ children, onQuestionClick }: MarkdownProps) => {
           code: ({ className, children }) => {
             if (!className) {
               return (
-                <code className="bg-slate-100 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 px-1.5 py-0.5 rounded text-sm font-mono text-[#0A1628] dark:text-slate-100">
+                <code className="bg-slate-100 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 px-1.5 py-0.5 rounded text-sm font-mono text-primary dark:text-slate-100">
                   {children}
                 </code>
               );

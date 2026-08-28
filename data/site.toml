@@ -114,8 +114,10 @@ suggestionsHint = "Ask me directly or click a suggestion"
 inputPlaceholder = "Enter your question..."
 
 [chat.messages]
+# A whole sentence: the banner prints it as-is. It used to be a fragment that
+# a component wrapped in "I'm here to help you with ...", and the two halves
+# drifted into printing the frame twice.
 welcomeMessage = "I'm here to help you with SMB lending analytics."
-rateLimited = "This demo runs on a monthly token budget and it is used up for now. It resets at the start of next month."
 waitForResponse = "Wait for the current answer to finish first."
 
 

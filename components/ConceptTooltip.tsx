@@ -73,7 +73,7 @@ export default function ConceptTooltip({
           role="tooltip"
           // The bubble must never sit between the pointer and the card, or
           // leaving the card through the bubble would flicker it shut.
-          className={`pointer-events-none absolute bottom-full z-30 mb-3 w-[min(16rem,calc(100vw-2rem))] rounded-xl bg-[#0A1628] p-4 text-left shadow-xl md:left-1/2 md:right-auto md:-translate-x-1/2 ${
+          className={`pointer-events-none absolute bottom-full z-30 mb-3 w-[min(16rem,calc(100vw-2rem))] rounded-xl bg-primary p-4 text-left shadow-xl md:left-1/2 md:right-auto md:-translate-x-1/2 ${
             align === "end" ? "right-0" : "left-0"
           }`}
         >
@@ -82,7 +82,7 @@ export default function ConceptTooltip({
               tracks the bubble's anchor so it keeps pointing at the card. */}
           <span
             aria-hidden="true"
-            className={`absolute top-full h-2 w-2 -translate-y-1 rotate-45 bg-[#0A1628] md:left-1/2 md:right-auto md:-translate-x-1/2 ${
+            className={`absolute top-full h-2 w-2 -translate-y-1 rotate-45 bg-primary md:left-1/2 md:right-auto md:-translate-x-1/2 ${
               align === "end" ? "right-6" : "left-6"
             }`}
           />

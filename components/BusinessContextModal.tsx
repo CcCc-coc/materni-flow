@@ -65,7 +65,7 @@ export default function BusinessContextModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-[#0A1628]/70 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-primary/70 backdrop-blur-sm"
       onClick={onClose}
     >
       <div
@@ -83,7 +83,7 @@ export default function BusinessContextModal({
           type="button"
           onClick={onClose}
           aria-label="Close"
-          className="absolute top-5 right-5 z-10 flex items-center justify-center w-9 h-9 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 hover:text-[#0A1628] dark:hover:text-white transition-colors cursor-pointer"
+          className="absolute top-5 right-5 z-10 flex items-center justify-center w-9 h-9 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 hover:text-primary dark:hover:text-white transition-colors cursor-pointer"
         >
           <X className="w-5 h-5" />
         </button>
@@ -91,7 +91,7 @@ export default function BusinessContextModal({
         <div className="overflow-y-auto px-6 sm:px-10 py-8 sm:py-10">
           <h2
             id="business-context-title"
-            className="font-display text-3xl sm:text-4xl text-[#0A1628] dark:text-white mb-3 pr-12"
+            className="font-display text-3xl sm:text-4xl text-primary dark:text-white mb-3 pr-12"
           >
             {labels.title}
           </h2>
@@ -107,9 +107,9 @@ export default function BusinessContextModal({
           <div
             className="mt-8 text-base text-slate-600 dark:text-slate-300
                        [&_h2]:font-display [&_h2]:text-xl [&_h2]:sm:text-2xl [&_h2]:font-normal
-                       [&_h2]:text-[#0A1628] [&_h2]:dark:text-white [&_h2]:mt-10 [&_h2]:mb-3
-                       [&_h3]:text-lg [&_h3]:text-[#0A1628] [&_h3]:dark:text-white [&_h3]:mt-6
-                       [&_li]:mb-2 [&_strong]:text-[#0A1628] [&_strong]:dark:text-white"
+                       [&_h2]:text-primary [&_h2]:dark:text-white [&_h2]:mt-10 [&_h2]:mb-3
+                       [&_h3]:text-lg [&_h3]:text-primary [&_h3]:dark:text-white [&_h3]:mt-6
+                       [&_li]:mb-2 [&_strong]:text-primary [&_strong]:dark:text-white"
           >
             <Markdown>{markdown}</Markdown>
           </div>

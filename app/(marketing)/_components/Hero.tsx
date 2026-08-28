@@ -26,14 +26,14 @@ export default function Hero({
   const { home, capabilities } = site
 
   return (
-    <section className="min-h-screen flex flex-col justify-center pt-24 pb-12 px-4 sm:px-6 lg:px-8 bg-white dark:bg-[#0A1628]">
+    <section className="min-h-screen flex flex-col justify-center pt-24 pb-12 px-4 sm:px-6 lg:px-8 bg-white dark:bg-primary">
       <div className="max-w-4xl mx-auto w-full">
         {/* Title */}
         <div
           className={`transition-all duration-700 delay-100 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-8"}`}
         >
           <h1 className="font-display text-5xl sm:text-6xl lg:text-7xl leading-tight mb-4">
-            <span className="text-[#0A1628] dark:text-white">{home.headline.prefix}</span>
+            <span className="text-primary dark:text-white">{home.headline.prefix}</span>
             <span className="text-blue-600 dark:text-blue-400">{home.headline.accent}</span>
           </h1>
 
@@ -100,7 +100,7 @@ export default function Hero({
             className="group flex items-center justify-between w-full p-6 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl hover:border-blue-500 dark:hover:border-blue-400 hover:shadow-lg transition-all duration-200 cursor-pointer"
           >
             <div>
-              <h3 className="font-display text-2xl sm:text-3xl text-[#0A1628] dark:text-white mb-1">
+              <h3 className="font-display text-2xl sm:text-3xl text-primary dark:text-white mb-1">
                 {home.cta.title}
               </h3>
               <p className="text-slate-500 dark:text-slate-400 text-sm sm:text-base">

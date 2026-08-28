@@ -90,10 +90,8 @@ export interface SiteConfig {
     suggestionsHint: string
     inputPlaceholder: string
     messages: {
-      /** Filled into the banner above the conversation. */
+      /** The whole sentence in the banner above the conversation, printed as-is. */
       welcomeMessage: string
-      /** Server refused because this deployment's spend cap was reached. */
-      rateLimited: string
       /** User submitted while a reply was still streaming. */
       waitForResponse: string
     }
@@ -104,10 +102,10 @@ export interface SiteConfig {
 /**
  * Every key `data/site.toml` must declare, as dotted paths.
  *
- * Mirrors `REQUIRED_SITE_KEYS` in `scripts/test_00_check_project_config.py`.
- * The list is duplicated rather than derived because the two runtimes cannot
- * share a value, and a page that renders `undefined` in production is worse
- * than a list that has to be edited twice.
+ * Checked by `load.ts` when Next.js reads the file, so a missing key fails the
+ * build with the key's name instead of rendering an empty heading on a live
+ * page. TOML is not type-checked, so this list is the only thing standing
+ * between a typo and an `undefined` in production.
  */
 export const REQUIRED_SITE_KEYS: readonly string[] = [
   "brand.displayName",
@@ -137,6 +135,5 @@ export const REQUIRED_SITE_KEYS: readonly string[] = [
   "chat.inputPlaceholder",
   "chat.suggestedActions",
   "chat.messages.welcomeMessage",
-  "chat.messages.rateLimited",
   "chat.messages.waitForResponse",
 ]

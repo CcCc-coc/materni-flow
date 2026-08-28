@@ -11,7 +11,7 @@ export default function ChatLayout({
   const { brand } = loadSite()
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-[#0A1628]">
+    <div className="min-h-screen bg-slate-50 dark:bg-primary">
       <Navigation logoPrefix={brand.logoPrefix} logoAccent={brand.logoAccent} />
       <div className="pt-16">{children}</div>
       {/* Without this, every toast.error() in the chat UI — including the

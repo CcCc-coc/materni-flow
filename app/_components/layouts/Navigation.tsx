@@ -4,8 +4,18 @@ import { useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { Menu, X } from "lucide-react"
-import { NavItem, NavigationProps } from "@/types"
 
+/** One entry in the top bar. */
+interface NavItem {
+  label: string
+  href: string
+}
+
+/**
+ * The bar is the same on every page, and its two entries are the app's two
+ * pages. Not authored copy: a dataset swap rewrites what the app is about,
+ * not how many pages it has.
+ */
 const DEFAULT_NAV_ITEMS: NavItem[] = [
   { label: "Home", href: "/" },
   { label: "Chat", href: "/chat" },
@@ -15,7 +25,8 @@ export default function Navigation({
   items = DEFAULT_NAV_ITEMS,
   logoPrefix,
   logoAccent,
-}: NavigationProps & {
+}: {
+  items?: NavItem[]
   /** The wordmark, split so the two halves can be coloured differently. */
   logoPrefix: string
   logoAccent: string
@@ -31,7 +42,7 @@ export default function Navigation({
   }
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-[#0A1628]">
+    <nav className="fixed top-0 left-0 right-0 z-50 bg-primary">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo / Brand */}

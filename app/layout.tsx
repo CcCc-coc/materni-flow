@@ -2,7 +2,7 @@ import type React from "react"
 import type { Metadata, Viewport } from "next"
 import { Inter, Figtree, Noto_Sans } from "next/font/google"
 import { generateSEOMetadata } from "@/lib/seo/generateMetadata"
-import { METADATA } from "@/lib/constants"
+import { loadSite } from "@/lib/site/load"
 import "./globals.css"
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" })
@@ -17,11 +17,12 @@ const notoSans = Noto_Sans({
   weight: ["400", "500", "700"]
 })
 
+const { seo } = loadSite()
+
 export const metadata: Metadata = {
   ...generateSEOMetadata({
-    title: METADATA.TITLE,
-    description: METADATA.DESCRIPTION,
-    keywords: [...METADATA.KEYWORDS],
+    title: seo.title,
+    description: seo.description,
   }),
   icons: {
     icon: [
