@@ -12,11 +12,11 @@
 
 ## 为什么是两个文件
 
-它们曾经是一个, 叫 `agent_debugger.py`. 但里面**三个函数在生产关键路径上** —— `api/index.py`
-每次回答都调它们 —— 而只有 `chat()` / `print_summary()` 是真的调试辅助.
+因为**解析在生产关键路径上, 打印不在**. `api/index.py` 每次回答都要解析; 而 `chat()` /
+`print_summary()` 只有人在终端里跑脚本时才会走到.
 
-一个叫 "debugger" 的文件里住着响应解析, 结果是 `api/index.py` 从"调试器"里 import 东西.
-按读者切开之后:
+把两者放在一个叫 "debugger" 的文件里, 结果是生产代码从"调试器"里 import 东西 —— 名字在骗
+读者, 而且删调试辅助时没人敢动. 按读者切开之后:
 
 | 文件 | 谁用 | 干什么 |
 | :--- | :--- | :--- |
@@ -54,9 +54,9 @@ parse_response_text          那段文本  -> (thinking, answer)
 normalize_render_blocks      answer    -> 把 <chart> 标签改写成围栏
 ```
 
-**它们合成一个 `parse_agent_response()`, 是因为跑了前两步忘了第三步会静默失败**: 答案照常
-到达, 只是图没了. 这个 bug 真发生过 —— 调试路径 (`chat()`) 以前只跑前两步, 所以本地测试
-看到的是裸的 `<chart>` 标签, 和生产不一致.
+**它们合成一个 `parse_agent_response()`, 因为漏掉第三步是静默失败**: 答案照常到达, 只是图
+没了. 所以不要在别处重新拼这三步 —— 调试路径少跑一步, 你在本地看到的就和生产不是同一个
+东西.
 
 ## `normalize_render_blocks` 是什么补丁
 

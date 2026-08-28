@@ -86,14 +86,13 @@ server component, 它读盘并把结果传下去; `"use client"` 的组件只渲
 
 ## 为什么是 TOML 而不是 `.ts`
 
-它以前是 `config/site.ts`, 一个 TypeScript 字面量, 编译器免费帮你查字段和图标名. 改成 TOML
-**丢掉了这个**, 换来的是"一个数据集的全部产出集中在 `data/` 一个目录".
+把这份文案写成 TypeScript 字面量, 编译器就会免费帮你查字段和图标名. TOML **没有这个**,
+换来的是"一个数据集的全部产出集中在 `data/` 一个目录".
 
-权衡的结论是后者更重要: 编译期检查是在**写的时候**帮你, 而目录集中是在**每一次换数据集和
-每一次 review** 时帮你. 完整论证见
-[architecture/04](../architecture/04-modular-design.md) 第 2 节.
+后者更值: 编译期检查是在**写的时候**帮你一次, 而目录集中是在**每一次换数据集和每一次
+review** 时帮你. 完整论证见 [architecture/04](../architecture/04-modular-design.md) 第 2 节.
 
-丢掉的检查没有消失, 它们搬到了加载时 —— 就是上面 `s2: Validate` 那一步.
+编译器不查, 就由加载时来查 —— 就是上面 `s2: Validate` 那一步.
 
 ---
 
@@ -123,9 +122,9 @@ loadBusinessContext()  // -> 原始 Markdown 字符串
 **故意不解析**: 它由 chat 页那个同一个 Markdown 组件渲染, 所以文件里写 ` ```mermaid ` 围栏
 就真的会画出图, 而这一层完全不知道"图"这个概念的存在.
 
-唯一的加工是**剥掉 HTML 注释**. 这是补过的一个真 bug: `react-markdown` 没装 `rehype-raw`,
-所以它不解释 HTML —— 它把 `<!-- 给下一个作者的说明 -->` 原样打印成覆盖层里的一段正文.
-在这里剥掉, 而不是禁止在文件里写注释, 是为了让作者批注留在有用的地方.
+唯一的加工是**剥掉 HTML 注释**. `react-markdown` 没装 `rehype-raw`, 所以它不解释 HTML ——
+一条 `<!-- 给下一个作者的说明 -->` 会被原样打印成覆盖层里的一段正文. 在这里剥掉而不是禁止
+在文件里写注释, 是为了让作者批注留在有用的地方.
 
 ---
 
@@ -138,23 +137,27 @@ loadBusinessContext()  // -> 原始 Markdown 字符串
 
 ---
 
-## 那次把文案内联进组件的事故
+## 组件里不许拼句子
 
-`[chat.messages] welcomeMessage` 的值是一句完整的话:
+`site.toml` 里的每一条文案都是**一句完整的话**, 组件原样打印它:
 
 ```toml
+# 一句完整的话: 横幅原样打印它.
 welcomeMessage = "I'm here to help you with SMB lending analytics."
 ```
 
-而 `chat.tsx` 在渲染时又包了一层句子框架:
+不要把它写成半句, 再让组件补上另外半句:
 
 ```jsx
+// 不要这样
 I'm here to help you with{" "}<span>{site.chat.messages.welcomeMessage}</span>.
 ```
 
-屏幕上印出来的是 **"I'm here to help you with I'm here to help you with SMB lending
-analytics.."** —— 句子重复, 外加两个句号.
+**一句话拆在两个文件里, 就没有任何一个地方能看出它读起来是什么样.** 改 TOML 的人看不到框架,
+改组件的人看不到值, 两边各自都"对", 拼起来是
+`"I'm here to help you with I'm here to help you with ..."` —— 而这类错误不报错, 不失败,
+测试全绿, 只有真的打开页面读那一行的人才会发现.
 
-**这就是"组件里不许出现业务文案"那条规矩存在的理由**, 而且它示范了这类 bug 的特征: 不报错,
-不失败, 测试全绿, 只有真的打开页面读那一行的人才会发现. 现在框架删掉了, 值是一句完整的话,
-`site.toml` 里也加了注释说明它必须是完整句.
+同一条规矩还有一个推论: **换数据集的人只该动 `data/`**. 一旦句子的一半住在组件里, 换领域
+就必须去改 TypeScript, 而那正是 [architecture/04](../architecture/04-modular-design.md) 承诺
+不需要发生的事.

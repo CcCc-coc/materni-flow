@@ -22,10 +22,10 @@ api.py          对外的再导出
 没有反向流动. `extractor` 只碰 SQLAlchemy 对象, `encoder` 只做字符串拼接不碰数据库,
 中间那层是纯 pydantic 模型.
 
-**`model.py` 里每一个字段都有 encoder 这个读者.** 早先它逐字段镜像 SQLAlchemy 的 `Column`
-—— `autoincrement`, `computed`, `identity`, `deferrable`, `onupdate` 等十几个 —— 下游一个
-都不看. 抽取一个没人编码的字段, 既费反射时间, 又像是给输出许了个不兑现的承诺. 加字段要
-和发出它的那行 encoder 代码一起加.
+**`model.py` 里每一个字段都有 encoder 这个读者.** 不要逐字段镜像 SQLAlchemy 的 `Column`
+(`autoincrement`, `computed`, `identity`, `deferrable`, `onupdate` 那十几个): 抽取一个没人
+编码的字段既费反射时间, 又像是给输出许了个不兑现的承诺. **加字段要和发出它的那行 encoder
+代码一起加.**
 
 ---
 
@@ -92,9 +92,9 @@ postgresql Database acme_data(
 )
 ```
 
-最外层那个 `postgresql` 是方言标签, **它是这一层唯一有信息量的东西** —— 决定 agent 写哪
-种 SQL. 库名以前是一个单独配置的 `displayName`, 值就是 `{schemaName}_data`, 和下一行几乎
-重复, 已经删掉改用 schema 名.
+最外层那个 `postgresql` 是方言标签, **它是这一层唯一有信息量的东西** —— 决定 agent 写哪种
+SQL. 库名直接用 schema 名, 不另配一个显示名: 只有一个 schema, 给它起第二个名字就是第二个
+要同步维护的东西, 而且它就印在下一行旁边.
 
 schema 名为空时 (SQLite 没有 schema) 显示成 `default`.
 
@@ -124,10 +124,10 @@ SQLite 种子, 所以 `BLOB` / `DATETIME` 这些条目有用. 缺 key 不是错�
 
 ## 只做到适配 PostgreSQL 就够
 
-`DbTypeEnum` 只列有代码路径的两个引擎 (SQLite 种子, PostgreSQL 服务). 它曾经列了十个,
-其中九个没有任何代码能走到 —— **一份没实现的选项菜单读起来像是支持, 而它不是**. 加一项
-要和用它的代码路径一起加.
+`DbTypeEnum` 只列有代码路径的两个引擎 (SQLite 种子, PostgreSQL 服务). **一份没实现的选项
+菜单读起来像是支持, 而它不是** —— 加一项要和用它的代码路径一起加.
 
-同理, `ObjectTypeEnum` 曾经有七个成员 (column / schema / database / foreign key ...),
-其中四个从来没被读过: 每个模型静态地知道自己是什么, 那个字段永远只装它所属的类已经蕴含
-的值. 现在只剩 `TableTypeEnum` 一个枚举, 三个成员, 而中间那张翻译表整个消失了.
+同一条判据还砍掉了另一类枚举: **不要给一个模型加"我是什么类型"的字段.** 每个模型静态地知道
+自己是什么, 那个字段永远只装它所属的类已经蕴含的值, 于是它和一张把枚举翻译回类的表一起
+成为纯开销. 这里只剩 `TableTypeEnum` 一个枚举, 三个成员, 而它是真的有信息量的 —— 那个标签
+就是告诉 agent 哪些关系写不得的东西.

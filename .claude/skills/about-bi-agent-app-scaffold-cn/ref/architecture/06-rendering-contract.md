@@ -64,7 +64,7 @@ data/system-prompt.md          data/site.toml                components/chat/
 为什么措辞不能随便改: 这个仓库跑得起小模型, 而小模型跟的是措辞不是意图. 仓库里已经有一个
 补丁 (`agent_app/agent_debugger.py` 的 `normalize_render_blocks`) 专门收拾模型把 chart 包进
 `<chart>` 标签的毛病 —— 尖括号标签会被 Markdown 渲染器静默丢弃, 答案到达时图没了, 也没有
-任何报错解释为什么. 改写这几节等于把那个教训重踩一遍.
+任何报错解释为什么. 改写这几节, 就是把那个补丁要防的事重新放出来.
 
 ## 第二半: 12 条 kickstart 的渲染配额
 

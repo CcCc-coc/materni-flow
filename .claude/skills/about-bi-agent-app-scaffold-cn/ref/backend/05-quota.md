@@ -44,9 +44,9 @@ learn-bi-agent-app-scaffold : fintech_smb_lending_pipeline_medium : 2026-08
 用 `:` 而不是 `-` 拼接, 是因为 slug 里有连字符, schema 名里有下划线, 用 `-` 粘会造出
 "看不出名字在哪结束"的歧义. 现在这个 key 能 `split(":")` 拆回三段, 在控制台里能读.
 
-**曾经有第二个标识符.** `data/dataset.toml` 里的 `[project] name = "smbll"` 也在做这件事,
-那是表名前缀时代的残留 —— 前缀退役之后它唯一的工作就是当配额 key. 一个东西两个名字, 就是
-两个要同步维护的东西, 所以合并到了 `schema_name`.
+**不要为这个 key 另起一个短名字.** 数据集已经有一个必须全局唯一的标识符 (`schema_name`,
+不唯一就撞别的项目的表), 再配一个 `smbll` 之类的缩写就是同一个东西的第二个名字, 也就是第二
+个要同步维护的东西.
 
 一张 DynamoDB 表可以装很多个部署的计数器, 理由和一个 Postgres 库可以装很多项目的表一样.
 
@@ -55,9 +55,11 @@ learn-bi-agent-app-scaffold : fintech_smb_lending_pipeline_medium : 2026-08
 ## 开关和失败策略都住在这个模块里
 
 两个入口 (`check_quota` / `increment_usage`) **自己检查 `quota_enabled` 并提前返回**, 所以
-调用方不需要包 `if`. 这一条以前不是这样: `api/index.py` 在两处各写了一遍
-`if one.config.quota_enabled:`, 于是开关住在使用者那里, 而不是住在拥有这个功能的模块里 ——
-第二个调用方只要忘了那个 `if`, 拿到的就是一次真实的 DynamoDB 调用.
+调用方不需要包 `if`.
+
+**开关必须住在拥有这个功能的模块里, 不能住在使用者那里.** 让每个调用点各写一遍
+`if one.config.quota_enabled:`, 那个开关就变成了一条纪律而不是一个机制: 第二个调用方只要忘
+了那行 `if`, 关着的配额照样会发一次真实的 DynamoDB 请求.
 
 同理, **计量出故障绝不能拒绝服务**: DynamoDB 挂了, 表不存在, 凭证过期 —— 这些都在模块内部
 记一笔日志然后咽掉, 而不是让每个调用方各写一遍 `except Exception: pass`. 少记一次数, 比让
@@ -68,8 +70,9 @@ learn-bi-agent-app-scaffold : fintech_smb_lending_pipeline_medium : 2026-08
 
 ## 配错在启动时就报, 不等第一个用户
 
-"打开了配额但没配表名"这件事, 检查在 `Config.__post_init__` 里. 以前它在 `quota._table`
-里, 于是一个配错的公开部署**启动完全正常**, 直到有人打第一个字才炸.
+"打开了配额但没配表名"这件事, 检查在 `Config.__post_init__` 里, **不在第一次用到表名的
+地方**. 放在后者的话, 一个配错的公开部署会**完全正常地启动**, 直到有人打第一个字才炸 ——
+而那时候错误已经离配置很远了.
 
 ## 为什么是裸 boto3 而不是 ORM
 
@@ -98,8 +101,8 @@ item 只有四个属性, 而且不会再多. ORM 在这里只会换来三个依�
 它还让两件事**第一次可以被断言**:
 
 - **计数器真的在累加.** 桩只能记录"update_item 被调用了", moto 会真的执行 `ADD`. 三次
-  increment 之后读回来是 3 —— 这正是不用 read-then-write 的理由 (并发下丢更新), 以前没有
-  任何测试证明过它成立.
+  increment 之后读回来是 3, 于是"为什么用 `ADD` 而不是 read-then-write"(并发下丢更新) 这件
+  事有测试撑着, 而不只是一句注释.
 - **故障是真故障.** "计量出错不能拒绝服务"那几条现在指向一张**不存在的表**, botocore 抛的
   是它真正会抛的 `ResourceNotFoundException`, 而不是桩被吩咐去抛的东西.
 

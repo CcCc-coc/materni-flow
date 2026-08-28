@@ -87,9 +87,9 @@ lib/seo/generateMetadata.ts  SEOConfig 类型 + 合并函数
 `generateSEOMetadata()` 把页面级配置盖在站点默认值上, 并且 **Open Graph 和 Twitter 的标题
 自动回退到 `title`**. 所以页面只需要传 `title` 和 `description`.
 
-首页的 `generateMetadata` 曾经把 `ogTitle` / `ogDescription` / `imageAlt` /
-`twitterTitle` / `twitterDescription` 五个字段全都显式填成和 `title` 一样的值 —— 那是五个
-额外的地方可以和标题不一致, 换来零收益. 现在删了.
+**不要把 `ogTitle` / `ogDescription` / `imageAlt` / `twitterTitle` /
+`twitterDescription` 再填一遍.** 它们本来就回退到 `title` 和 `description`, 显式重复一遍只是
+多出五个可以和标题不一致的地方.
 
 **没有 `author` / `creator`, 也没有社交预览图**. 这个站点展示的是产品不是人 (见
 [01](01-what-the-ui-must-do.md)). Twitter 卡片因此是 `summary` 而不是

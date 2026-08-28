@@ -108,9 +108,9 @@ Connection: keep-alive
 第一个是 AI SDK 用来识别这是 v5 message stream 的; 少了它前端不会按这个协议解析. 后两个是
 让代理和浏览器别缓冲这个流.
 
-**它们和 generator 住在一起** (`ai_sdk_streaming_response`), 不由调用方拼. 以前
-`api/index.py` 在三个地方各拼了一遍 `StreamingResponse(...)` 加三行 header —— 三份拷贝, 而
-协议改了要同时改三处, 漏一处的症状是前端静默地不渲染.
+**它们和 generator 住在一起** (`ai_sdk_streaming_response`), 不由调用方拼. 让每个返回流的
+地方各拼一遍 `StreamingResponse(...)` 加三行 header, 等于把协议的一部分交给使用者保管: 协议
+改了要同时改每一处, 而漏掉一处的症状是**前端静默地不渲染**.
 
 ---
 

@@ -140,7 +140,7 @@ agent 有可能只留下思考, 没有最终文本 (为什么会这样见 [07](0
 - 它是否知道两个以上模块的内部细节? 是 -> 它属于其中一个模块, 不属于这里
 - 它是否会被第二个调用方需要? 是 -> 抽成函数放进 `agent_app/`
 
-这条规矩是补回来的. 这个文件曾经在三个地方各拼了一遍 `StreamingResponse(...)` 加三行
-SSE header, 也曾经在两处各写一遍 `if one.config.quota_enabled:` —— 两次都是把某个模块的
-知识漏到了使用者这里, 而且第二个使用者忘了抄就是一个 bug. 现在 header 跟着 generator 走,
-开关跟着 quota 走, 这个文件只剩顺序.
+**最容易破的两处是 header 和开关.** 在这里手拼 `StreamingResponse(...)` 加三行 SSE
+header, 或者在调用配额前包一个 `if one.config.quota_enabled:`, 都是把某个模块的知识搬到了
+使用者这里 —— 而使用者一多, 忘了抄的那个就是 bug. header 跟着 generator 走, 开关跟着 quota
+走, 这个文件只剩顺序.

@@ -40,7 +40,7 @@ page.tsx (server)  loadSite() + loadBusinessContext()
 ## `CapabilityCard`: 一份数据, 两处渲染
 
 首页和 agent 页展示的是**同一组四条业务主线**, 同一个组件, 只差一个 `compact` 开关 (agent
-页地方小). 为什么必须是一个组件而不是两个, 见 [02](02-the-elements.md) 末尾那段漂移事故.
+页地方小). 为什么必须是一个组件而不是两个, 见 [02](02-the-elements.md) 末尾.
 
 卡片底部那条**虚线短横**不是装饰: 它是唯一在告诉读者"这里有东西可以 hover"的东西. 去掉它,
 那个提示就是隐形的.

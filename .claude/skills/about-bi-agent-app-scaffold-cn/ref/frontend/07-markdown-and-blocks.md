@@ -44,7 +44,7 @@ const BLOCK_RENDERERS: Record<string, ComponentType<BlockProps>> = {
 注意和 kickstart 那 12 条各自带的 `render` 字段区分: **那个不是开关, 是按钮对读者的承诺**
 (画在按钮上的小图标, 见 [06](06-chat-page.md)). 真正让块出现的是 `action` 里那句触发短语.
 
-还有一个配套的小改动容易漏: `pre` 被改成了直接透传. 围栏块自己会渲染外层容器, 再包一层
+还有一个配套的设置容易漏: **`pre` 必须是直接透传的.** 围栏块自己会渲染外层容器, 再包一层
 就会得到 `<pre>` 套 `<pre>`, 或者 `<div>` 套在 `<pre>` 里面.
 
 ---

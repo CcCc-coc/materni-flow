@@ -43,29 +43,30 @@ rounded-full   ∞      药丸       导航 CTA, 技术栈标签
 **容器越大, 圆角越大**, 嵌套时内圈比外圈紧. 这条阶梯就是 Tailwind 自己的刻度, 没有任何
 覆盖.
 
-### 它曾经是坏的, 值得记一笔
+### 不要用一个变量去派生这条阶梯
 
-`tailwind.config.ts` 里原来有一段 shadcn 的覆盖:
+shadcn 的脚手架会往 `borderRadius` 里塞这么一段:
 
 ```ts
 borderRadius: {
-  lg: "var(--radius)",              // --radius: 12px
+  lg: "var(--radius)",
   md: "calc(var(--radius) - 2px)",
   sm: "calc(var(--radius) - 4px)",
 }
 ```
 
-它把 `lg` 从 Tailwind 默认的 8px 顶到 12px —— **正好是 Tailwind 给 `xl` 的值**. 于是
-`rounded-lg` 和 `rounded-xl` 在屏幕上完全一样, 而这两个类名一共用在 19 个地方. 写代码的人
-随手挑哪一个看起来都对, 所以这条阶梯读起来像是随意的.
+**这个仓库不要它**, 两个理由:
 
-更麻烦的是它把我们自己的刻度**绑在了一个为 shadcn 设的变量上**: 谁改一下 `--radius`, 那 19
-个站点会静默分成两拨.
+**一, 它会撞车.** `--radius` 是 12px, 而 Tailwind 给 `xl` 的默认值也是 12px. 于是
+`rounded-lg` 和 `rounded-xl` 编译成同一个值, 屏幕上完全分不开 —— 而这两个类名负担的是"内嵌
+块"和"卡片"两层. **两个类名编译成同一个值, 就等于那一层区分不存在, 而代码还在假装它存在**:
+写代码的人随手挑哪一个看起来都对, 阶梯读起来就是随意的.
 
-而它并不服务任何东西 —— `components/ui/*` 里每一个 `rounded-md` 在调用点都被覆盖掉了. 所以
-整段删掉了, `--radius` 也随之没了读者一并删除.
+**二, 它把刻度绑在一个不属于它的变量上.** 改一下 `--radius`, `rounded-lg` 的站点会动而
+`rounded-xl` 的不会, 一套设计静默分成两拨.
 
-**教训**: 两个类名编译成同一个值, 就等于那一层区分不存在, 而代码还在假装它存在.
+而它并不服务任何东西: `components/ui/*` 里每一个 `rounded-md` 在调用点都被覆盖掉了. 所以
+`borderRadius` 保持不扩展, 用 Tailwind 自己的刻度.
 
 ---
 
@@ -80,9 +81,9 @@ bg-white border border-slate-200 rounded-xl
 
 出现在: chat 横幅, kickstart 上方的提示条, 输入框, agent 消息气泡, "Thinking" 气泡.
 
-它们的 class 顺序一度有四种写法, 现在统一了, 所以 `grep "bg-white border border-slate-200
-rounded-xl"` 能把它们全找出来. 顺序统一那次顺带发现了唯一一处真正的不一致: 提示条是 `p-3`
-而横幅是 `p-4`, 而这两者互斥出现在同一个位置 —— 发出第一条消息时会跳 4px. 已经统一成 `p-4`.
+**这五处的 class 写法保持一致**, 顺序也一样, 所以 `grep "bg-white border border-slate-200
+rounded-xl"` 能把它们全找出来. 顺序一旦各写各的, 差异就藏得住 —— 比如提示条用 `p-3` 而横幅
+用 `p-4`, 这两者互斥出现在同一个位置, 发第一条消息时会跳 4px.
 
 **没有把它抽成一个 `<Surface>` 组件**, 因为这 20 处里有几处的差异是有意的 (覆盖层要
 `shadow-2xl`, 能力卡要 `cursor-help`, 输入框还要 focus 态), 硬收成一个组件会变成一堆 props,
@@ -101,10 +102,10 @@ rounded-xl"` 能把它们全找出来. 顺序统一那次顺带发现了唯一�
 | 滚动条 | `::-webkit-scrollbar` 四条规则 |
 | `.viz-root` | 图表的颜色 token, 由 `blocks/chart/` 读, 见 [07](07-markdown-and-blocks.md) |
 
-它曾经是 306 行. 删掉的是上一个模板的遗物: `@layer components` 里 10 个零引用的类
-(`.finance-card` `.finance-button` `.glass-card` `.kpi-card` `.feature-card` `.status-*`,
-其中一个的注释还写着 "Bluevine style"), `@layer utilities` 里 4 个零引用的类, 以及约 25 个
-零读者的 CSS 变量 —— 包括十个 `--sidebar-*`, 而这个 app 没有侧边栏.
+**`@layer components` 和 `@layer utilities` 都是空的, 这是有意的.** 用 `@apply` 攒一批
+`.finance-card` / `.kpi-card` 这样的语义类是很自然的想法, 但它和 Tailwind 的写法并存时会产生
+两套讲同一件事的词汇, 而且没有任何东西能告诉你哪一套在某个组件上生效. 这个仓库的选择是只用
+一套: 组件里写工具类, 复用靠 React 组件而不是 CSS 类.
 
 ---
 
@@ -113,18 +114,20 @@ rounded-xl"` 能把它们全找出来. 顺序统一那次顺带发现了唯一�
 没有主题切换按钮, 没有 `next-themes`, 没有任何地方给 `<html>` 加 `dark` 类, `tailwind.config.ts`
 里也没有 `darkMode` 策略.
 
-**这是一个决定, 不是遗漏.** 之前的状态是: 组件里散着 121 个 `dark:` 变体, `globals.css` 里
-有一整块暗色调色板, 而它们**永远渲染不出来, 因此也永远无法被验证**. 每一个容器的 class 都
-是双份长度, 其中一半是没人能看见的猜测.
+**这是一个决定, 不是遗漏**, 所以组件里也不该出现 `dark:` 变体. 一个开不出来的配色**永远
+渲染不出来, 因此也永远无法被验证**: 每个容器的 class 长一倍, 其中一半是没人能看见的猜测,
+而它会在有人真的打开暗色的那天集中爆出来.
 
-要加回来的话, 那是一个明确的动作: 装 `next-themes`, 加一个切换开关, 然后逐屏过一遍暗色 ——
+要支持暗色的话, 那是一个完整的动作: 装 `next-themes`, 加一个切换开关, 然后逐屏过一遍 ——
 而不是在改别的东西时顺手补几个 `dark:`.
 
 ---
 
 ## 这个前端是从一个作品集模板改出来的
 
-上面几处清理 (青色页脚, `.finance-*` 死类, sidebar 变量, `--radius` 覆盖, 未被使用的
-`fontSize` / `animation` / `boxShadow` 配置) 都是同一个来历. 再看到类似的东西 —— 一个没有
-读者的类, 一个和整站配色无关的色相, 一个 app 里不存在的组件的 token —— 先怀疑它是模板残留,
-查一下引用数再决定.
+所以在这两个文件里看到**说不出用途的东西**时 —— 一个没有读者的类, 一个和整站配色无关的
+色相, 一个这个 app 里根本不存在的组件的 token (比如侧边栏) —— 先查引用数, 大概率是模板残留
+而不是有人特意留的.
+
+反过来也成立: **往这两个文件里加东西之前先确认它有读者.** 一份没人读的 theme 会被当成设计
+系统, 而它不是.

@@ -35,7 +35,7 @@
 | :--- | :--- | :--- |
 | [01-what-the-ui-must-do.md](01-what-the-ui-must-do.md) | 两个页面服务两种读者, 四条硬要求, 以及**不做**什么 | 全部 |
 | [02-the-elements.md](02-the-elements.md) | **每一块元素对到 `site.toml` 的哪个字段, 哪个组件画它** | `data/site.toml` |
-| [03-content-pipeline.md](03-content-pipeline.md) | 为什么是 TOML, 两个构建期检查, 那次把文案内联进组件的事故 | `lib/site/`, `lib/icons.ts` |
+| [03-content-pipeline.md](03-content-pipeline.md) | 为什么是 TOML, 两个构建期检查, 组件里为什么不许拼句子 | `lib/site/`, `lib/icons.ts` |
 | [04-pages-and-shell.md](04-pages-and-shell.md) | 路由分组, server/client 的线画在哪, SEO | `app/`, `lib/seo/` |
 | [05-home-page.md](05-home-page.md) | 概念名读不懂怎么办, 气泡为什么会跑出屏幕 | `Hero`, `CapabilityCard`, `ConceptTooltip`, `BusinessContextModal` |
 | [06-chat-page.md](06-chat-page.md) | 空状态放什么, 渲染徽章, 消息气泡里的三种内容 | `components/chat/*` |
@@ -46,8 +46,9 @@
 
 ## 三条贯穿全部的规矩
 
-**一, 组件里不出现业务文案.** 界面上说的每一句话都在 `data/site.toml` 里. 破坏它的代价见
-[03](03-content-pipeline.md) 末尾那次事故 —— 欢迎语在屏幕上印了两遍, 而且没有任何东西报错.
+**一, 组件里不出现业务文案.** 界面上说的每一句话都在 `data/site.toml` 里, 组件只负责摆放,
+不负责拼句子. 破坏它的失败方式见 [03](03-content-pipeline.md) 末尾: 不报错, 不失败,
+测试全绿, 只有真的打开页面读那一行的人才会发现.
 
 **二, 读盘的往上放, 有状态的往下放.** `loadSite()` 碰文件系统, 所以只有 server component
 能调它; 客户端组件通过 props 接收, 从不自己去读.
