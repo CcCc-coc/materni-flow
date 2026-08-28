@@ -36,17 +36,12 @@ class DbMixin:
         """
         Open the shared PostgreSQL instance, optionally scoped to one schema.
 
-        When ``schema_name`` is given, every transaction on this engine begins
-        by pinning ``search_path`` to it. That is what lets the agent write
-        ``SELECT ... FROM loan`` and have it resolve without ever naming the
-        schema, which is what keeps one system prompt honest.
+        When ``schema_name`` is given, every transaction pins ``search_path`` to
+        it, which is what lets the agent write ``SELECT ... FROM widget`` and
+        have it resolve without ever naming the schema.
 
-        Args:
-            schema_name: The schema to pin. ``None`` leaves the server default,
-                which is what the sync needs while it is creating that schema.
-
-        Returns:
-            An engine, scoped to the schema when one was given.
+        ``None`` leaves the server default -- what the sync needs while it is
+        still creating that schema.
         """
         url = sa.URL.create(
             drivername="postgresql+psycopg2",
@@ -103,42 +98,27 @@ class DbMixin:
         """
         The engine everything is served from: our schema in the shared database.
 
-        **The same database in every environment, laptop included.** This used
-        to follow the runtime -- SQLite locally, PostgreSQL on Vercel -- which
-        meant one agent and two dialects. Every SQL example in the system prompt
-        was written and tested against SQLite and then shipped to a PostgreSQL
-        deployment, where ``JULIANDAY``, ``strftime`` and ``DATE(x, '-30 days')``
-        do not exist. The prompt was correct where nobody was watching and wrong
-        in production, and nothing failed loudly: the agent's SQL tool turns a
-        database error into a string and hands it back to the model, so the
-        symptom was worse answers rather than a crash.
-
-        One database everywhere is what makes a single prompt honest. The cost
-        is that local development now needs the ``DB_*`` variables and a
-        completed ``scripts/test_06_sync_data_to_remote_db.py``, which is a
-        setup step rather than a silent wrong answer.
-
-        SQLite has not gone away: it is still the source of truth that the
-        dataset ships and that the sync reads, exposed as
-        :attr:`local_sqlite_engine`.
+        **The same database in every environment, laptop included.** It used to
+        follow the runtime, which meant one prompt and two dialects: SQL examples
+        written against SQLite shipped to PostgreSQL, where ``JULIANDAY`` and
+        ``strftime`` do not exist. Nothing failed loudly, because the SQL tool
+        hands database errors back to the model as text -- the symptom was worse
+        answers. The cost of the fix is that local development needs the ``DB_*``
+        variables and a completed sync.
         """
         return self._new_postgres_engine(schema_name=self.config.schema_name)
 
     @cached_property
     def database_schema_str(self: "One") -> str:
         """
-        The database schema, encoded in the LLM-optimized compact format.
+        The database schema, encoded in the compact format the agent reads.
 
-        Reflection is scoped to this project's schema, so the agent never sees
-        -- and therefore never queries -- another project's tables in the shared
-        instance.
+        Scoped to this project's schema, so the agent never sees another
+        project's tables in the shared instance.
 
-        A schema that was never synced reflects successfully and returns
-        nothing: an absent schema and an empty one look identical to the
-        reflector. The agent would then start with no tables, invent plausible
-        ones, and answer confidently out of thin air. Since PostgreSQL became
-        the only source, an unsynced database is the likely first-run state, so
-        it is named here rather than discovered three wrong answers later.
+        An absent schema and an empty one look identical to the reflector, so an
+        unsynced database would otherwise hand the agent no tables at all -- it
+        would invent plausible ones and answer confidently out of thin air.
         """
         # The schema goes on the MetaData, not only on reflect(): the encoder
         # labels the block with `metadata.schema`, and without it the agent is

@@ -3,9 +3,8 @@
 """
 Reflection: SQLAlchemy metadata -> the models in :mod:`.model`.
 
-Everything here is a pure function over objects SQLAlchemy hands you. The one
-function that needs a live connection is :func:`new_schema_info`, and only to ask
-the inspector which relations are views.
+Pure functions over objects SQLAlchemy hands you. Only :func:`new_schema_info`
+needs a live connection, and only to ask which relations are views.
 """
 
 import typing as T
@@ -24,18 +23,12 @@ from .model import (
     DatabaseInfo,
 )
 
-#: SQLAlchemy type visit name -> the compact vocabulary the LLM is shown.
+#: SQLAlchemy ``__visit_name__`` -> the compact vocabulary the LLM is shown.
 #:
-#: Keyed on ``__visit_name__`` rather than on the class, so a generic type and
-#: its dialect-specific spelling can map to the same entry: ``sa.String`` visits
-#: as ``"string"`` and ``sa.VARCHAR`` as ``"VARCHAR"``, and both mean ``str`` to
-#: the agent.
-#:
-#: Deliberately broader than PostgreSQL. Reflection returns whatever the dialect
-#: reports, and the SQLite seed is reflected by the sync, so entries such as
-#: ``BLOB`` and ``DATETIME`` earn their place. A missing key is not an error --
-#: :func:`sqlalchemy_type_to_llm_type` falls back to the dialect's own spelling --
-#: so this table is a compression aid, not a whitelist.
+#: Keyed on the visit name rather than the class so that a generic type and its
+#: dialect spelling collapse to one entry. Broader than PostgreSQL on purpose:
+#: the sync reflects the SQLite seed too, and a missing key costs nothing since
+#: the caller falls back to the dialect's own spelling.
 SQLALCHEMY_TYPE_MAPPING: dict[str, LLMTypeEnum] = {
     # String type
     sa.String.__visit_name__: LLMTypeEnum.STR,
@@ -98,18 +91,8 @@ def sqlalchemy_type_to_llm_type(type_: TypeEngine) -> T.Union[LLMTypeEnum, str]:
     """
     Compress a SQLAlchemy column type into the LLM vocabulary.
 
-    :param type_: A SQLAlchemy ``TypeEngine`` instance representing a column type.
-
-    :returns: The matching :class:`~agent_app.constants.LLMTypeEnum` member, or --
-        for a type not in :data:`SQLALCHEMY_TYPE_MAPPING` -- the dialect's own
-        spelling as a string, so an unrecognised type degrades to a longer label
-        rather than to nothing.
-
-    Example:
-        >>> sqlalchemy_type_to_llm_type(sa.String(50)).value
-        'str'
-        >>> sqlalchemy_type_to_llm_type(sa.DECIMAL(10, 2)).value
-        'dec'
+    An unmapped type degrades to the dialect's own spelling rather than to
+    nothing, so a schema the vocabulary does not cover is still usable.
     """
     visit_name = getattr(type_, "__visit_name__", None)
     if visit_name is None:  # pragma: no cover
@@ -155,13 +138,11 @@ def new_schema_info(
     """
     Build a :class:`~.model.SchemaInfo` from already-reflected metadata.
 
-    ``include`` / ``exclude`` are wildcard or regex patterns over table names --
-    see :func:`agent_app.utils.match`. They are how a table is kept out of the
-    agent's view without dropping it from the database.
+    ``include`` / ``exclude`` keep a table out of the agent's view without
+    dropping it from the database; see :func:`agent_app.utils.match`.
 
-    :param engine: Only used to ask the inspector which relations are views;
-        the columns come from ``metadata``, which the caller has already
-        reflected.
+    ``engine`` is only used to ask the inspector which relations are views --
+    the columns come from ``metadata``, which the caller already reflected.
     """
     insp = sa.inspect(engine)
     try:

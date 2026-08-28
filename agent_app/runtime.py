@@ -3,19 +3,10 @@
 """
 Where am I running?
 
-One question, answered in one place, so that no other module ever reads the
-environment to find out:
-
-    from .runtime import runtime
-
-    if runtime.is_local():
-        ...
-
-Today the only caller is ``config.py``, which uses the answer to pick
-a ``Config`` factory. That is the intended shape: the detection lives here, the
-consequences live in the config. Adding a deployment target (AWS Lambda, say)
-means adding an ``is_*`` method here and a factory there -- and nothing else in
-the codebase learns about it.
+One question, one place, so that no other module reads the environment to find
+out. Detection lives here, the consequences live in ``config.py``: adding a
+deployment target means an ``is_*`` method here and a factory there, and nothing
+else in the codebase learns a new target exists.
 """
 
 import os

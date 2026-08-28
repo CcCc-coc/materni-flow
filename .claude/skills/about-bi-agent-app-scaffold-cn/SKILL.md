@@ -20,6 +20,7 @@ description: 这个仓库的事实标准. 它是什么性质的项目, 为什么
 | 想知道改完要跑什么, 或者要加/改一项检查 | [06-what-guards-the-boundaries.md](ref/06-what-guards-the-boundaries.md) |
 | 写注释 / docstring, 或者要加教学材料 | [07-comments-explain-why.md](ref/07-comments-explain-why.md) |
 | 开发服务器起不来 / 杀不掉, 或者要动 `kill-dev-servers.py` | [08-killing-dev-servers.md](ref/08-killing-dev-servers.md) |
+| **要改 `agent_app/` 里某个模块, 想知道它为什么这么写** | [source-code/](ref/source-code/README.md) |
 
 渲染器**内部**怎么实现的 (流式期间的残缺围栏, 懒加载, 安全等级, 兜底), 在另一个 skill:
 `agent-app-design-cn` 的 `ref/chat-frontend.md`. 它有 `paths` 触发器, 你编辑
@@ -34,6 +35,10 @@ description: 这个仓库的事实标准. 它是什么性质的项目, 为什么
 (或者下一个 AI) 自信地改错地方.
 
 写新规范就放进 `ref/`, 在上面那张表里加一行.
+
+`ref/` 的 01-08 讲的是**边界**: 什么该放哪一层, 换数据集时不能破什么. `ref/source-code/`
+讲的是**某段代码为什么长这样**, 一篇对一组模块. 代码里的注释只留很短的工程 why, 展开的
+部分在那里 —— 两边都不完整, 加起来完整, 而且可以独立删掉其中一边.
 
 ## 一条贯穿全仓库的判断
 

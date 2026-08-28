@@ -1,47 +1,15 @@
 # -*- coding: utf-8 -*-
 
 """
-Database sync utilities: push the local SQLite database to remote PostgreSQL.
+Push the local SQLite seed into this project's remote PostgreSQL schema.
 
-The namespace is a schema, not a prefix
----------------------------------------
+**Table names are identical on both sides** -- the namespace is a schema, not a
+prefix. That is the design goal: a prefix made the name the agent sees depend on
+which engine was behind it, so every SQL example in the system prompt was right
+in one environment and wrong in the other, with nothing to catch it.
 
-The remote NeonDB instance is shared between several projects, so this project's
-tables have to be namespaced. They are namespaced with a **schema**, and the
-table names are identical on both sides::
-
-    local SQLite          remote PostgreSQL
-    ------------          -----------------
-    widget          ->    schema acme_widgets.widget
-    part            ->    schema acme_widgets.part
-
-**The table names being identical is the entire design goal.** An earlier
-revision namespaced with a table-name prefix (``acme_widget``) and it failed
-that test: the schema string the agent reads, and therefore every SQL example in
-the system prompt, came out different depending on which engine was behind it --
-correct in one environment, wrong in the other, with nothing to catch it. A
-schema moves the namespace off the table name, so the name the agent sees never
-changes.
-
-Foreign keys are re-pointed into the same schema, so the target is
-self-contained and never reaches across into another project's tables.
-
-Ordering
---------
-
-Dependency order is **computed, not configured**: SQLAlchemy's
-``metadata.sorted_tables`` is already a topological sort of the reflected
-foreign keys, and :func:`table_insert_order` is a thin name over it.
-
-- **inserting** walks it forwards, so a row's parents already exist;
-- **dropping** walks it backwards, so no table is dropped while another still
-  references it.
-
-There used to be a hand-written list in a config file, plus a check that
-compared it against the seed file. Both are gone: a hand-copied topological sort
-is a value that can be wrong, and the only thing the check could catch was
-someone copying it wrong. Reading it off the same metadata the sync already
-reflects removes the value and the check together.
+Dependency order is computed, never configured. A hand-copied topological sort
+is a value that can be wrong; ``metadata.sorted_tables`` cannot be.
 """
 
 import typing as T
@@ -51,14 +19,10 @@ import sqlalchemy as sa
 
 def table_insert_order(metadata: "sa.MetaData") -> list[str]:
     """
-    Table names in foreign-key dependency order: parents first.
+    Table names in foreign-key dependency order: parents first, drops reversed.
 
-    ``sorted_tables`` is SQLAlchemy's own topological sort, so this is the order
-    inserts must follow and the reverse of the order drops must follow.
-
-    Raises:
-        sqlalchemy.exc.CircularDependencyError: if the schema has a foreign-key
-            cycle, which no insert order can satisfy.
+    Raises ``CircularDependencyError`` on a foreign-key cycle, which no insert
+    order can satisfy.
     """
     return [table.name for table in metadata.sorted_tables]
 

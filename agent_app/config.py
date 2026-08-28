@@ -1,110 +1,15 @@
 # -*- coding: utf-8 -*-
 
 """
-Centralized Configuration Management
-====================================
-
-This module implements the **Config Pattern** — a common approach for managing
-application configuration across different runtime environments.
-
-Why this pattern?
------------------
-
-Applications need different configurations in different environments:
-
-- **Local development:** Use ``~/.aws/credentials``, connect to dev databases
-- **Vercel/Cloud:** Read secrets from environment variables, connect to prod services
-
-The naive approach scatters ``if runtime.is_vercel()`` checks throughout the codebase.
-This leads to:
-
-- Duplicated logic in multiple files
-- Hard to track what configuration differs between environments
-- Easy to miss a check and introduce bugs
-
-The Config Pattern solves this by **centralizing all environment-specific logic
-in one place**.
-
-Where the values come from
---------------------------
+Everything that varies by machine, read once.
 
 Two files, split by whether a value is a secret -- which is also what decides
-who may open the file. :func:`load_env_files` reads both:
+who may open them. :func:`load_env_files` reads ``.env`` first so it wins, then
+``.env.defaults`` fills in the rest.
 
-- ``.env`` -- credentials. Gitignored, and denied to an AI assistant in
-  ``.claude/settings.json``. **Read first, so it wins.**
-- ``.env.defaults`` -- everything that is not a credential, the dataset's
-  ``SCHEMA_NAME`` included. Committed, so a change is reviewable in ``git diff``,
-  and freely editable by an AI doing a dataset swap.
-
-Repeating a key from ``.env.defaults`` in ``.env`` overrides it on that machine
-alone -- pointing one checkout at a staging schema, say. That layering is inside
-*one* config system with one reader, which is different from the same value
-living in two unrelated config systems; that is what must not happen, and did
-once, with ``project_name``.
-
-How it works
-------------
-
-1. **Define a Config dataclass** with all configurable values as fields
-2. **Create factory methods** for each runtime environment (``new_in_local_runtime``,
-   ``new_in_vercel_runtime``)
-3. **Build it once** on the ``One`` singleton, which every caller already has
-
-Example usage::
-
-    from agent_app.api import one
-
-    # Anywhere in your code - no environment checks needed
-    session = boto3.Session(
-        region_name=one.config.aws_region,
-        aws_access_key_id=one.config.aws_access_key_id,
-        aws_secret_access_key=one.config.aws_secret_access_key,
-    )
-
-There is deliberately no module-level ``config`` singleton. Building one at
-import time would read the environment before a test could arrange it, and
-``ConfigMixin`` already gives every caller ``one.config`` lazily.
-
-Benefits
---------
-
-- **One place complex, everywhere else simple** — Environment detection happens
-  once in ``Config.new()``. All other code just reads ``one.config.xxx``.
-- **Easy to extend** — Need a new config value? Add a field and set it in the
-  factory methods. All existing code continues to work.
-- **Testable** — Tests can create ``Config`` instances directly with test values,
-  bypassing the runtime detection entirely.
-- **Self-documenting** — The dataclass fields serve as documentation of what
-  can be configured.
-
-Adding new configuration
-------------------------
-
-To add a new configurable value:
-
-1. Add a field to the ``Config`` dataclass
-2. Set appropriate values in ``new_in_local_runtime()`` and ``new_in_vercel_runtime()``
-3. Document it in ``.env.defaults`` if it is not a secret, ``.env.example`` if it is
-4. Use ``one.config.your_new_field`` anywhere in the codebase
-
-That's it. No need to add ``if runtime.is_xxx()`` checks anywhere else.
-
-Choosing an LLM provider
-------------------------
-
-The agent talks to exactly one LLM backend per process, chosen by the
-``LLM_PROVIDER`` environment variable (``bedrock`` by default). Each provider
-authenticates differently, so only the credential belonging to the *selected*
-provider is required — the others may be absent::
-
-    LLM_PROVIDER=bedrock     -> AWS credentials (env vars, or ~/.aws/credentials)
-    LLM_PROVIDER=anthropic   -> ANTHROPIC_API_KEY
-    LLM_PROVIDER=openai      -> OPENAI_API_KEY
-    LLM_PROVIDER=google      -> GOOGLE_API_KEY
-
-Call :meth:`Config.validate` to fail fast with a readable message when the
-selected provider's credential is missing.
+There is deliberately no module-level ``config`` singleton: building one would
+read the environment at import time, before a test could arrange it.
+``ConfigMixin`` gives every caller ``one.config`` lazily instead.
 """
 
 import os
@@ -119,28 +24,18 @@ from .constants import LlmProviderEnum, DEFAULT_MODEL_ID
 #: The placeholder ``.env.example`` uses for values the reader has to fill in.
 PLACEHOLDER = "..."
 
-#: What PostgreSQL accepts unquoted as a schema name, which is the promise
-#: ``.env.defaults`` already makes in the comment above ``SCHEMA_NAME``.
-#: Enforcing it matters twice over: an illegal name fails deep inside a query
-#: with an unhelpful message, and the value is interpolated into a
-#: ``SET LOCAL search_path`` statement in ``one/one_02_db.py``.
+#: Enforced because the value is interpolated into a ``SET LOCAL search_path``
+#: statement in ``one/one_02_db.py``, and because an illegal name otherwise
+#: fails deep inside a query with an unhelpful message.
 SCHEMA_NAME_PATTERN = re.compile(r"^[a-z_][a-z0-9_]{0,62}$")
 
 
 def load_env_files() -> None:  # pragma: no cover
     """
-    Load ``.env`` then ``.env.defaults``, in that order.
+    Load ``.env`` then ``.env.defaults``.
 
-    ``load_dotenv`` does not overwrite a variable that is already set, so the
-    first file to define a key wins. Reading ``.env`` first is therefore what
-    makes it the override layer: put a key in your own ``.env`` and the
-    committed default stops applying to your machine.
-
-    Both files are loaded on Vercel too. ``.env`` will not be there, but
-    ``.env.defaults`` is committed and ships with the deployment, so the schema
-    name arrives without anyone re-entering it in the dashboard -- while a
-    dashboard variable still wins, because Vercel sets it in the real
-    environment before this runs.
+    Order is the whole point: ``load_dotenv`` never overwrites an already-set
+    variable, so reading ``.env`` first is what makes it the override layer.
     """
     from dotenv import load_dotenv
 
@@ -152,15 +47,9 @@ def get_env(name: str) -> str | None:  # pragma: no cover
     """
     Read an environment variable, treating the ``"..."`` placeholder as unset.
 
-    ``load_dotenv()`` has no notion of a placeholder: a ``.env`` copied from
-    ``.env.example`` with ``AWS_ACCESS_KEY_ID="..."`` left uncommented gives you
-    a variable that is set, non-empty, and useless. boto3 reads env vars before
-    ``~/.aws/credentials``, so that placeholder shadows a working local profile
-    and Bedrock fails with ``UnrecognizedClientException``. Returning None lets
-    each SDK fall back to its own credential chain.
-
-    Returns:
-        The value, or None if unset or still the placeholder.
+    An uncommented placeholder copied out of ``.env.example`` is set, non-empty
+    and useless. boto3 reads env vars before ``~/.aws/credentials``, so it would
+    shadow a working local profile and fail with ``UnrecognizedClientException``.
     """
     value = os.environ.get(name)
     if value == PLACEHOLDER:
@@ -172,13 +61,8 @@ def get_env_bool(name: str, default: bool = False) -> bool:  # pragma: no cover
     """
     Read an environment variable as a boolean.
 
-    Accepts the spellings people actually type in a ``.env``: ``1/0``,
-    ``true/false``, ``yes/no``, ``on/off``, any case. Anything else falls back to
-    ``default`` rather than raising, because a malformed flag should not stop the
-    app from booting -- it should just leave the feature in its default state.
-
-    Returns:
-        The parsed boolean, or ``default`` if unset or unrecognized.
+    An unrecognized spelling falls back to ``default`` rather than raising: a
+    malformed flag should leave its feature off, not stop the app booting.
     """
     value = get_env(name)
     if value is None:
@@ -193,14 +77,10 @@ def get_env_bool(name: str, default: bool = False) -> bool:  # pragma: no cover
 
 def get_env_int(name: str) -> int | None:  # pragma: no cover
     """
-    Read an environment variable as an int, or None if unset / not a number.
+    Read an environment variable as an int.
 
-    Env vars are always strings, so something has to do the conversion. Doing it
-    here means a blank or malformed ``DB_PORT`` yields None, which callers
-    already treat as "not configured", instead of a ValueError at import time.
-
-    Returns:
-        The parsed integer, or None if unset or not a valid integer.
+    A malformed value yields None, which callers already treat as "not
+    configured", rather than a ValueError at import time.
     """
     value = get_env(name)
     if value is None:
@@ -223,46 +103,22 @@ PROVIDER_API_KEY_ENV_VAR = {
 @dataclasses.dataclass
 class Config:
     """
-    Application configuration container.
+    Everything that varies by machine. Build it with the factories, read it as
+    ``one.config``.
 
-    This dataclass holds all environment-specific configuration values.
-    Use the factory methods to create instances, or use the module-level
-    ``config`` singleton for normal application code.
+    Only the fields whose behaviour is not obvious from the name are described.
 
     Attributes:
-        schema_name: The PostgreSQL schema this dataset's tables live in, and
-            the only identifier the dataset has. From ``SCHEMA_NAME`` in the
-            committed ``.env.defaults``; overridable per machine in ``.env`` to
-            point one checkout at a staging schema.
-        llm_provider: Which LLM backend to talk to. One of :class:`LlmProviderEnum`.
-            Defaults to ``openai``, which needs only an ``OPENAI_API_KEY``.
-            Bedrock needs an AWS account, and not everyone picking this repo up
-            has one.
-        model_id: Model identifier for the selected provider. When None, the
-            provider's default from ``DEFAULT_MODEL_ID`` is filled in.
-        max_tokens: Maximum tokens the model may generate in one response.
-            Required by the Anthropic provider, ignored by the others.
-        aws_region: AWS region for all AWS services (e.g., "us-east-1")
-        aws_access_key_id: AWS access key. None means use default credential chain.
-        aws_secret_access_key: AWS secret key. None means use default credential chain.
-        anthropic_api_key: Claude API key, used when llm_provider is "anthropic".
-        openai_api_key: OpenAI API key, used when llm_provider is "openai".
-        google_api_key: Gemini API key, used when llm_provider is "google".
-        db_host: PostgreSQL host. Only needed for the remote Postgres engine;
-            local development reads the SQLite file instead.
-        db_port: PostgreSQL port.
-        db_user: PostgreSQL user.
-        db_pass: PostgreSQL password.
-        db_name: PostgreSQL database name.
-        quota_enabled: Whether to meter and cap monthly LLM spend. **Off by
-            default**: a student running this locally is spending their own
-            Bedrock allowance and needs no cap, and turning it on requires a
-            DynamoDB table that does not exist until someone creates it.
-        dynamodb_table_name_quota: DynamoDB table holding the counters. Only
-            read when ``quota_enabled`` is true.
-        quota_max_invoke_per_month: Cap on agent invocations per calendar month.
-        quota_max_input_token_per_month: Cap on input tokens per calendar month.
-        quota_max_output_token_per_month: Cap on output tokens per calendar month.
+        schema_name: From ``SCHEMA_NAME`` in ``.env.defaults``; overridable per
+            machine in ``.env`` to point one checkout at a staging schema.
+        model_id: None means "fill in the provider's default" -- see
+            :data:`~agent_app.constants.DEFAULT_MODEL_ID`.
+        max_tokens: Required by the Anthropic provider, ignored by the others.
+        aws_access_key_id: None means fall through to boto3's credential chain
+            (``~/.aws/credentials``, an IAM role), which is what local wants.
+        aws_secret_access_key: As above.
+        quota_enabled: Off by default. Turning it on needs a DynamoDB table that
+            does not exist until someone creates it.
     """
 
     # --- Dataset ---
@@ -296,16 +152,10 @@ class Config:
         """
         Normalize the provider, fill in its default model ID, check the schema name.
 
-        Doing this here (rather than in the factories) means a hand-built
-        ``Config()`` in a test behaves exactly like one built from the environment.
-
-        The schema name is checked at start-up rather than at first use because
-        the alternative failure is a query error from deep inside PostgreSQL,
-        several layers away from the typo that caused it.
-
-        Raises:
-            ValueError: on an unknown provider, or a schema name PostgreSQL
-                would not accept.
+        Here rather than in the factories so that a hand-built ``Config()`` in a
+        test behaves exactly like one built from the environment. Checking the
+        schema name now turns what would be a PostgreSQL error several layers
+        away into a start-up failure naming the typo.
         """
         if self.schema_name and not SCHEMA_NAME_PATTERN.fullmatch(self.schema_name):
             raise ValueError(
@@ -325,11 +175,7 @@ class Config:
 
     @property
     def llm_api_key(self) -> str | None:
-        """
-        The API key belonging to the selected provider.
-
-        Returns None for ``bedrock``, which uses AWS credentials instead.
-        """
+        """The selected provider's API key. None for bedrock, which uses AWS."""
         return {
             LlmProviderEnum.ANTHROPIC.value: self.anthropic_api_key,
             LlmProviderEnum.OPENAI.value: self.openai_api_key,
@@ -340,11 +186,8 @@ class Config:
         """
         Fail fast when the selected provider's credential is missing.
 
-        Only the *selected* provider is checked. The other providers' keys may be
-        absent, which is the whole point of switching with ``LLM_PROVIDER``.
-
-        Raises:
-            ValueError: If the selected provider has no usable credential.
+        Only the selected one is checked; the others being absent is the point
+        of switching with ``LLM_PROVIDER``.
         """
         if self.llm_provider == LlmProviderEnum.BEDROCK.value:
             # boto3 resolves credentials from env vars, ~/.aws/credentials, or an
@@ -366,23 +209,14 @@ class Config:
     @classmethod
     def new_from_env_var(cls, **overrides) -> "Config":
         """
-        Build a Config from ``os.environ``, whatever put the values there.
+        Build a Config from ``os.environ``. Reads nothing off disk.
 
-        Reads nothing off disk. Every runtime shares this, because the mapping
-        from variable name to field is the same everywhere -- what differs
-        between runtimes is only *which* variables exist and where they came
-        from, and that is the caller's problem.
-
-        AWS credentials are the one thing deliberately absent. boto3 reads
-        ``AWS_ACCESS_KEY_ID`` / ``AWS_SECRET_ACCESS_KEY`` before it reads
-        ``~/.aws/credentials``, so reading them unconditionally would let a
-        placeholder in a local ``.env`` shadow a perfectly good profile. The
-        runtime that genuinely needs them passes them in.
-
-        :param overrides: Field values to use instead of the environment. The
-            runtime-specific bits go here, so the difference between two
-            runtimes reads as a short argument list rather than a second copy
-            of this whole call.
+        AWS credentials are deliberately absent: boto3 reads them before
+        ``~/.aws/credentials``, so picking them up here would let a placeholder
+        in a local ``.env`` shadow a working profile. The runtime that needs
+        them passes them through ``overrides``, which is also what keeps the
+        difference between runtimes to an argument list instead of a second copy
+        of this call.
         """
         values = dict(
             schema_name=get_env("SCHEMA_NAME") or "",
@@ -415,12 +249,8 @@ class Config:
         """
         Build config for local development.
 
-        The extra step over :meth:`new_from_env_var` is reading the files: a
-        laptop keeps its settings in ``.env`` and ``.env.defaults`` rather than
-        in a real environment.
-
-        No AWS credentials are passed, so boto3 falls through to
-        ``~/.aws/credentials`` -- see :meth:`new_from_env_var`.
+        Passes no AWS credentials, so boto3 falls through to
+        ``~/.aws/credentials``.
         """
         load_env_files()
         return cls.new_from_env_var()
@@ -430,15 +260,13 @@ class Config:
         """
         Build config for Vercel.
 
-        Serverless has no ``~/.aws``, so AWS credentials have to come from the
-        environment; this is the runtime that passes them in.
+        Serverless has no ``~/.aws``, so AWS credentials must come from the
+        environment.
 
-        The files are read here too, which is easy to misread as pointless.
-        ``.env`` will not exist (``load_dotenv`` on a missing path is a no-op),
-        but ``.env.defaults`` is committed and ships with the deployment, so the
-        schema name arrives without anyone re-entering it in the Vercel
-        dashboard. A dashboard variable still wins, because Vercel sets it in the
-        real environment before any of this runs.
+        Loading the files here looks pointless but is not: ``.env`` will not
+        exist, while ``.env.defaults`` is committed and ships with the
+        deployment, so the schema name arrives without anyone re-entering it in
+        the dashboard.
         """
         load_env_files()
         return cls.new_from_env_var(
@@ -451,20 +279,12 @@ class Config:
         """
         The entry point: detect the runtime, then build the config for it.
 
-        This is the only place the runtime is consulted. Adding a deployment
-        target means adding an ``is_*`` method in :mod:`agent_app.runtime`, a
-        factory above, and a branch here -- and nothing anywhere else learns
-        that a new target exists.
+        The only place the runtime is consulted, so adding a deployment target
+        touches this function and nothing else.
 
-        Returns:
-            Config: configured for the detected runtime.
-
-        Raises:
-            RuntimeError: if the runtime is one this method has no branch for.
-                Unreachable today, since ``is_local`` is defined as "not
-                Vercel"; it exists so that adding a third target and forgetting
-                this function fails loudly instead of silently getting the
-                local config.
+        The final branch is unreachable today -- ``is_local`` is defined as "not
+        Vercel" -- and exists so that adding a third target and forgetting this
+        function fails loudly rather than silently getting the local config.
         """
         if runtime.is_local():
             return cls.new_in_local_runtime()

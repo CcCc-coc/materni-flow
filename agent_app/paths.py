@@ -3,14 +3,12 @@
 """
 Every path this package needs, in one place.
 
-Paths are facts about the source tree, not configuration: a dataset swap rewrites
-the *contents* of ``data/``, never the filenames. So nothing here is routed
-through configuration -- doing that once bought nothing and forced a circular
-import between this module and the config that named the path.
+Paths are facts about the source tree, not configuration: a swap rewrites the
+*contents* of ``data/``, never the filenames.
 
-Add a path here first, then refer to it as ``path_enum.your_new_path`` everywhere
-else. Do not add one speculatively: an entry with no reader silently rots into a
-pointer at a directory that no longer exists.
+Do not add a path speculatively. An entry with no reader silently rots into a
+pointer at a directory that no longer exists, which is what happened to every
+entry this module has ever lost.
 """
 
 from pathlib import Path
@@ -24,24 +22,14 @@ class PathEnum:
     # Coverage report, written by agent_app.tests.helper.
     dir_htmlcov = dir_project_root / "htmlcov"
 
-    # Configuration, split by whether it is a secret.
-    #
-    # ``.env`` is gitignored and holds credentials; ``.env.defaults`` is
-    # committed and holds everything that is not a secret, the dataset's schema
-    # name included. ``.env`` is loaded first and wins. See ``config.py``.
+    # Split by whether the value is a secret. ``.env`` is gitignored and loaded
+    # first, so it wins; ``.env.defaults`` is committed. See ``config.py``.
     path_env = dir_project_root / ".env"
     path_env_defaults = dir_project_root / ".env.defaults"
 
-    # Everything a dataset swap rewrites, in one directory.
-    #
-    # A swap replaces the contents of ``data/`` and nothing else: the config
-    # Python reads, the copy the frontend reads, the explainer, the system
-    # prompt, and the database seed. Keeping them together is what makes a swap
-    # a directory replacement rather than a diff scattered across the repo, and
-    # it is why ``agent_app/`` never has to be touched for one.
-    #
-    # Not to be confused with ``agent_app/config.py``, which holds secrets from
-    # ``.env`` and varies per machine rather than per dataset.
+    # Authored content only -- copy, prompt, explainer, seed. Keeping it in one
+    # directory is what makes a dataset swap a directory replacement rather than
+    # a diff scattered across the repo.
     dir_data = dir_project_root / "data"
 
     # Read by the frontend, never parsed here. Named so that the preflight
@@ -57,13 +45,8 @@ class PathEnum:
     # Written by the agent's ``write_debug_report`` tool.
     path_debug_report_md = dir_tmp / "debug_report.md"
 
-    # Local SQLite database, synced by ``agent_app.tests.db_helper``.
-    #
-    #   data/data.sqlite.example  (committed to Git, pristine seed)
-    #       --copy/overwrite-->
-    #   tmp/data.sqlite           (gitignored via the `tmp` rule, working copy)
-    #
-    # Never commit the working copy: tests and write tools mutate it.
+    # Never commit the working copy: tests and write tools mutate it. The
+    # committed seed is copied over it by ``agent_app.tests.db_helper``.
     path_sqlite_db_example = dir_data / "data.sqlite.example"
     path_sqlite_db = dir_tmp / "data.sqlite"
 

@@ -3,10 +3,7 @@
 """
 Encoding: the models in :mod:`.model` -> the compact string the agent is shown.
 
-Pure string formatting, no database access. The format trades SQL DDL's verbosity
-for a fraction of the tokens while keeping every fact the agent needs in order to
-write a correct query: names, types, nullability, keys, and which column points
-at which.
+Pure string formatting, no database access.
 """
 
 import textwrap
@@ -20,8 +17,7 @@ from .model import (
     DatabaseInfo,
 )
 
-#: Indent unit for the encoded schema. A private formatting detail of this
-#: encoder, not a project-wide constant.
+#: Indent unit. A formatting detail of this encoder, not a project-wide constant.
 TAB = " " * 2
 
 
@@ -30,38 +26,12 @@ def encode_column_info(
     column_info: ColumnInfo,
 ) -> str:
     """
-    Encode a database column into LLM-friendly compact format.
+    Encode one column: ``name:type`` plus constraint markers.
 
-    Transforms verbose column metadata into a concise string representation
-    optimized for Large Language Model consumption in text-to-SQL tasks.
-
-    Format: ${COLUMN_NAME}:${DATA_TYPE}${PRIMARY_KEY}${UNIQUE}${NOT_NULL}${INDEX}${FOREIGN_KEY}
-
-    .. note::
-
-        There might be multiple Foreign Keys encoded as ``*FK->Table1.Column1*FK->Table2.Column2``.
-
-    Constraints are encoded as:
-
-    - ``*PK``: Primary Key (implies unique and indexed)
-    - ``*UQ``: Unique constraint (implies indexed)
-    - ``*NN``: Not Null constraint
-    - ``*IDX``: Has database index
-    - ``*FK->Table.Column``: Foreign key reference
-
-    Redundant constraints are automatically omitted (PK/UQ don't show IDX).
-
-    :param table_info: Table metadata containing primary key information
-    :param column_info: Column metadata with type, constraints, and relationships
-
-    :returns: Compact column representation string
-
-    Examples:
-
-    - Primary key column: ``UserId:INT*PK``
-    - Foreign key with index: ``CategoryId:INT*NN*IDX*FK->Category.CategoryId``
-    - Unique email field: ``Email:STR*UQ*NN``
-    - Simple nullable column: ``Description:STR``
+    Redundant markers are dropped -- a primary key is already not-null and
+    indexed, a unique column is already indexed -- so the agent never reads a
+    fact twice. The full format is in
+    ``.claude/skills/about-bi-agent-app-scaffold-cn/ref/source-code/04-schema-encoding.md``.
     """
     col_name = column_info.name
     col_type = column_info.llm_type.value if column_info.llm_type else column_info.type
@@ -91,51 +61,7 @@ def encode_column_info(
 def encode_table_info(
     table_info: TableInfo,
 ) -> str:
-    """
-    Encode a database table into LLM-friendly compact format.
-
-    Format::
-
-        Table TableName(
-            encoded_column_info_1,
-            encoded_column_info_2,
-            ...
-        )
-
-    This format provides:
-
-    - Immediate visual structure similar to SQL CREATE TABLE
-    - Compact representation reducing token usage by ~70%
-    - Preserves all essential schema information
-    - Self-documenting constraint annotations
-    - Clear foreign key relationships
-
-    :param table_info: Table metadata containing columns and foreign keys
-
-    :returns: Compact table representation string
-
-    Example::
-
-        Table Product(
-            ProductId:INT*PK,
-            ProductName:STR*NN,
-            CategoryId:INT*NN*FK->Category.CategoryId,
-            Price:DEC*NN,
-            Stock:INT*NN,
-            CreatedAt:TS*NN,
-            UpdatedAt:TS
-        )
-
-        # or
-        View SalesReport(
-            ...
-        )
-
-        # or
-        MaterializedView MonthlySales(
-            ...
-        )
-    """
+    """Encode one table, view or materialized view, one column per line."""
     columns = list()
     for col in table_info.columns:
         col_str = encode_column_info(table_info, col)
@@ -149,58 +75,10 @@ def encode_schema_info(
     schema_info: SchemaInfo,
 ) -> str:
     """
-    Encode a database schema into LLM-friendly compact format.
+    Encode one schema and its tables.
 
-    Format::
-
-        Schema SchemaName(
-            encoded_table_info_1,
-            encoded_table_info_2,
-            ...,
-        )
-
-    Key benefits for LLM consumption:
-
-    - **Token Efficiency**: Reduces schema representation by ~70% compared to
-      verbose SQL DDL or JSON formats
-    - **Semantic Clarity**: Constraint abbreviations (PK, FK, NN) are intuitive
-      and consistently applied
-    - **Relationship Visibility**: Foreign keys show target table/column inline,
-      enabling quick relationship understanding
-    - **Type Simplification**: Database-specific types mapped to universal
-      categories (STR, INT, DEC, etc.)
-    - **Hierarchical Structure**: Clear nesting shows schema->table->column
-      relationships
-
-    :param schema_info: Schema metadata containing all tables and relationships
-
-    :returns: Compact schema representation string
-
-    Example::
-
-        Schema ecommerce(
-            Table Customer(
-                CustomerId:INT*PK,
-                Email:STR*UQ*NN,
-                FirstName:STR*NN,
-                LastName:STR*NN,
-                CreatedAt:TS*NN
-            ),
-            Table Order(
-                OrderId:INT*PK,
-                CustomerId:INT*NN*FK->Customer.CustomerId,
-                OrderDate:DT*NN,
-                TotalAmount:DEC*NN,
-                Status:STR*NN
-            ),
-            Table OrderItem(
-                OrderItemId:INT*PK,
-                OrderId:INT*NN*FK->Order.OrderId,
-                ProductId:INT*NN*FK->Product.ProductId,
-                Quantity:INT*NN,
-                UnitPrice:DEC*NN
-            )
-        )
+    An unnamed schema is labelled ``default``: SQLite has no schemas, so the
+    name comes back empty and the block would otherwise open with nothing.
     """
     tables = list()
     for table in schema_info.tables:
@@ -219,22 +97,10 @@ def encode_database_info(
     database_info: DatabaseInfo,
 ) -> str:
     """
-    Encode a database into LLM-friendly compact format.
+    Encode the whole database, one line per nesting level.
 
-    Format::
-
-        DatabaseType Database DatabaseName(
-            Schema SchemaName(
-                encoded_table_info_1,
-                encoded_table_info_2,
-                ...,
-            ),
-            ...
-        )
-
-    :param database_info: Database metadata containing schemas and tables
-
-    :returns: Compact database representation string
+    The dialect prefixes the outermost block, which is how the agent knows
+    which SQL flavour to write.
     """
     schemas = list()
     for schema in database_info.schemas:

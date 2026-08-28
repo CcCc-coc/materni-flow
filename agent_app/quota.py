@@ -1,53 +1,15 @@
 # -*- coding: utf-8 -*-
 
 """
-Monthly LLM spend cap, backed by one DynamoDB row per (project, month).
+Monthly LLM spend cap, backed by one DynamoDB row per (deployment, month).
 
-Why this exists
----------------
-
-A chat agent that anyone can open is an open invoice: every message spends
-tokens on somebody's cloud account. This module keeps that bill bounded by
-counting invocations and tokens for the current calendar month and refusing to
-start a new one once a cap is reached.
-
-**It is off by default** (``Config.quota_enabled``). A student running the repo
-locally is spending their own Bedrock allowance on their own machine and needs
-no cap, and enabling it requires a DynamoDB table that does not exist until
-someone creates it. It is meant for a public deployment, where the person paying
-is not the person typing.
-
-What is configurable and what is not
-------------------------------------
-
-Configurable, because it varies by deployment: the on/off flag, the table name,
-and the three caps. All live in ``.env`` and are read through ``Config``.
-
-Fixed, because it does not: the item schema below, and the partition key, which
-is ``<scaffold>:<dataset>:<YYYY-MM>``. One DynamoDB table can hold the counters
-for many deployments for the same reason one Postgres database can hold their
-tables, so the key has to say which deployment it is counting, and it says so in
-two parts:
-
-- the **scaffold**, :data:`SCAFFOLD_ID` -- a constant, because it identifies
-  this codebase and does not change when the dataset does;
-- the **dataset**, ``config.schema_name`` -- from ``SCHEMA_NAME`` in the
-  committed ``.env.defaults``, because that is exactly what does change.
-
-Neither is duplicated anywhere. A value with two homes eventually has two
-different answers, and for a spend counter that means a cap that silently
-stops applying.
-
-Why raw boto3 and not an ORM
-----------------------------
-
-The item has four attributes and will never have more, so an ORM would buy
-nothing here except three dependencies. ``boto3`` is already a core dependency.
+**Off by default** (``Config.quota_enabled``): it needs a DynamoDB table that
+does not exist until someone creates it, and it is meant for a public
+deployment, where the person paying is not the person typing.
 
 Every function takes ``boto_ses`` and ``config`` explicitly rather than reaching
-for the ``one`` singleton. That keeps this module importable on its own, lets a
-test drive it with a stub, and avoids building a second ``Config`` just to read
-three numbers.
+for the ``one`` singleton, which is what lets a test drive this with a stub and
+no AWS.
 """
 
 import typing as T
@@ -58,10 +20,8 @@ if T.TYPE_CHECKING:  # pragma: no cover
 
 
 #: Identifies this scaffold in a quota table it may share with other codebases.
-#:
-#: A constant rather than config: it is a fact about *this repository*, not about
-#: the dataset it currently serves, so a dataset swap must not touch it. Change
-#: it only if the scaffold itself is forked or renamed.
+#: A constant rather than config: it is a fact about *this repository*, not the
+#: dataset it serves, so a dataset swap must not touch it.
 SCAFFOLD_ID = "learn-bi-agent-app-scaffold"
 
 #: The DynamoDB attribute names. Fixed on purpose -- see the module docstring.
@@ -76,18 +36,11 @@ class QuotaExceededError(RuntimeError):
 
 def get_app_id(config: "Config", now: datetime.datetime | None = None) -> str:
     """
-    Build the partition key for the current (or given) UTC month.
+    Build the partition key: ``<scaffold>:<dataset>:<YYYY-MM>``.
 
-    Shape is ``<scaffold>:<dataset>:<YYYY-MM>``, so a new month starts from zero
-    without anyone having to reset anything, and many deployments can share one
-    table.
-
-    ``:`` separates the three parts because neither a slug nor a schema name can
-    contain one, while both can contain the ``-`` and ``_`` that appear inside
-    them. A key you can split back apart is one you can read in the console.
-
-    Returns:
-        The partition key, e.g. ``"learn-bi-agent-app-scaffold:acme_widgets:2026-08"``.
+    A new month is a new row, so usage resets without anyone acting. ``:``
+    separates the parts because neither a slug nor a schema name can contain
+    one, while both contain the ``-`` and ``_`` that appear inside them.
     """
     if now is None:
         now = datetime.datetime.now(datetime.timezone.utc)
@@ -112,11 +65,8 @@ def get_usage(
     """
     Read the current month's counters.
 
-    A month with no traffic yet has no row at all, which is not an error: it
-    reads as three zeros and no write is issued.
-
-    Returns:
-        ``{"total_invoke": int, "total_input_token": int, "total_output_token": int}``
+    A month with no traffic has no row, which is not an error: three zeros, and
+    no write is issued.
     """
     if app_id is None:
         app_id = get_app_id(config)

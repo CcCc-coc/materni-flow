@@ -3,15 +3,9 @@
 """
 The intermediate representation between reflection and encoding.
 
-``extractor.py`` fills these in from SQLAlchemy metadata, ``encoder.py`` turns
-them into the compact string the agent is given. Nothing else reads them.
-
-**Every field here has a reader in the encoder.** The models used to mirror
-SQLAlchemy's ``Column`` and ``ForeignKey`` field for field -- ``autoincrement``,
-``computed``, ``identity``, ``deferrable``, ``onupdate`` and a dozen others --
-none of which anything downstream looked at. Extracting a field nobody encodes
-costs reflection time and reads as a promise the output does not keep. Add one
-together with the encoder line that emits it, not before.
+**Every field here has a reader in the encoder.** Extracting one nobody encodes
+costs reflection time and reads as a promise the output does not keep, so add a
+field together with the encoder line that emits it.
 """
 
 from pydantic import BaseModel, Field
@@ -31,8 +25,8 @@ class ColumnInfo(BaseModel):
     """
 
     name: str = Field()
-    #: The dialect's own spelling, e.g. ``VARCHAR(50)``. Kept as the fallback
-    #: label for a type the LLM vocabulary has no entry for.
+    #: The dialect's own spelling, e.g. ``VARCHAR(50)``. The fallback label when
+    #: the LLM vocabulary has no entry for this type.
     type: str = Field()
     llm_type: LLMTypeEnum | None = Field(default=None)
     nullable: bool = Field(default=False)
@@ -48,8 +42,8 @@ class TableInfo(BaseModel):
 
     name: str = Field()
     table_type: TableTypeEnum = Field(default=TableTypeEnum.TABLE)
-    #: Column names, not columns. The encoder marks a column ``*PK`` by looking
-    #: its name up here, which is why ``ColumnInfo`` carries no primary-key flag.
+    #: Column names, not columns. The encoder looks a name up here to mark it
+    #: ``*PK``, which is why ``ColumnInfo`` carries no primary-key flag.
     primary_key: list[str] = Field(default_factory=list)
     columns: list[ColumnInfo] = Field(default_factory=list)
 

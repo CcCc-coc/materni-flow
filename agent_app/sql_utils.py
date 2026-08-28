@@ -3,9 +3,9 @@
 """
 How SQL is executed and handed to the agent.
 
-Pure functions -- ``engine`` is the first parameter, nothing here reaches for
-``self``. The module owns one promise: **a query run through
-:func:`execute_sql_query` cannot change the database.**
+Pure functions -- ``engine`` is the first parameter, nothing reaches for
+``self``. One promise: **a query run through :func:`execute_sql_query` cannot
+change the database.**
 """
 
 import re
@@ -20,21 +20,14 @@ def new_sqlite_engine(path: str) -> sa.Engine:
     """
     Open a SQLite database with transactions the caller can actually roll back.
 
-    Lives here rather than with the other engines because it exists to hold up
-    :func:`execute_sql_query`'s guarantee, and a safety setting stored away from
-    the thing it protects is one the next refactor drops without noticing.
-
-    ``execute_sql_query`` protects the data by always rolling back, which needs
-    a transaction to be open. pysqlite decides that by sniffing the statement's
+    pysqlite decides whether to open a transaction by sniffing the statement's
     first keyword, and it does not recognise ``WITH`` -- so a CTE-prefixed write
-    runs in autocommit and lands on disk with nothing to roll back.
+    runs in autocommit and lands on disk with nothing to roll back. Turning
+    ``isolation_level`` off and emitting ``BEGIN`` ourselves stops the guessing.
 
-    Turning ``isolation_level`` off stops the driver guessing, and emitting
-    ``BEGIN`` ourselves puts every statement -- CTE-prefixed writes and DDL
-    included -- inside a transaction the caller can discard. This is the recipe
-    from SQLAlchemy's own pysqlite notes.
-
-    :param path: Database file path, or ``":memory:"``.
+    Lives here rather than with the other engines because it exists to hold up
+    :func:`execute_sql_query`'s guarantee, and a safety setting kept away from
+    the thing it protects is one the next refactor drops without noticing.
     """
     engine = sa.create_engine(f"sqlite:///{path}")
 
@@ -55,9 +48,8 @@ def format_result(
     """
     Format a SQL result as a Markdown table.
 
-    Markdown beats JSON here on every axis that matters: it costs roughly a
-    quarter fewer tokens, it matches what the model saw during training, and it
-    stays readable when a human opens the log to work out what went wrong.
+    Cheaper than JSON in tokens, closer to what the model saw in training, and
+    still readable when a human opens the log.
     """
     records = result.fetchall()
     if len(records) == 0:
@@ -72,24 +64,14 @@ def ensure_valid_select_query(query: str):
     """
     Reject the obvious non-query before spending a database round trip on it.
 
-    **This is not the safety boundary.** What actually protects the data is that
-    every agent query runs inside a transaction that is always rolled back (see
-    :func:`execute_sql_query`). This check exists so that a model which writes
-    ``UPDATE`` gets a fast, readable error telling it what to do instead, rather
-    than a driver exception.
+    **Not the safety boundary** -- the always-rolled-back transaction in
+    :func:`execute_sql_query` is. This only buys the model a fast, readable
+    error instead of a driver exception.
 
-    It is deliberately one rule and no keyword denylist. A denylist reads the
-    query as a string and cannot tell code from data, so it rejects perfectly
-    legal queries -- ``WHERE note = 'do not delete'`` -- while still missing the
-    dangerous things that hide inside a legal ``SELECT``. Every false rejection
-    costs a full model round trip and pushes the model toward stranger SQL to
-    get around it, which is the worse failure of the two.
-
-    ``WITH`` is accepted because every non-trivial analysis is a CTE. A write
-    smuggled in behind one (SQLite does accept ``WITH x AS (...) DELETE ...``)
-    executes and is then discarded with the transaction.
-
-    :raises ValueError: if the query starts with anything but SELECT or WITH.
+    One rule and no keyword denylist on purpose: a denylist cannot tell code
+    from data, so it rejects a legal ``WHERE note = 'do not delete'`` while
+    still missing what hides inside a legal ``SELECT``. Each false rejection
+    costs a model round trip and pushes it toward stranger SQL.
     """
     if not re.match(r"^(SELECT|WITH)\b", query.strip(), re.IGNORECASE):
         raise ValueError(
@@ -104,23 +86,13 @@ def execute_sql_query(
     """
     Execute a read-only query and return the result as a Markdown table.
 
-    The transaction is **always** rolled back. That, not the string check above,
-    is what makes this read-only: a write that slips past the check still runs
-    against a transaction nobody ever commits, so it never reaches disk. The
-    guarantee costs nothing (SQLAlchemy 2.0 does not autocommit), needs no
-    dependency, and works on every dialect rather than just the one in front of
-    us today. On SQLite it additionally requires the engine from
-    :func:`new_sqlite_engine`; on MySQL it would not hold for DDL, which commits
-    implicitly.
+    The transaction is **always** rolled back, and that -- not the string check
+    -- is what makes this read-only: a write that slips past still runs against
+    a transaction nobody commits. On SQLite this additionally requires the
+    engine from :func:`new_sqlite_engine`.
 
     **Every failure is returned as text, never raised.** The caller is an LLM
-    tool: a traceback ends the turn, whereas a sentence describing the problem
-    lets the model fix its own SQL and try again.
-
-    :param engine: SQLAlchemy engine connected to the database.
-    :param sql: Raw SQL query string to execute.
-
-    :return: The result as a Markdown table, or an ``Error: ...`` message.
+    tool: a traceback ends the turn, a sentence lets it fix its own SQL.
     """
     try:
         ensure_valid_select_query(sql)
