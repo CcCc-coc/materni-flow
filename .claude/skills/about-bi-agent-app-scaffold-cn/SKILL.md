@@ -8,20 +8,29 @@ description: 这个仓库的事实标准. 它是什么性质的项目, 为什么
 这个 skill 是这个仓库的**总纲**. 它回答的是"这是什么, 为什么长成这样", 不回答"代码在哪"
 (那个看 `CLAUDE.md`) 也不回答"怎么换数据集" (那个看 `swap-dataset-cn`).
 
-规范都在 `ref/` 下面, 一篇一个主题. **按你要动的东西读对应那篇, 不要全读.**
+`ref/` 分两个目录, 一篇一个主题. **按你要动的东西读对应那篇, 不要全读.**
+
+`ref/architecture/` —— 架构与设计决定, 与具体某段代码无关:
 
 | 你在做什么 | 读 |
 | :--- | :--- |
-| 想搞清楚这个项目的定位, 或者要对外介绍它 | [01-what-this-project-is.md](ref/01-what-this-project-is.md) |
-| 重构, 挪文件, 加模块, 判断某个东西该放哪一层 | [02-modular-design.md](ref/02-modular-design.md) |
-| 动数据库, 写 SQL, 同步数据, 估体积 | [03-one-database-everywhere.md](ref/03-one-database-everywhere.md) |
-| 让 agent 画图 / 出表格, 或者加一种新的渲染块 | [04-rendering-contract.md](ref/04-rendering-contract.md) |
-| 写 `data/` 下面那几个文件 (配置, 文案, 提示词) | [05-authoring-the-data-directory.md](ref/05-authoring-the-data-directory.md) |
-| 想知道改完要跑什么, 或者要加/改一项检查 | [06-what-guards-the-boundaries.md](ref/06-what-guards-the-boundaries.md) |
-| 写注释 / docstring, 或者要加教学材料 | [07-comments-explain-why.md](ref/07-comments-explain-why.md) |
-| 开发服务器起不来 / 杀不掉, 或者要动 `kill-dev-servers.py` | [08-killing-dev-servers.md](ref/08-killing-dev-servers.md) |
-| **要改 `agent_app/` 里某个模块, 想知道它为什么这么写** | [source-code/](ref/source-code/README.md) |
-| 要造数据集 / 同步到 PostgreSQL | `scripts/teaching_cli.py`, 说明在 [source-code/05](ref/source-code/05-dataset-pipeline.md) |
+| 想搞清楚这个项目的定位, 或者要对外介绍它 | [01-what-this-project-is.md](ref/architecture/01-what-this-project-is.md) |
+| 重构, 挪文件, 加模块, 判断某个东西该放哪一层 | [02-modular-design.md](ref/architecture/02-modular-design.md) |
+| 动数据库, 写 SQL, 同步数据, 估体积 | [03-one-database-everywhere.md](ref/architecture/03-one-database-everywhere.md) |
+| 让 agent 画图 / 出表格, 或者加一种新的渲染块 | [04-rendering-contract.md](ref/architecture/04-rendering-contract.md) |
+| 写 `data/` 下面那几个文件 (配置, 文案, 提示词) | [05-authoring-the-data-directory.md](ref/architecture/05-authoring-the-data-directory.md) |
+| 想知道改完要跑什么, 或者要加/改一项检查 | [06-what-guards-the-boundaries.md](ref/architecture/06-what-guards-the-boundaries.md) |
+| 写注释 / docstring, 或者要加教学材料 | [07-comments-explain-why.md](ref/architecture/07-comments-explain-why.md) |
+| 开发服务器起不来 / 杀不掉, 或者要动 `kill-dev-servers.py` | [08-killing-dev-servers.md](ref/architecture/08-killing-dev-servers.md) |
+
+`ref/backend/` —— `agent_app/` 里某段 Python 为什么这么写, 一篇对一组模块:
+
+| 你在做什么 | 读 |
+| :--- | :--- |
+| **要改 `agent_app/` 里某个模块** | [backend/README.md](ref/backend/README.md) 的索引表, 挑一篇 |
+| 要造数据集 / 同步到 PostgreSQL | `scripts/teaching_cli.py`, 说明在 [backend/05](ref/backend/05-dataset-pipeline.md) |
+
+前端 (`app/`, `components/`, `lib/`) 目前没有对应目录, 将来是 `ref/frontend/`.
 
 渲染器**内部**怎么实现的 (流式期间的残缺围栏, 懒加载, 安全等级, 兜底), 在另一个 skill:
 `agent-app-design-cn` 的 `ref/chat-frontend.md`. 它有 `paths` 触发器, 你编辑
@@ -35,7 +44,7 @@ description: 这个仓库的事实标准. 它是什么性质的项目, 为什么
 别让两边对不上. 一份描述着三个月前的目录结构的规范, 比没有规范更糟: 它会让下一个人
 (或者下一个 AI) 自信地改错地方.
 
-写新规范就放进 `ref/`, 在上面那张表里加一行.
+写新规范就放进对应的子目录, 在上面那张表里加一行.
 
 `scripts/teaching_cli.py` 是**教学自动化的命令行**: 造数据集, 发布到 PostgreSQL, 逐表核对.
 它住在这里而不是 `mise.toml` 里, 因为 mise 跑的是应用, 而这些都不是应用 —— 教学层要能靠
@@ -45,8 +54,8 @@ description: 这个仓库的事实标准. 它是什么性质的项目, 为什么
 .venv/bin/python .claude/skills/about-bi-agent-app-scaffold-cn/scripts/teaching_cli.py --help
 ```
 
-`ref/` 的 01-08 讲的是**边界**: 什么该放哪一层, 换数据集时不能破什么. `ref/source-code/`
-讲的是**某段代码为什么长这样**, 一篇对一组模块. 代码里的注释只留很短的工程 why, 展开的
+`ref/architecture/` 讲的是**边界**: 什么该放哪一层, 换数据集时不能破什么. `ref/backend/`
+讲的是**某段 Python 代码为什么长这样**, 一篇对一组模块. 代码里的注释只留很短的工程 why, 展开的
 部分在那里 —— 两边都不完整, 加起来完整, 而且可以独立删掉其中一边.
 
 ## 一条贯穿全仓库的判断

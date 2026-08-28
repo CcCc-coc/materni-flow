@@ -2,7 +2,7 @@
 
 对应代码: `agent_app/dataset.py`, `scripts/test_06_*.py`, `scripts/test_07_*.py`
 
-命名空间为什么是 schema 而不是表名前缀, 见 [03-one-database-everywhere.md](../03-one-database-everywhere.md).
+命名空间为什么是 schema 而不是表名前缀, 见 [03-one-database-everywhere.md](../architecture/03-one-database-everywhere.md).
 
 ---
 

@@ -1,7 +1,7 @@
-# 代码为什么长这样
+# 后端代码为什么长这样
 
 `agent_app/` 各模块的设计说明。**代码里的注释只留工程上的 why 且很短** (规矩见
-[07-comments-explain-why.md](../07-comments-explain-why.md)), 模式讲解、格式规范、
+[07-comments-explain-why.md](../architecture/07-comments-explain-why.md)), 模式讲解、格式规范、
 历史包袱这些展开的内容在这里。
 
 两边都不完整, 加起来完整, 而且可以独立删除其中一边。
@@ -17,5 +17,5 @@
 | [07-ai-sdk-adapter.md](07-ai-sdk-adapter.md) | SSE 协议形状, header 为什么和 generator 同住 | `ai_sdk_adapter.py` |
 | [08-agent-response.md](08-agent-response.md) | 最后一条消息不一定是答案, 三步为什么合成一个 | `agent_response.py`, `agent_debugger.py` |
 
-**边界规范** (什么该放哪一层, 换数据集不能破什么) 在上一级 `ref/` 的 01-08, 不在这里。
-这里只回答"这段代码为什么这么写"。
+**架构与设计决定** (什么该放哪一层, 换数据集不能破什么) 在隔壁 [`../architecture/`](../architecture/01-what-this-project-is.md),
+不在这里。这里只回答"这段 Python 代码为什么这么写"。
