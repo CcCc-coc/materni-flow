@@ -11,7 +11,7 @@ environment to find out:
     if runtime.is_local():
         ...
 
-Today the only caller is ``config/conf_00_def.py``, which uses the answer to pick
+Today the only caller is ``config.py``, which uses the answer to pick
 a ``Config`` factory. That is the intended shape: the detection lives here, the
 consequences live in the config. Adding a deployment target (AWS Lambda, say)
 means adding an ``is_*`` method here and a factory there -- and nothing else in

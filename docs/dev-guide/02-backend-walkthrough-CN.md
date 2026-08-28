@@ -254,8 +254,8 @@ ai_sdk_adapter
 
 | 需求 | 修改位置 |
 |------|----------|
-| 换 AI 模型 | `config/conf_00_def.py` 的 `model_id` |
+| 换 AI 模型 | `agent_app/config.py` 的 `model_id` |
 | 改 System Prompt | `prompts/bi-agent-system-prompt.md` |
 | 添加新 API 端点 | `api/index.py` |
-| 添加新配置项 | `config/conf_00_def.py` |
+| 添加新配置项 | `agent_app/config.py` |
 | 添加新 Agent 工具 | `one/one_04_agent.py` |

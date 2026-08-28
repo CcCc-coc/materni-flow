@@ -28,7 +28,7 @@ class PathEnum:
     #
     # ``.env`` is gitignored and holds credentials; ``.env.defaults`` is
     # committed and holds everything that is not a secret, the dataset's schema
-    # name included. ``.env`` is loaded first and wins. See ``config/conf_00_def.py``.
+    # name included. ``.env`` is loaded first and wins. See ``config.py``.
     path_env = dir_project_root / ".env"
     path_env_defaults = dir_project_root / ".env.defaults"
 
@@ -40,7 +40,7 @@ class PathEnum:
     # a directory replacement rather than a diff scattered across the repo, and
     # it is why ``agent_app/`` never has to be touched for one.
     #
-    # Not to be confused with ``agent_app/config/``, which holds secrets from
+    # Not to be confused with ``agent_app/config.py``, which holds secrets from
     # ``.env`` and varies per machine rather than per dataset.
     dir_data = dir_project_root / "data"
 

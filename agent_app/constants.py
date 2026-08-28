@@ -12,7 +12,7 @@ zero-dependency leaf that everything else may import:
   -- read by ``db_schema/`` and ``one/one_02_db.py``.
 
 Nothing dataset-specific belongs here. A value that varies per machine goes to
-``config/conf_00_def.py`` (``.env`` if it is a secret, ``.env.defaults`` if not).
+``config.py`` (``.env`` if it is a secret, ``.env.defaults`` if not).
 """
 
 from enum_mate.api import BetterStrEnum

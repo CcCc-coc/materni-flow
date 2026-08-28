@@ -154,7 +154,7 @@ class TestDefaultOff:
         A student cloning the repo must not need a DynamoDB table to chat.
         This is the assertion that keeps that true.
         """
-        from agent_app.config.conf_00_def import Config
+        from agent_app.config import Config
 
         assert Config().quota_enabled is False
 

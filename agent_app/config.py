@@ -25,14 +25,23 @@ This leads to:
 The Config Pattern solves this by **centralizing all environment-specific logic
 in one place**.
 
-What does NOT belong here
--------------------------
+Where the values come from
+--------------------------
 
-Anything that is the same in every environment. The project's name, the tables
-it owns, and the database it describes are properties of the *dataset*, not of
-the machine, so they live in the committed ``.env.defaults`` and are loaded by
-:func:`load_env_files` alongside ``.env``. Duplicating such a value here, even with an environment
-variable as an escape hatch, gives it two homes and eventually two answers.
+Two files, split by whether a value is a secret -- which is also what decides
+who may open the file. :func:`load_env_files` reads both:
+
+- ``.env`` -- credentials. Gitignored, and denied to an AI assistant in
+  ``.claude/settings.json``. **Read first, so it wins.**
+- ``.env.defaults`` -- everything that is not a credential, the dataset's
+  ``SCHEMA_NAME`` included. Committed, so a change is reviewable in ``git diff``,
+  and freely editable by an AI doing a dataset swap.
+
+Repeating a key from ``.env.defaults`` in ``.env`` overrides it on that machine
+alone -- pointing one checkout at a staging schema, say. That layering is inside
+*one* config system with one reader, which is different from the same value
+living in two unrelated config systems; that is what must not happen, and did
+once, with ``project_name``.
 
 How it works
 ------------
@@ -40,25 +49,28 @@ How it works
 1. **Define a Config dataclass** with all configurable values as fields
 2. **Create factory methods** for each runtime environment (``new_in_local_runtime``,
    ``new_in_vercel_runtime``)
-3. **Expose a singleton** ``config`` instance at module level
-4. **Import and use** ``config.xxx`` anywhere in the codebase
+3. **Build it once** on the ``One`` singleton, which every caller already has
 
 Example usage::
 
-    from agent_app.config import config
+    from agent_app.api import one
 
     # Anywhere in your code - no environment checks needed
     session = boto3.Session(
-        region_name=config.aws_region,
-        aws_access_key_id=config.aws_access_key_id,
-        aws_secret_access_key=config.aws_secret_access_key,
+        region_name=one.config.aws_region,
+        aws_access_key_id=one.config.aws_access_key_id,
+        aws_secret_access_key=one.config.aws_secret_access_key,
     )
+
+There is deliberately no module-level ``config`` singleton. Building one at
+import time would read the environment before a test could arrange it, and
+``ConfigMixin`` already gives every caller ``one.config`` lazily.
 
 Benefits
 --------
 
 - **One place complex, everywhere else simple** — Environment detection happens
-  once in ``Config.new()``. All other code just reads ``config.xxx``.
+  once in ``Config.new()``. All other code just reads ``one.config.xxx``.
 - **Easy to extend** — Need a new config value? Add a field and set it in the
   factory methods. All existing code continues to work.
 - **Testable** — Tests can create ``Config`` instances directly with test values,
@@ -73,7 +85,8 @@ To add a new configurable value:
 
 1. Add a field to the ``Config`` dataclass
 2. Set appropriate values in ``new_in_local_runtime()`` and ``new_in_vercel_runtime()``
-3. Use ``config.your_new_field`` anywhere in the codebase
+3. Document it in ``.env.defaults`` if it is not a secret, ``.env.example`` if it is
+4. Use ``one.config.your_new_field`` anywhere in the codebase
 
 That's it. No need to add ``if runtime.is_xxx()`` checks anywhere else.
 
@@ -98,9 +111,9 @@ import os
 import re
 import dataclasses
 
-from ..paths import path_enum
-from ..runtime import runtime
-from ..constants import LlmProviderEnum, DEFAULT_MODEL_ID
+from .paths import path_enum
+from .runtime import runtime
+from .constants import LlmProviderEnum, DEFAULT_MODEL_ID
 
 
 #: The placeholder ``.env.example`` uses for values the reader has to fill in.

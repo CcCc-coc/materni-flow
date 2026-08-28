@@ -4,7 +4,7 @@
 
 import typing as T
 from functools import cached_property
-from ..config.conf_00_def import Config
+from ..config import Config
 
 if T.TYPE_CHECKING:  # pragma: no cover
     from .one_00_main import One

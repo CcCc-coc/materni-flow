@@ -88,7 +88,7 @@ Your role is to help nurses query ward status, manage beds...
 
 **需求：** 切换到其他模型
 
-**修改位置：** `agent_app/config/conf_00_def.py`
+**修改位置：** `agent_app/config.py`
 
 ```python
 @dataclasses.dataclass
@@ -253,7 +253,7 @@ Vercel Dashboard → Deployments → 选择部署 → View Build Logs / Function
 | Landing Page 内容 | `app/(marketing)/_components/` |
 | Chat UI | `components/chat/` |
 | Agent System Prompt | `data/system-prompt.md` |
-| AI 模型 | `agent_app/config/conf_00_def.py` |
+| AI 模型 | `agent_app/config.py` |
 | Agent 工具 | `agent_app/one/one_04_agent.py` |
 | API 端点 | `api/index.py` |
 | 全局样式 | `app/globals.css` |

@@ -37,7 +37,7 @@ agent_app/
 ├── ai_sdk_adapter.py       # 格式转换器，把前端发来的消息格式转成 AWS Bedrock 能理解的格式，反之亦然
 │
 ├── config/                 # 配置相关代码的文件夹
-│   └── conf_00_def.py      # 配置类定义，读取环境变量（如数据库密码、AWS 密钥）并提供给其他代码使用
+                        # (已扁平化为 agent_app/config.py)
 │
 ├── one/                    # 主类和 Mixin 的文件夹，采用「组合模式」把不同功能拆分到不同文件
 │   ├── one_00_main.py      # 主类 One，通过继承把下面所有 Mixin 的功能组合在一起，是整个后端的核心对象
@@ -143,7 +143,7 @@ One (one_00_main.py)
 tests_python/
 │
 ├── config/
-│   └── test_config_conf_00_def.py   # 测试配置类是否能正确读取环境变量
+│   └── test_config_config.py   # 测试配置类是否能正确读取环境变量
 │
 ├── one/
 │   ├── test_one_one_00_main.py      # 测试主类 One 是否能正常初始化

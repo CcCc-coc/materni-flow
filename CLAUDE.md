@@ -32,9 +32,8 @@ agent_app/                   # Python package. Name is deliberately generic and
 ├── sql_utils.py
 ├── ai_sdk_adapter.py
 │
-├── config/                  # NOTE: secrets from .env -- NOT data/*.toml
-│   └── conf_00_def.py
-│
+├── config.py                # Reads .env + .env.defaults. Nothing else parses
+│                            #   configuration; data/ holds content only.
 ├── vendor/                  # Third-party code copied in, not installed.
 │   └── vercel_ai_sdk.py     #   AI SDK request-body data model. No project
 │                            #   logic goes in here.
@@ -68,7 +67,7 @@ components/
 
 ### The Two Kinds of "Config"
 
-Two files feed `agent_app/config/`. **The line between them is whether the value
+Two files feed `agent_app/config.py`. **The line between them is whether the value
 is a secret**, because that is what decides who — and which AI — may open the
 file:
 
@@ -205,14 +204,14 @@ the build too, since the check script never parses the TOML's icon fields.
 
 | File | What It Does | When to Modify |
 |------|--------------|----------------|
-| `conf_00_def.py` | Config dataclass with env vars, credentials, settings | When adding new environment variables (add field + load in `new_in_local_runtime()` and `new_in_vercel_runtime()`). |
+| `config.py` | The `Config` dataclass, and `load_env_files()` which reads `.env` then `.env.defaults` | When adding an environment variable: add a field, load it in **both** `new_in_local_runtime()` and `new_in_vercel_runtime()`, and document it in `.env.defaults` (not a secret) or `.env.example` (secret). There is no module-level `config` singleton — callers use `one.config`. |
 
 **one/ Directory (Main Class + Mixins):**
 
 | File | What It Does | When to Modify |
 |------|--------------|----------------|
 | `one_00_main.py` | Defines `One` class that inherits all mixins; creates `one` singleton | When adding a new mixin (import it and add to inheritance list). |
-| `one_01_config.py` | `ConfigMixin`: provides `self.config` | Rarely. Config loading logic is in `conf_00_def.py`. |
+| `one_01_config.py` | `ConfigMixin`: provides `self.config` | Rarely. Config loading logic is in `config.py`. |
 | `one_02_db.py` | `DbMixin`: provides `self.engine`, `self.local_sqlite_engine`, `self.remote_postgres_engine` | When adding new database connections or changing engine selection logic. |
 | `one_03_boto3.py` | `Boto3Mixin`: provides `self.boto_ses`, `self.bedrock_runtime_client()` | When adding new AWS service clients (S3, DynamoDB, etc.). |
 | `one_04_agent.py` | `AgentMixin`: provides `self.agent` and all `@tool` methods | **Most common edit.** When adding/modifying agent tools. Add `@tool` method here, then register in `self.agent`'s `tools=[]` list. |
@@ -248,7 +247,7 @@ spelling rather than failing, so breadth there costs nothing.
 ```
 One (one_00_main.py)
 ├── ConfigMixin (one_01_config.py)
-│   └── self.config -> Config instance (from conf_00_def.py)
+│   └── self.config -> Config instance (from config.py)
 │
 ├── DbMixin (one_02_db.py)
 │   ├── self.local_sqlite_engine   -> SQLite (tmp/data.sqlite)
@@ -373,8 +372,7 @@ so a placeholder there shadows a working local profile.
 **Test File Mapping:**
 ```
 tests_python/
-├── config/
-│   └── test_config_conf_00_def.py  # Tests for Config class
+├── test_config.py                  # Tests for config.py
 ├── db_schema/
 │   ├── test_db_schema_encoder.py   # Tests for encoder.py
 │   └── test_db_schema_extractor.py # Tests for extractor.py

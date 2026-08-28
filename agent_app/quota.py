@@ -54,7 +54,7 @@ import typing as T
 import datetime
 
 if T.TYPE_CHECKING:  # pragma: no cover
-    from .config.conf_00_def import Config
+    from .config import Config
 
 
 #: Identifies this scaffold in a quota table it may share with other codebases.

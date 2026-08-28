@@ -146,7 +146,7 @@ Python 包叫 `agent_app`, 不叫 `smb_lending_anything`. 这个名字是故意�
 | 位置 | 职责 |
 | :--- | :--- |
 | `agent_app/paths.py` | 所有路径, 集中一处. 路径是源码树的事实, 所以不进配置 |
-| `agent_app/config/` | 读 `.env` 和 `.env.defaults`, 是后端唯一的配置入口 |
+| `agent_app/config.py` | 读 `.env` 和 `.env.defaults`, 是后端唯一的配置入口 |
 | `agent_app/one/one_0*.py` | 按关注点切开的 mixin: 配置, 数据库, boto3, agent |
 | `agent_app/sql_utils.py` | 纯函数, 拿 `engine` 当第一个参数, 不依赖类 |
 | `agent_app/db_schema/` | 把库结构编码成 LLM 好读的紧凑格式 |

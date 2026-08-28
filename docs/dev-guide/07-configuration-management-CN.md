@@ -72,14 +72,14 @@ elif runtime.is_vercel():
 
 ---
 
-## 配置类：conf_00_def.py
+## 配置类：config.py
 
 知道了"在哪里"，下一步是"读什么配置"。这是 `Config` 类的工作。
 
 ### Config 类的结构
 
 ```python
-# agent_app/config/conf_00_def.py
+# agent_app/config.py
 
 @dataclasses.dataclass
 class Config:
@@ -247,7 +247,7 @@ cp .env.example .env
 # agent_app/one/one_01_config.py
 
 from functools import cached_property
-from ..config.conf_00_def import Config
+from ..config import Config
 
 class ConfigMixin:
     @cached_property
@@ -379,9 +379,9 @@ def connect_db():
 | 组件 | 文件 | 作用 |
 |------|------|------|
 | `Runtime` | `runtime.py` | 检测当前是本地还是 Vercel |
-| `Config` 类 | `config/conf_00_def.py` | 存放所有配置项 |
-| `new_in_local_runtime()` | `config/conf_00_def.py` | 创建本地环境配置 |
-| `new_in_vercel_runtime()` | `config/conf_00_def.py` | 创建 Vercel 环境配置 |
+| `Config` 类 | `agent_app/config.py` | 存放所有配置项 |
+| `new_in_local_runtime()` | `agent_app/config.py` | 创建本地环境配置 |
+| `new_in_vercel_runtime()` | `agent_app/config.py` | 创建 Vercel 环境配置 |
 | `ConfigMixin` | `one/one_01_config.py` | 懒加载 + 单例，提供 `one.config` |
 | `.env` 文件 | 项目根目录 | 本地开发的配置来源（**不进 Git**） |
 | Vercel Dashboard | 云端 | 生产环境的配置来源 |

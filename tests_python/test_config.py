@@ -9,7 +9,7 @@ the shape of what comes back. No environment mutation, no network, no I/O.
 
 import pytest
 
-from agent_app.config.conf_00_def import SCHEMA_NAME_PATTERN, Config
+from agent_app.config import SCHEMA_NAME_PATTERN, Config
 
 
 class TestConfig:
@@ -103,6 +103,6 @@ if __name__ == "__main__":
 
     run_cov_test(
         __file__,
-        "agent_app.config.conf_00_def",
+        "agent_app.config",
         preview=False,
     )
