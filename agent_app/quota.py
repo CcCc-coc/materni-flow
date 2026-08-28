@@ -13,9 +13,11 @@ deny service**, so a DynamoDB failure is logged and swallowed here rather than
 in every caller. The one thing that does propagate is
 :class:`QuotaExceededError`, which is the answer, not a fault.
 
-Every function takes ``boto_ses`` and ``config`` explicitly rather than reaching
-for the ``one`` singleton, which is what lets a test drive this with a stub and
-no AWS.
+Every function takes the ``dynamodb_client`` and the ``config`` explicitly rather
+than reaching for the ``one`` singleton, which is what lets a test drive this
+with a stub and no AWS. The client is built once in
+:meth:`~agent_app.one.one_03_boto3.Boto3Mixin.dynamodb_client`, so this module
+never sees a session and cannot reach any other service.
 """
 
 import typing as T
@@ -55,18 +57,19 @@ def get_app_id(config: "Config", now: datetime.datetime | None = None) -> str:
     return f"{SCAFFOLD_ID}:{config.schema_name}:{now.year:04d}-{now.month:02d}"
 
 
-def _table(boto_ses: T.Any, config: "Config") -> T.Any:
+def _counter(item: dict, attr: str) -> int:
     """
-    The DynamoDB table holding the counters.
+    Read one counter out of a raw DynamoDB item.
 
-    That the name is set is guaranteed by ``Config.__post_init__``, which
-    refuses to build a config with the cap on and no table named.
+    The client API returns type-tagged values (``{"N": "42"}``) rather than
+    Python numbers, and an attribute that was never written is simply absent.
+    Both read as zero.
     """
-    return boto_ses.resource("dynamodb").Table(config.dynamodb_table_name_quota)
+    return int(item.get(attr, {}).get("N", 0))
 
 
 def get_usage(
-    boto_ses: T.Any,
+    dynamodb_client: T.Any,
     config: "Config",
     app_id: str | None = None,
 ) -> dict[str, int]:
@@ -78,16 +81,20 @@ def get_usage(
     """
     if app_id is None:
         app_id = get_app_id(config)
-    item = _table(boto_ses, config).get_item(Key={"app_id": app_id}).get("Item") or {}
+    response = dynamodb_client.get_item(
+        TableName=config.dynamodb_table_name_quota,
+        Key={"app_id": {"S": app_id}},
+    )
+    item = response.get("Item") or {}
     return {
-        ATTR_INVOKE: int(item.get(ATTR_INVOKE, 0)),
-        ATTR_INPUT_TOKEN: int(item.get(ATTR_INPUT_TOKEN, 0)),
-        ATTR_OUTPUT_TOKEN: int(item.get(ATTR_OUTPUT_TOKEN, 0)),
+        ATTR_INVOKE: _counter(item, ATTR_INVOKE),
+        ATTR_INPUT_TOKEN: _counter(item, ATTR_INPUT_TOKEN),
+        ATTR_OUTPUT_TOKEN: _counter(item, ATTR_OUTPUT_TOKEN),
     }
 
 
 def increment_usage(
-    boto_ses: T.Any,
+    dynamodb_client: T.Any,
     config: "Config",
     input_tokens: int,
     output_tokens: int,
@@ -106,15 +113,17 @@ def increment_usage(
     if app_id is None:
         app_id = get_app_id(config)
     try:
-        _table(boto_ses, config).update_item(
-            Key={"app_id": app_id},
+        dynamodb_client.update_item(
+            TableName=config.dynamodb_table_name_quota,
+            Key={"app_id": {"S": app_id}},
             UpdateExpression=(
                 f"ADD {ATTR_INVOKE} :i, {ATTR_INPUT_TOKEN} :it, {ATTR_OUTPUT_TOKEN} :ot"
             ),
+            # The client API wants numbers as decimal strings under "N".
             ExpressionAttributeValues={
-                ":i": int(invokes),
-                ":it": int(input_tokens),
-                ":ot": int(output_tokens),
+                ":i": {"N": str(int(invokes))},
+                ":it": {"N": str(int(input_tokens))},
+                ":ot": {"N": str(int(output_tokens))},
             },
         )
     except Exception as e:
@@ -123,7 +132,7 @@ def increment_usage(
 
 
 def check_quota(
-    boto_ses: T.Any,
+    dynamodb_client: T.Any,
     config: "Config",
     app_id: str | None = None,
 ) -> dict[str, int] | None:
@@ -141,7 +150,7 @@ def check_quota(
     if app_id is None:
         app_id = get_app_id(config)
     try:
-        usage = get_usage(boto_ses, config, app_id)
+        usage = get_usage(dynamodb_client, config, app_id)
     except Exception as e:
         # Metering is broken, which is not the user's problem. Note it and let
         # the request through; the alternative is an outage caused by bookkeeping.

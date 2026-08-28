@@ -12,7 +12,13 @@ if T.TYPE_CHECKING:  # pragma: no cover
 
 
 class Boto3Mixin:
-    """Mixin providing AWS session and Bedrock client access."""
+    """
+    Mixin providing the AWS session and the service clients built from it.
+
+    Every client is a method rather than a field so that a deployment which uses
+    none of them never builds one -- constructing a boto3 client parses that
+    service's model, which is not free on a serverless cold start.
+    """
 
     @cached_property
     def boto_ses(self: "One") -> boto3.Session:
@@ -23,12 +29,12 @@ class Boto3Mixin:
             aws_secret_access_key=self.config.aws_secret_access_key,
         )
 
-    def bedrock_runtime_client(self: "One") -> T.Any:
+    def bedrock_runtime_client(self: "One"):
         """
-        Get the Bedrock Runtime client for invoking models.
-
-        The return type is loose on purpose: boto3 builds its service clients at
-        runtime, so annotating it precisely would mean depending on a
-        third-party stubs package just for editor autocompletion.
+        The Bedrock Runtime client, for invoking models.
         """
         return self.boto_ses.client("bedrock-runtime")
+
+    def dynamodb_client(self: "One"):
+        """The DynamoDB client, for the monthly spend counters."""
+        return self.boto_ses.client("dynamodb")

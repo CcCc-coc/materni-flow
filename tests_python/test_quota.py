@@ -3,10 +3,14 @@
 """
 Tests for the monthly spend cap.
 
-Driven with a stub boto3 session rather than a real table: the logic worth
-testing is the arithmetic and the boundary, and neither needs AWS. That the
-module takes ``boto_ses`` and ``config`` as plain arguments is what makes this
+Driven with a stub client rather than a real table: the logic worth testing is
+the arithmetic and the boundary, and neither needs AWS. That the module takes
+the ``dynamodb_client`` and the ``config`` as plain arguments is what makes this
 possible.
+
+The stub speaks the **client** API, type descriptors and all -- ``{"N": "42"}``
+rather than ``42``. That is the shape the real service returns, and getting it
+wrong is exactly the bug a stub is supposed to catch.
 """
 
 import datetime
@@ -23,33 +27,25 @@ from agent_app.quota import get_usage
 from agent_app.quota import increment_usage
 
 
-class StubTable:
+def counters(**values) -> dict:
+    """A DynamoDB item as the client API returns it: numbers tagged and stringy."""
+    return {name: {"N": str(n)} for name, n in values.items()}
+
+
+class StubClient:
     """Records what was asked of DynamoDB, and answers with a canned item."""
 
     def __init__(self, item=None):
         self.item = item
         self.updates = []
-        self.keys = []
+        self.gets = []
 
-    def get_item(self, Key):
-        self.keys.append(Key)
+    def get_item(self, **kwargs):
+        self.gets.append(kwargs)
         return {"Item": self.item} if self.item is not None else {}
 
     def update_item(self, **kwargs):
         self.updates.append(kwargs)
-
-
-class StubSession:
-    def __init__(self, table):
-        self._table = table
-
-    def resource(self, name):
-        assert name == "dynamodb"
-        return self
-
-    def Table(self, name):
-        self._table.name = name
-        return self._table
 
 
 class StubConfig:
@@ -88,26 +84,35 @@ class TestAppId:
 class TestGetUsage:
     def test_missing_row_reads_as_zero(self):
         """A month with no traffic has no row. That is not an error."""
-        session = StubSession(StubTable(item=None))
+        session = StubClient(item=None)
         usage = get_usage(session, StubConfig(), app_id="x")
         assert usage == {ATTR_INVOKE: 0, ATTR_INPUT_TOKEN: 0, ATTR_OUTPUT_TOKEN: 0}
 
-    def test_existing_row_is_coerced_to_int(self):
-        """DynamoDB hands numbers back as Decimal; callers compare them to ints."""
-        from decimal import Decimal
-
-        table = StubTable(item={ATTR_INVOKE: Decimal("7"), ATTR_INPUT_TOKEN: Decimal("12")})
-        usage = get_usage(StubSession(table), StubConfig(), app_id="x")
+    def test_tagged_numbers_are_coerced_to_int(self):
+        """
+        The client API hands numbers back as ``{"N": "7"}`` -- a string under a
+        type tag -- and callers compare them to int caps. Comparing a str to an
+        int raises; comparing the wrong way round would silently never trip.
+        """
+        table = StubClient(item=counters(**{ATTR_INVOKE: 7, ATTR_INPUT_TOKEN: 12}))
+        usage = get_usage(table, StubConfig(), app_id="x")
         assert usage[ATTR_INVOKE] == 7
         assert isinstance(usage[ATTR_INVOKE], int)
+        assert usage[ATTR_INPUT_TOKEN] == 12
+        # An attribute the row never had reads as zero, not as missing.
         assert usage[ATTR_OUTPUT_TOKEN] == 0
 
     def test_app_id_defaults_to_this_month(self):
         """The production path: nobody passes app_id, it comes from the clock."""
-        table = StubTable(item=None)
+        table = StubClient(item=None)
         config = StubConfig()
-        get_usage(StubSession(table), config)
-        assert table.keys == [{"app_id": get_app_id(config)}]
+        get_usage(table, config)
+        assert table.gets == [
+            {
+                "TableName": config.dynamodb_table_name_quota,
+                "Key": {"app_id": {"S": get_app_id(config)}},
+            }
+        ]
 
 
 class TestIncrementUsage:
@@ -117,39 +122,44 @@ class TestIncrementUsage:
         would lose updates whenever two requests overlap, which on a public
         deployment they will.
         """
-        table = StubTable()
-        increment_usage(StubSession(table), StubConfig(), input_tokens=30, output_tokens=8)
+        table = StubClient()
+        increment_usage(table, StubConfig(), input_tokens=30, output_tokens=8)
         (call,) = table.updates
         assert call["UpdateExpression"].startswith("ADD ")
-        assert call["ExpressionAttributeValues"] == {":i": 1, ":it": 30, ":ot": 8}
+        assert call["ExpressionAttributeValues"] == {
+            ":i": {"N": "1"},
+            ":it": {"N": "30"},
+            ":ot": {"N": "8"},
+        }
+        assert call["Key"] == {"app_id": {"S": get_app_id(StubConfig())}}
 
 
 class TestCheckQuota:
     def test_under_every_cap_passes(self):
-        table = StubTable(item={ATTR_INVOKE: 99, ATTR_INPUT_TOKEN: 999, ATTR_OUTPUT_TOKEN: 499})
-        assert check_quota(StubSession(table), StubConfig(), app_id="x")[ATTR_INVOKE] == 99
+        table = StubClient(item=counters(**{ATTR_INVOKE: 99, ATTR_INPUT_TOKEN: 999, ATTR_OUTPUT_TOKEN: 499}))
+        assert check_quota(table, StubConfig(), app_id="x")[ATTR_INVOKE] == 99
 
     @pytest.mark.parametrize(
         "item, expected",
         [
-            ({ATTR_INVOKE: 100}, "invoke"),
-            ({ATTR_INPUT_TOKEN: 1_000}, "input-token"),
-            ({ATTR_OUTPUT_TOKEN: 500}, "output-token"),
+            (counters(**{ATTR_INVOKE: 100}), "invoke"),
+            (counters(**{ATTR_INPUT_TOKEN: 1_000}), "input-token"),
+            (counters(**{ATTR_OUTPUT_TOKEN: 500}), "output-token"),
         ],
     )
     def test_any_cap_reached_blocks(self, item, expected):
         """Each of the three caps blocks on its own, and says which one it was."""
-        table = StubTable(item=item)
+        table = StubClient(item=item)
         with pytest.raises(QuotaExceededError, match=expected):
-            check_quota(StubSession(table), StubConfig(), app_id="x")
+            check_quota(table, StubConfig(), app_id="x")
 
     def test_boundary_is_inclusive(self):
         """At exactly the cap the budget is spent, so the next call must not run."""
-        under = StubTable(item={ATTR_INVOKE: 99})
-        check_quota(StubSession(under), StubConfig(), app_id="x")
-        at = StubTable(item={ATTR_INVOKE: 100})
+        under = StubClient(item=counters(**{ATTR_INVOKE: 99}))
+        check_quota(under, StubConfig(), app_id="x")
+        at = StubClient(item=counters(**{ATTR_INVOKE: 100}))
         with pytest.raises(QuotaExceededError):
-            check_quota(StubSession(at), StubConfig(), app_id="x")
+            check_quota(at, StubConfig(), app_id="x")
 
 
 class TestDisabled:
@@ -167,15 +177,15 @@ class TestDisabled:
         assert Config().quota_enabled is False
 
     def test_check_is_a_no_op(self):
-        session = StubSession(StubTable(item={ATTR_INVOKE: 10_000}))
+        session = StubClient(item=counters(**{ATTR_INVOKE: 10_000}))
         config = StubConfig(quota_enabled=False)
         # Way over the cap, and still allowed, because metering is off.
         assert check_quota(session, config) is None
 
     def test_increment_is_a_no_op(self):
-        table = StubTable()
+        table = StubClient()
         increment_usage(
-            StubSession(table),
+            table,
             StubConfig(quota_enabled=False),
             input_tokens=30,
             output_tokens=8,
@@ -189,25 +199,28 @@ class TestMeteringFaultsDoNotDenyService:
     logged and swallowed here rather than in each caller.
     """
 
-    class BrokenSession:
-        def resource(self, name):
+    class BrokenClient:
+        def get_item(self, **kwargs):
+            raise RuntimeError("dynamodb is down")
+
+        def update_item(self, **kwargs):
             raise RuntimeError("dynamodb is down")
 
     def test_a_failed_check_lets_the_request_through(self, capsys):
-        assert check_quota(self.BrokenSession(), StubConfig()) is None
+        assert check_quota(self.BrokenClient(), StubConfig()) is None
         assert "dynamodb is down" in capsys.readouterr().err
 
     def test_a_failed_increment_does_not_raise(self, capsys):
         increment_usage(
-            self.BrokenSession(), StubConfig(), input_tokens=1, output_tokens=1
+            self.BrokenClient(), StubConfig(), input_tokens=1, output_tokens=1
         )
         assert "dynamodb is down" in capsys.readouterr().err
 
     def test_an_actual_refusal_still_propagates(self):
         """The one thing that must NOT be swallowed: the answer itself."""
-        table = StubTable(item={ATTR_INVOKE: 100})
+        table = StubClient(item=counters(**{ATTR_INVOKE: 100}))
         with pytest.raises(QuotaExceededError):
-            check_quota(StubSession(table), StubConfig(), app_id="x")
+            check_quota(table, StubConfig(), app_id="x")
 
 
 if __name__ == "__main__":

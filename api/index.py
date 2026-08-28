@@ -112,7 +112,7 @@ async def handle_chat_data(request: Request, protocol: str = Query("data")):
     # A no-op when the cap is off, and it swallows its own infrastructure
     # faults, so the only thing that reaches here is an actual refusal.
     try:
-        check_quota(one.boto_ses, one.config)
+        check_quota(one.dynamodb_client(), one.config)
     except QuotaExceededError as e:
         debug(f"[Quota] blocked: {e}")
         return ai_sdk_streaming_response(QUOTA_EXCEEDED_MESSAGE)
@@ -136,7 +136,7 @@ async def handle_chat_data(request: Request, protocol: str = Query("data")):
     invocations = getattr(agent_result.metrics, "agent_invocations", None) or []
     usage = invocations[-1].usage if invocations else {}
     increment_usage(
-        one.boto_ses,
+        one.dynamodb_client(),
         one.config,
         input_tokens=int(usage.get("inputTokens", 0) or 0),
         output_tokens=int(usage.get("outputTokens", 0) or 0),

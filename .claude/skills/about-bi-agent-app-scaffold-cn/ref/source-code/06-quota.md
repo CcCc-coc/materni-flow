@@ -69,9 +69,17 @@ learn-bi-agent-app-scaffold : fintech_smb_lending_pipeline_medium : 2026-08
 
 item 只有四个属性, 而且不会再多。ORM 在这里只会换来三个依赖。`boto3` 本来就是核心依赖。
 
-每个函数都显式接收 `boto_ses` 和 `config`, 而不是去抓 `one` 单例。这让这个模块可以单独
-import, 让测试能用桩驱动它 (`tests_python/test_quota.py` 一个 AWS 调用都没有), 也避免为了
-读三个数字而再建一个 `Config`.
+每个函数都显式接收 `dynamodb_client` 和 `config`, 而不是去抓 `one` 单例。这让这个模块可以
+单独 import, 让测试能用桩驱动它 (`tests_python/test_quota.py` 一个 AWS 调用都没有), 也避免
+为了读三个数字而再建一个 `Config`.
+
+**接收的是 client 不是 session.** client 在 `one_03_boto3.py` 的 `dynamodb_client()` 里建,
+所以这个模块**从头到尾看不到 session, 也就够不到任何别的 AWS 服务** —— 依赖注入注进来的是
+它需要的那一个东西, 不是一把万能钥匙。
+
+用的是低层 client API 而不是 resource API, 代价是要自己处理类型标签: 读回来的数字长成
+`{"N": "42"}` (字符串, 带类型标签), 写进去也要 `{"N": str(n)}`. `_counter()` 负责把它转回
+`int` —— 调用方要拿它和 int 上限比大小, 拿字符串比会抛异常。
 
 ---
 
