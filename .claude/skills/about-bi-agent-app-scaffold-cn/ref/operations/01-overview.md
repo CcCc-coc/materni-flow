@@ -10,12 +10,10 @@
 
 ## 四步
 
-```
-1  装依赖      mise run inst                    见 04
-2  配密钥      cp .env.example .env, 填 DB_* 和一个 LLM 凭据   见 02
-3  灌数据      gen-data -> sync-db -> verify-db  见 03
-4  起服务      mise run dev                     见 04
-```
+1. **装依赖** —— `mise run inst`, 见 [04](04-dev-servers.md)
+2. **配密钥** —— `cp .env.example .env`, 填 `DB_*` 和一个 LLM 凭据, 见 [02](02-configuration.md)
+3. **灌数据** —— `gen-data` -> `sync-db` -> `verify-db`, 见 [03](03-the-database.md)
+4. **起服务** —— `mise run dev`, 见 [04](04-dev-servers.md)
 
 **第 2 步和第 3 步不能跳过, 而且顺序不能换.** 这个 app **在任何环境下都读同一个 PostgreSQL,
 本地也一样** —— 没有本地 SQLite 兜底 (完整理由见

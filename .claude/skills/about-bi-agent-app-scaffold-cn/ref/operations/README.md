@@ -6,14 +6,9 @@
 
 ---
 
-## 四步, 顺序不能换
+## 索引
 
-```
-1  装依赖    mise run inst
-2  配密钥    cp .env.example .env, 填 DB_* 和一个 LLM 凭据
-3  灌数据    gen-data -> sync-db -> verify-db
-4  起服务    mise run dev
-```
+第一次跑起来: 按 [01](01-overview.md) 的四步走, 顺序不能换.
 
 | 篇 | 讲什么 | 对应文件 |
 | :--- | :--- | :--- |

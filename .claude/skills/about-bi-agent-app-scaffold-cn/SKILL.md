@@ -1,88 +1,104 @@
 ---
 name: about-bi-agent-app-scaffold-cn
-description: 这个仓库的事实标准. 它是什么性质的项目, 为什么这样切模块, 以及换数据集时哪些边界不能破. 动手改这个仓库之前先读, 尤其是重构, 挪文件, 加模块, 或者要判断某个东西该放哪一层的时候.
+description: 这个仓库的事实标准, 分四块: architecture (边界与设计决定), backend (agent_app/ 的 Python), frontend (Next.js 界面), operations (怎么把它跑起来). 动手改这个仓库之前先读, 尤其是重构, 挪文件, 加模块, 加 agent tool, 改界面, 换数据集, 或者要判断某个东西该放哪一层的时候.
 ---
 
 # BI Agent App 脚手架: 事实标准
 
-这个 skill 是这个仓库的**总纲**. 它回答的是"这是什么, 为什么长成这样", 不回答"代码在哪"
-(那个看 `CLAUDE.md`) 也不回答"怎么换数据集" (那个看 `swap-dataset-cn`).
+这个 skill 是这个仓库的**总纲**. 它回答"这是什么, 为什么长成这样", 不回答"代码在哪"
+(那个看 `CLAUDE.md`), 也不回答"怎么一步步换数据集" (那个看 `swap-dataset-cn`).
 
-`ref/` 分四个目录, 一篇一个主题. **按你要动的东西读对应那篇, 不要全读.**
-
-`ref/architecture/` —— 架构与设计决定, 与具体某段代码无关:
-
-| 你在做什么 | 读 |
-| :--- | :--- |
-| 想搞清楚这个项目的定位, 或者要对外介绍它 | [01-what-this-project-is.md](ref/architecture/01-what-this-project-is.md) |
-| 加东西时拿不准该放哪, 或者要擦掉教学痕迹交付 | [02-teaching-and-production.md](ref/architecture/02-teaching-and-production.md) |
-| 动 `dataset/`, 造数据, 换数据集的源材料 | [03-the-dataset.md](ref/architecture/03-the-dataset.md) |
-| 重构, 挪文件, 加模块, 判断某个东西该放哪一层 | [04-modular-design.md](ref/architecture/04-modular-design.md) |
-| 动数据库, 写 SQL, 同步数据, 估体积 | [05-why-postgres-everywhere.md](ref/architecture/05-why-postgres-everywhere.md) |
-| 让 agent 画图 / 出表格, 或者加一种新的渲染块 | [06-rendering-contract.md](ref/architecture/06-rendering-contract.md) |
-| 加一个配置项, 或者写 `data/` 下那三个文件 | [07-config-and-content.md](ref/architecture/07-config-and-content.md) |
-| 想知道改完要跑什么, 或者要加/改一项检查 | [08-what-guards-the-boundaries.md](ref/architecture/08-what-guards-the-boundaries.md) |
-| **写这些文档本身**, 写注释 / docstring, 或者要加一篇文档但不知道放哪 | [09-comments-and-docs.md](ref/architecture/09-comments-and-docs.md) |
-
-`ref/backend/` —— `agent_app/` 里某段 Python 为什么这么写, 一篇对一组模块:
-
-| 你在做什么 | 读 |
-| :--- | :--- |
-| **要改 `agent_app/` 里某个模块** | [backend/README.md](ref/backend/README.md) 的索引表, 编号就是依赖顺序 |
-| **给 agent 加一个 tool**, 或者动 `one/` 里任何东西 | [backend/08](ref/backend/08-the-one-object.md) |
-| 改 `/api/chat` 的流程 | [backend/09](ref/backend/09-http-entry-point.md) |
-| 写测试, 或者要用 `# pragma: no cover` | [backend/10](ref/backend/10-testing.md) |
-| 要造数据集 / 同步到 PostgreSQL | `scripts/teaching_cli.py`, 说明在 [backend/11](ref/backend/11-dataset-pipeline.md) |
-
-`ref/operations/` —— 怎么让它跑起来 (装依赖 -> 配置 -> 灌数据 -> 起服务):
-
-| 你在做什么 | 读 |
-| :--- | :--- |
-| **第一次把这个仓库跑起来** | [01-overview.md](ref/operations/01-overview.md) 的四步 |
-| 填 `.env`, 换 LLM provider, 打开配额 | [02-configuration.md](ref/operations/02-configuration.md) |
-| 造数据集, 同步 PostgreSQL, 换数据集之后重灌 | [03-the-database.md](ref/operations/03-the-database.md) |
-| 起 / 停开发服务器, 或者搞不清 mise 和 pnpm/uv 谁调谁 | [04-dev-servers.md](ref/operations/04-dev-servers.md) |
-
-`ref/frontend/` —— 界面必须做到什么, 以及那些 TypeScript 为什么这么写:
-
-| 你在做什么 | 读 |
-| :--- | :--- |
-| **要改界面上任何一块**, 想知道它的文字从哪来 | [frontend/02](ref/frontend/02-the-elements.md) 那张元素对照表 |
-| 加一个配置项 / 文案项, 或者动 `lib/site/` | [frontend/03](ref/frontend/03-content-pipeline.md) |
-| 动路由, 布局, SEO | [frontend/04](ref/frontend/04-pages-and-shell.md) |
-| 改首页 / 改 agent 页 | [frontend/05](ref/frontend/05-home-page.md) / [frontend/06](ref/frontend/06-chat-page.md) |
-| **加一种新的渲染块**, 或者动 Markdown 渲染 | [frontend/07](ref/frontend/07-markdown-and-blocks.md) |
-| 改配色 / 圆角 / 卡片外观 | [frontend/08](ref/frontend/08-design-tokens.md) |
-
-> **重复警告**: `agent-app-design-cn` skill 的 `ref/chat-frontend.md` 讲的是同一段代码,
-> 而且已经有过期内容 (它还在描述已经删掉的暗色模式). 它唯一的独有价值是那个
-> `components/chat/**` 的 `paths` 自动触发器. 两边合并之前, **以 `ref/frontend/` 为准**.
+**用法: 在下面那张表里找到你要做的事, 只读那一篇.** 不要全读.
 
 ---
 
-## 这几篇文档的地位
+## 按任务查
+
+| 我要做的事 | 读 |
+| :--- | :--- |
+| **第一次把仓库跑起来** | [operations/01](ref/operations/01-overview.md) |
+| 填 `.env`, 换 LLM provider, 打开花费配额 | [operations/02](ref/operations/02-configuration.md) |
+| 造数据集, 同步 PostgreSQL, 换完数据集重灌 | [operations/03](ref/operations/03-the-database.md) |
+| 起 / 停开发服务器, 搞不清 mise 和 pnpm/uv 谁调谁 | [operations/04](ref/operations/04-dev-servers.md) |
+| 改完之后要跑什么才算验过 | [architecture/08](ref/architecture/08-what-guards-the-boundaries.md) |
+| | |
+| 重构, 挪文件, 加模块, **判断一个东西该放哪一层** | [architecture/04](ref/architecture/04-modular-design.md) |
+| 加东西时拿不准算教学层还是生产层 | [architecture/02](ref/architecture/02-teaching-and-production.md) |
+| 加一个配置项 | [architecture/07](ref/architecture/07-config-and-content.md) |
+| 写 `data/` 下那三个文件 (提示词 / 文案 / 业务说明) | [architecture/07](ref/architecture/07-config-and-content.md) |
+| 动 `dataset/` 的源材料 | [architecture/03](ref/architecture/03-the-dataset.md) |
+| 写 SQL, 动数据库, 估体积 | [architecture/05](ref/architecture/05-why-postgres-everywhere.md) |
+| 要对外介绍这个项目 | [architecture/01](ref/architecture/01-what-this-project-is.md) |
+| 写注释 / docstring, **或者要写这批文档本身** | [architecture/09](ref/architecture/09-comments-and-docs.md) |
+| | |
+| **给 agent 加一个 tool**, 或动 `one/` 里任何东西 | [backend/08](ref/backend/08-the-one-object.md) |
+| 改 `/api/chat` 的流程 | [backend/09](ref/backend/09-http-entry-point.md) |
+| 写 Python 测试, 或要用 `# pragma: no cover` | [backend/10](ref/backend/10-testing.md) |
+| 改 agent 看到的库结构字符串 | [backend/04](ref/backend/04-schema-encoding.md) |
+| 改 SQL 执行 / 只读保证 | [backend/03](ref/backend/03-sql-execution.md) |
+| 改别的 `agent_app/` 模块 | [backend/README](ref/backend/README.md) 的索引, **编号就是依赖顺序** |
+| | |
+| **改界面上任何一块**, 想知道它的文字从哪来 | [frontend/02](ref/frontend/02-the-elements.md) 的元素对照表 |
+| 加一个文案项, 或动 `lib/site/` | [frontend/03](ref/frontend/03-content-pipeline.md) |
+| 改首页 / 改 agent 页 | [frontend/05](ref/frontend/05-home-page.md) / [frontend/06](ref/frontend/06-chat-page.md) |
+| 动路由, 布局, SEO | [frontend/04](ref/frontend/04-pages-and-shell.md) |
+| 改配色 / 圆角 / 卡片外观 | [frontend/08](ref/frontend/08-design-tokens.md) |
+| | |
+| **加一种新的渲染块** (表格 / 流程图 / 图表之外) | 三处一起改, 见 [architecture/06](ref/architecture/06-rendering-contract.md) |
+| 让 agent 画图但它不画 | [architecture/06](ref/architecture/06-rendering-contract.md) |
+| 动 Markdown 渲染或某个块渲染器 | [frontend/07](ref/frontend/07-markdown-and-blocks.md) |
+| agent 的回答解析不对 (思考 / 空答案) | [backend/07](ref/backend/07-agent-response.md) |
+
+---
+
+## 四个目录
+
+拿不准该查哪一块时, 按这个问题分:
+
+| 目录 | 回答的问题 | 完整索引 |
+| :--- | :--- | :--- |
+| `ref/architecture/` | 这该放哪一层? 这条边界破了会怎样? | [README](ref/architecture/README.md), 9 篇 |
+| `ref/backend/` | `agent_app/` 这段 Python 为什么这么写? | [README](ref/backend/README.md), 11 篇, **按依赖顺序编号** |
+| `ref/frontend/` | 界面必须做到什么? 这段 TypeScript 为什么这么写? | [README](ref/frontend/README.md), 8 篇, **前两篇讲需求** |
+| `ref/operations/` | 怎么让它跑起来? | [README](ref/operations/README.md), 4 篇, **按四步排序** |
+
+一件事同时落在两块时, 先读 `architecture/` 那篇拿边界, 再读 `backend/` 或 `frontend/` 那篇
+拿实现. 渲染契约就是典型: 规则在 `architecture/06`, 而三处实现分别在 `frontend/07`,
+`backend/07` 和 `data/system-prompt.md`.
+
+---
+
+## 这批文档的地位
 
 **它们是事实标准, 不是参考读物.** 要么照做, 要么在改代码的**同一个 commit 里改文档**,
-别让两边对不上. 一份描述着三个月前的目录结构的规范, 比没有规范更糟: 它会让下一个人
-(或者下一个 AI) 自信地改错地方.
+别让两边对不上. 一份描述着三个月前目录结构的规范, 比没有规范更糟: 它会让下一个人 (或者
+下一个 AI) 自信地改错地方.
 
-写新规范就放进对应的子目录, 在上面那张表里加一行.
+写法本身也有规矩, 见 [architecture/09](ref/architecture/09-comments-and-docs.md):
 
-`scripts/teaching_cli.py` 是**教学自动化的命令行**: 造数据集, 发布到 PostgreSQL, 逐表核对.
-它住在这里而不是 `mise.toml` 里, 因为 mise 跑的是应用, 而这些都不是应用 —— 教学层要能靠
-"删几个目录"擦掉, 不该留下需要从共用配置里一行行挑的残渣.
+- **代码里只留很短的工程 why**, 展开的部分放这里 —— 两边都不完整, 加起来完整, 而且可以
+  独立删掉其中一边
+- **文档写现在, 不写过去** —— 写"现在是怎么做的, 为什么", 不写"我们以前怎么错的"
+- **文档可以引用代码路径, 代码不能引用文档路径** —— 这是单向的
+
+加一篇新文档: 放进对应的子目录, 在那个目录的 README 里加一行; 如果它是一个常见任务的入口,
+再在上面那张按任务查的表里加一行.
+
+---
+
+## `scripts/teaching_cli.py`
+
+教学自动化的命令行: 造数据集, 发布到 PostgreSQL, 逐表核对.
 
 ```bash
 .venv/bin/python .claude/skills/about-bi-agent-app-scaffold-cn/scripts/teaching_cli.py --help
 ```
 
-四个目录的分工: `architecture/` 讲**边界和设计决定** (什么该放哪一层, 换数据集时不能破
-什么), `backend/` 和 `frontend/` 讲**某段代码为什么长这样** —— backend 按依赖顺序编号,
-frontend 前两篇讲需求后面才是代码走读 —— `operations/` 讲**日常维护**.
+它住在这里而不是 `mise.toml` 里, 因为 mise 跑的是应用, 而这些都不是应用 —— 教学层要能靠
+"删几个目录"擦掉, 不该留下需要从共用配置里一行行挑的残渣. 用法见
+[operations/03](ref/operations/03-the-database.md).
 
-代码里的注释只留很短的工程 why, 展开的部分在这里 —— 两边都不完整, 加起来完整, 而且可以
-独立删掉其中一边. 这条规矩本身见
-[architecture/09](ref/architecture/09-comments-and-docs.md).
+---
 
 ## 一条贯穿全仓库的判断
 
@@ -91,6 +107,12 @@ frontend 前两篇讲需求后面才是代码走读 —— `operations/` 讲**�
 > **这个东西是随数据集变的, 还是随脚手架不变的?**
 
 变的东西全部在 `data/` 一个目录里, 换数据集就是重写那个目录. 不变的东西是脚手架本体,
-换数据集时一行都不该动. 拿不准一个新增的东西该放哪, 先问这句话.
+换数据集时一行都不该动. 拿不准一个新增的东西该放哪, 先问这句话 —— 具体怎么切的见
+[architecture/04](ref/architecture/04-modular-design.md).
 
-具体怎么切的, 看 02.
+---
+
+> **一处已知重复**: `agent-app-design-cn` skill 的 `ref/chat-frontend.md` 讲的是
+> `components/chat/` 那同一段代码, 而且有过期内容 (它还在描述已经删掉的暗色模式). 它唯一
+> 的独有价值是那个 `components/chat/**` 的 `paths` 自动触发器. 两边合并之前, **以
+> `ref/frontend/` 为准**.
