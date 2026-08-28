@@ -3,31 +3,25 @@
 """
 Translation layer between the Vercel AI SDK frontend and the Strands Agent.
 
-The frontend and the backend describe a conversation differently, and this
-module is the only place that knows both dialects:
+The only place that knows both dialects: the frontend's typed message *parts*
+going in, the AI SDK v5 Data Stream Protocol going out.
 
-- **Inbound** -- the frontend POSTs a :class:`RequestBody` whose messages are
-  lists of typed *parts* (text, reasoning, ...). The agent wants messages whose
-  content is a list of ``{"text": ...}`` blocks.
-- **Outbound** -- the agent hands back a finished string. The frontend expects
-  the AI SDK v5 Data Stream Protocol over Server-Sent Events.
+**Nothing here is provider-specific, and it must stay that way.** The message
+shape the agent uses is the one AWS invented for Bedrock Converse, and Strands
+kept it across every provider, so switching ``LLM_PROVIDER`` does not touch this
+file. Provider-specific code belongs next to the model construction in
+``one_04_agent.py``.
 
-Nothing in here is provider-specific. The message shape the agent uses happens
-to be the one AWS invented for the Bedrock Converse API, and Strands kept it
-across every provider it supports -- so switching ``LLM_PROVIDER`` between
-bedrock, openai, anthropic, and google does not touch this file. Keep it that
-way: if provider-specific code ever needs to exist, it belongs next to the
-model construction in ``one_04_agent.py``, not here.
-
-The request/response data model itself lives in
-``agent_app/vendor/vercel_ai_sdk.py``.
+The request data model itself is vendored in ``vendor/vercel_ai_sdk.py``.
 """
 
 import sys
 import json
 import uuid
+import typing as T
 
 from fastapi import Request
+from fastapi.responses import StreamingResponse
 
 from .utils import debug
 from .vendor.vercel_ai_sdk import RequestBody
@@ -38,25 +32,16 @@ from .vendor.vercel_ai_sdk import RequestBody
 # ------------------------------------------------------------------------------
 def get_last_user_message_text(request_body: RequestBody) -> str | None:
     """
-    Extract the text of the newest user message -- the question to answer now.
+    The text of the newest user message -- the question to answer now.
 
-    The AI SDK always puts the message being sent at the end of the list, so
-    this is the last entry rather than a search by role.
-
-    Args:
-        request_body: The parsed AI SDK request body.
-
-    Returns:
-        The text the user just typed, or ``None`` if there is none. Returning
-        ``None`` rather than raising lets the caller answer with a readable
-        error instead of a 500 -- an empty request is a client bug, and the
-        useful response to it is a message, not a stack trace.
+    Returns None rather than raising on an empty request: that is a client bug,
+    and the useful response to it is a message, not a stack trace.
     """
     if not request_body.messages:
         return None
 
-    # A message can hold several parts; join only the visible-text ones, so a
-    # reasoning block never gets mistaken for what the user said.
+    # Only the visible-text parts, so a reasoning block is never mistaken for
+    # what the user said.
     text = "".join(part.text for part in request_body.messages[-1].text_parts())
     return text or None
 
@@ -65,21 +50,12 @@ def request_body_to_agent_history(request_body: RequestBody) -> list[dict]:
     """
     Convert the conversation so far into the agent's message format.
 
-    The last message is excluded on purpose: that is the question being asked
-    right now, which goes to the agent as its input rather than as history.
+    The last message is excluded: that is the question being asked now, which
+    goes to the agent as input rather than as history.
 
-    Reasoning parts are dropped. The agent does not benefit from re-reading its
-    own earlier thinking, and those blocks are long -- they would be resent, and
-    paid for, on every subsequent turn.
-
-    Args:
-        request_body: The parsed AI SDK request body.
-
-    Returns:
-        Messages shaped as ``{"role": ..., "content": [{"text": ...}, ...]}``,
-        ready to load into ``agent.messages``. Messages left with no text at
-        all are skipped rather than sent as empty content, which providers
-        reject.
+    Reasoning parts are dropped -- the agent gains nothing from re-reading its
+    own thinking, and those blocks would be resent, and paid for, every turn.
+    A message left with no text is skipped, since providers reject empty content.
     """
     messages = []
 
@@ -93,36 +69,39 @@ def request_body_to_agent_history(request_body: RequestBody) -> list[dict]:
 
 # ------------------------------------------------------------------------------
 # Outbound: agent output -> AI SDK Data Stream Protocol (SSE)
-#
-# Every event is one `data: <json>` line followed by a blank line. Text and
-# reasoning are each sent as a three-phase sequence -- start, delta, end -- so
-# that the UI can open a block, fill it, and close it. We send one delta
-# holding the whole string because the agent has already finished by the time
-# we get here; true token-by-token streaming would emit many deltas instead,
-# and nothing else about the protocol would change.
 # ------------------------------------------------------------------------------
+
+#: Required by the AI SDK to parse the body as a v5 message stream, plus the two
+#: that stop a proxy or browser from buffering it. Part of the protocol, so they
+#: travel with the generator rather than being spelled out at each call site.
+SSE_HEADERS = {
+    "x-vercel-ai-ui-message-stream": "v1",
+    "Cache-Control": "no-cache",
+    "Connection": "keep-alive",
+}
+
+
 def _sse(**payload) -> str:
     """Format one Server-Sent Event line from a JSON payload."""
     return f"data: {json.dumps(payload)}\n\n"
 
 
-def ai_sdk_message_with_reasoning_generator(reasoning_text: str, output_text: str):
+def ai_sdk_message_with_reasoning_generator(
+    reasoning_text: str,
+    output_text: str,
+) -> T.Iterator[str]:
     """
     Stream a finished answer, with its thinking, as AI SDK v5 SSE events.
 
-    Args:
-        reasoning_text: The model's thinking, rendered as a collapsible block.
-            Falsy values skip the reasoning events entirely -- an empty block
-            shows up in the UI as a stray toggle with nothing inside it.
-        output_text: The answer itself.
+    Each block is start / delta / end so the UI can open, fill and close it, and
+    carries an id so concurrent blocks can be told apart. One delta holds the
+    whole string because the agent has already finished; real token streaming
+    would emit many deltas and change nothing else.
 
-    Yields:
-        SSE-formatted strings, in protocol order: reasoning (optional), then
-        text, then the finish marker.
+    An empty ``reasoning_text`` skips those events entirely -- an empty block
+    renders as a toggle with nothing inside it.
     """
     if reasoning_text:
-        # Each block needs an id so the frontend can tell concurrent blocks
-        # apart and match every delta to the block it belongs to.
         reasoning_id = str(uuid.uuid4())
         yield _sse(type="reasoning-start", id=reasoning_id)
         yield _sse(type="reasoning-delta", id=reasoning_id, delta=reasoning_text)
@@ -133,34 +112,59 @@ def ai_sdk_message_with_reasoning_generator(reasoning_text: str, output_text: st
     yield _sse(type="text-delta", id=text_id, delta=output_text)
     yield _sse(type="text-end", id=text_id)
 
-    # Ends the message. Without it the UI keeps showing a spinner forever.
+    # Without this the UI keeps showing a spinner forever.
     yield _sse(type="finish", finishReason="stop")
 
-    # SSE stream termination marker, defined by the protocol rather than by us.
+    # Stream termination marker, defined by the protocol rather than by us.
     yield "data: [DONE]\n\n"
 
 
-# ------------------------------------------------------------------------------
-# Debugging
-# ------------------------------------------------------------------------------
-async def debug_ai_sdk_request(request: Request) -> dict:
+def ai_sdk_streaming_response(
+    output_text: str,
+    reasoning_text: str = "",
+) -> StreamingResponse:
     """
-    Log an incoming request, and return its parsed JSON body.
+    A ready-to-return SSE response carrying one finished answer.
 
-    This both logs and returns the body because a request body can only be read
-    once -- reading it here and throwing it away would leave the caller with
-    nothing to parse.
+    Every reply the API sends -- the answer, a refusal, an error -- is this
+    shape, so the headers live here instead of being rebuilt at each call site.
+    """
+    response = StreamingResponse(
+        ai_sdk_message_with_reasoning_generator(
+            reasoning_text=reasoning_text,
+            output_text=output_text,
+        ),
+        media_type="text/event-stream",
+    )
+    response.headers.update(SSE_HEADERS)
+    return response
 
-    Args:
-        request: The raw FastAPI request.
 
-    Returns:
-        The decoded JSON body, ready to pass to ``RequestBody(**body)``.
+# ------------------------------------------------------------------------------
+# Request logging
+# ------------------------------------------------------------------------------
+
+#: Headers replaced with a placeholder before logging. These logs are retained
+#: by the host, so anything that authenticates a caller must not reach them.
+SENSITIVE_HEADERS = frozenset(
+    {"authorization", "proxy-authorization", "cookie", "set-cookie", "x-api-key"}
+)
+
+REDACTED = "<redacted>"
+
+
+async def read_request_body(request: Request) -> dict:
+    """
+    Read the JSON body, logging the request on the way through.
+
+    Logs *and* returns because a request body can only be read once: reading it
+    here and throwing it away would leave the caller with nothing to parse.
     """
     debug("====== Incoming request")
     debug("------ Request Headers")
     for key, value in request.headers.items():
-        debug(f"{key}: {value}")
+        shown = REDACTED if key.lower() in SENSITIVE_HEADERS else value
+        debug(f"{key}: {shown}")
     debug("------ Request Body")
     request_body_data = await request.json()
     debug(json.dumps(request_body_data, indent=2, ensure_ascii=False))

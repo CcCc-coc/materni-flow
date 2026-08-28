@@ -19,12 +19,12 @@ import io
 
 # fmt: off
 from fastapi import FastAPI, Request, Query
-from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi.responses import JSONResponse
 from agent_app.vendor.vercel_ai_sdk import RequestBody  # Parses AI SDK request format
 from agent_app.utils import debug
-from agent_app.ai_sdk_adapter import debug_ai_sdk_request
-from agent_app.ai_sdk_adapter import ai_sdk_message_with_reasoning_generator
+from agent_app.ai_sdk_adapter import ai_sdk_streaming_response
 from agent_app.ai_sdk_adapter import get_last_user_message_text
+from agent_app.ai_sdk_adapter import read_request_body
 from agent_app.ai_sdk_adapter import request_body_to_agent_history
 from agent_app.one.api import one  # Main singleton with agent
 from agent_app.agent_debugger import extract_text_from_messages
@@ -85,7 +85,7 @@ async def handle_chat_data(request: Request, protocol: str = Query("data")):
         protocol: Stream protocol version (default: "data" for AI SDK v5)
     """
     # --- Log incoming request for troubleshooting
-    request_body_data = await debug_ai_sdk_request(request=request)
+    request_body_data = await read_request_body(request=request)
 
     # --- Parse the incoming request into AI SDK format
     request_body = RequestBody(**request_body_data)
@@ -94,18 +94,7 @@ async def handle_chat_data(request: Request, protocol: str = Query("data")):
     last_user_message = get_last_user_message_text(request_body)
 
     if not last_user_message:
-        # Return error if no message found
-        response = StreamingResponse(
-            ai_sdk_message_with_reasoning_generator(
-                reasoning_text="",
-                output_text="Error: No message content found in request.",
-            ),
-            media_type="text/event-stream",
-        )
-        response.headers["x-vercel-ai-ui-message-stream"] = "v1"
-        response.headers["Cache-Control"] = "no-cache"
-        response.headers["Connection"] = "keep-alive"
-        return response
+        return ai_sdk_streaming_response("Error: No message content found in request.")
 
     # --- Get the agent and restore conversation history ---
     agent = one.agent
@@ -128,17 +117,7 @@ async def handle_chat_data(request: Request, protocol: str = Query("data")):
         check_quota(one.boto_ses, one.config)
     except QuotaExceededError as e:
         debug(f"[Quota] blocked: {e}")
-        response = StreamingResponse(
-            ai_sdk_message_with_reasoning_generator(
-                reasoning_text="",
-                output_text=QUOTA_EXCEEDED_MESSAGE,
-            ),
-            media_type="text/event-stream",
-        )
-        response.headers["x-vercel-ai-ui-message-stream"] = "v1"
-        response.headers["Cache-Control"] = "no-cache"
-        response.headers["Connection"] = "keep-alive"
-        return response
+        return ai_sdk_streaming_response(QUOTA_EXCEEDED_MESSAGE)
 
     # Record message count before calling agent (so we only extract new messages)
     msg_count_before = len(agent.messages)
@@ -187,14 +166,4 @@ async def handle_chat_data(request: Request, protocol: str = Query("data")):
         debug("[Agent] Empty answer, sent fallback text")
 
     # --- Return SSE response with reasoning and text ---
-    response = StreamingResponse(
-        ai_sdk_message_with_reasoning_generator(
-            reasoning_text=thinking,
-            output_text=answer,
-        ),
-        media_type="text/event-stream",
-    )
-    response.headers["x-vercel-ai-ui-message-stream"] = "v1"
-    response.headers["Cache-Control"] = "no-cache"
-    response.headers["Connection"] = "keep-alive"
-    return response
+    return ai_sdk_streaming_response(answer, reasoning_text=thinking)
