@@ -7,6 +7,12 @@ Monthly LLM spend cap, backed by one DynamoDB row per (deployment, month).
 does not exist until someone creates it, and it is meant for a public
 deployment, where the person paying is not the person typing.
 
+The entry points check that flag themselves and return early, so a caller never
+has to guard the call. Same for infrastructure faults: **metering must never
+deny service**, so a DynamoDB failure is logged and swallowed here rather than
+in every caller. The one thing that does propagate is
+:class:`QuotaExceededError`, which is the answer, not a fault.
+
 Every function takes ``boto_ses`` and ``config`` explicitly rather than reaching
 for the ``one`` singleton, which is what lets a test drive this with a stub and
 no AWS.
@@ -14,6 +20,8 @@ no AWS.
 
 import typing as T
 import datetime
+
+from .utils import debug
 
 if T.TYPE_CHECKING:  # pragma: no cover
     from .config import Config
@@ -48,12 +56,12 @@ def get_app_id(config: "Config", now: datetime.datetime | None = None) -> str:
 
 
 def _table(boto_ses: T.Any, config: "Config") -> T.Any:
-    """Return the DynamoDB Table resource holding the counters."""
-    if not config.dynamodb_table_name_quota:
-        raise ValueError(
-            "QUOTA_ENABLED is on but DYNAMODB_TABLE_NAME_QUOTA is not set. "
-            "Point it at a DynamoDB table whose partition key is `app_id` (S)."
-        )
+    """
+    The DynamoDB table holding the counters.
+
+    That the name is set is guaranteed by ``Config.__post_init__``, which
+    refuses to build a config with the cap on and no table named.
+    """
     return boto_ses.resource("dynamodb").Table(config.dynamodb_table_name_quota)
 
 
@@ -87,45 +95,58 @@ def increment_usage(
     app_id: str | None = None,
 ) -> None:
     """
-    Atomically add to the current month's counters.
+    Atomically add to the current month's counters. No-op when the cap is off.
 
-    Uses ``UpdateItem`` with ``ADD``, which creates the row if it is missing and
-    treats an absent numeric attribute as 0 before adding. That matters under
-    concurrency: a read-then-write would lose updates whenever two requests
-    overlap, and on a public deployment they will.
+    ``ADD`` upserts and treats an absent numeric attribute as 0, which is what
+    makes this safe under concurrency: a read-then-write would lose updates
+    whenever two requests overlap, and on a public deployment they will.
     """
+    if not config.quota_enabled:
+        return
     if app_id is None:
         app_id = get_app_id(config)
-    _table(boto_ses, config).update_item(
-        Key={"app_id": app_id},
-        UpdateExpression=(
-            f"ADD {ATTR_INVOKE} :i, {ATTR_INPUT_TOKEN} :it, {ATTR_OUTPUT_TOKEN} :ot"
-        ),
-        ExpressionAttributeValues={
-            ":i": int(invokes),
-            ":it": int(input_tokens),
-            ":ot": int(output_tokens),
-        },
-    )
+    try:
+        _table(boto_ses, config).update_item(
+            Key={"app_id": app_id},
+            UpdateExpression=(
+                f"ADD {ATTR_INVOKE} :i, {ATTR_INPUT_TOKEN} :it, {ATTR_OUTPUT_TOKEN} :ot"
+            ),
+            ExpressionAttributeValues={
+                ":i": int(invokes),
+                ":it": int(input_tokens),
+                ":ot": int(output_tokens),
+            },
+        )
+    except Exception as e:
+        # Losing a count is cheaper than failing a reply the user already paid for.
+        debug(f"[quota] increment failed: {e}")
 
 
 def check_quota(
     boto_ses: T.Any,
     config: "Config",
     app_id: str | None = None,
-) -> dict[str, int]:
+) -> dict[str, int] | None:
     """
     Raise :class:`QuotaExceededError` if any of the three caps is reached.
 
     Checked before the model is called rather than after, because the point is
     to not spend the tokens.
 
-    Returns:
-        The current counters, when none of the caps has been reached.
+    Returns the current counters, or None when the cap is off or the counters
+    could not be read -- neither is a reason to refuse the request.
     """
+    if not config.quota_enabled:
+        return None
     if app_id is None:
         app_id = get_app_id(config)
-    usage = get_usage(boto_ses, config, app_id)
+    try:
+        usage = get_usage(boto_ses, config, app_id)
+    except Exception as e:
+        # Metering is broken, which is not the user's problem. Note it and let
+        # the request through; the alternative is an outage caused by bookkeeping.
+        debug(f"[quota] check failed, allowing request: {e}")
+        return None
     for attr, cap, label in (
         (ATTR_INVOKE, config.quota_max_invoke_per_month, "invoke"),
         (ATTR_INPUT_TOKEN, config.quota_max_input_token_per_month, "input-token"),

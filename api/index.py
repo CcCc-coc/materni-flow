@@ -122,25 +122,23 @@ async def handle_chat_data(request: Request, protocol: str = Query("data")):
     debug(f"[Agent] Loaded {len(history_messages)} history messages")
 
     # --- Refuse before spending, if this deployment caps its monthly spend ---
-    # Off by default; see agent_app/quota.py for why and how to turn it on.
-    if one.config.quota_enabled:
-        try:
-            check_quota(one.boto_ses, one.config)
-        except QuotaExceededError as e:
-            debug(f"[Quota] blocked: {e}")
-            response = StreamingResponse(
-                ai_sdk_message_with_reasoning_generator(
-                    reasoning_text="",
-                    output_text=QUOTA_EXCEEDED_MESSAGE,
-                ),
-                media_type="text/event-stream",
-            )
-            response.headers["x-vercel-ai-ui-message-stream"] = "v1"
-            response.headers["Cache-Control"] = "no-cache"
-            response.headers["Connection"] = "keep-alive"
-            return response
-        except Exception as e:  # pragma: no cover - a metering fault must not deny service
-            debug(f"[Quota] check failed, allowing request: {e}")
+    # A no-op when the cap is off, and it swallows its own infrastructure
+    # faults, so the only thing that reaches here is an actual refusal.
+    try:
+        check_quota(one.boto_ses, one.config)
+    except QuotaExceededError as e:
+        debug(f"[Quota] blocked: {e}")
+        response = StreamingResponse(
+            ai_sdk_message_with_reasoning_generator(
+                reasoning_text="",
+                output_text=QUOTA_EXCEEDED_MESSAGE,
+            ),
+            media_type="text/event-stream",
+        )
+        response.headers["x-vercel-ai-ui-message-stream"] = "v1"
+        response.headers["Cache-Control"] = "no-cache"
+        response.headers["Connection"] = "keep-alive"
+        return response
 
     # Record message count before calling agent (so we only extract new messages)
     msg_count_before = len(agent.messages)
@@ -154,22 +152,18 @@ async def handle_chat_data(request: Request, protocol: str = Query("data")):
         sys.stdout = old_stdout
 
     # --- Meter what that cost ---
-    if one.config.quota_enabled:
-        # NOT metrics.accumulated_usage: strands accumulates that across the
-        # lifetime of the Agent instance, and `one.agent` is cached, so reading
-        # it would re-count every earlier request in the process. The
-        # per-invocation total is on the latest AgentInvocation.
-        invocations = getattr(agent_result.metrics, "agent_invocations", None) or []
-        usage = invocations[-1].usage if invocations else {}
-        try:
-            increment_usage(
-                one.boto_ses,
-                one.config,
-                input_tokens=int(usage.get("inputTokens", 0) or 0),
-                output_tokens=int(usage.get("outputTokens", 0) or 0),
-            )
-        except Exception as e:  # pragma: no cover - metering must not break a reply
-            debug(f"[Quota] increment failed: {e}")
+    # NOT metrics.accumulated_usage: strands accumulates that across the
+    # lifetime of the Agent instance, and `one.agent` is cached, so reading it
+    # would re-count every earlier request in the process. The per-invocation
+    # total is on the latest AgentInvocation.
+    invocations = getattr(agent_result.metrics, "agent_invocations", None) or []
+    usage = invocations[-1].usage if invocations else {}
+    increment_usage(
+        one.boto_ses,
+        one.config,
+        input_tokens=int(usage.get("inputTokens", 0) or 0),
+        output_tokens=int(usage.get("outputTokens", 0) or 0),
+    )
 
     # --- Extract thinking and answer from agent response ---
     full_text = extract_text_from_messages(agent.messages, msg_count_before)

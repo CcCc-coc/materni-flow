@@ -53,6 +53,25 @@ class TestConfig:
         assert isinstance(Config.new(), Config)
 
 
+class TestQuotaConfig:
+    def test_cap_on_without_a_table_is_refused(self):
+        """
+        Caught at start-up rather than on some user's first request. The check
+        used to live in ``quota._table``, where a misconfigured public
+        deployment booted fine and failed the moment someone typed.
+        """
+        with pytest.raises(ValueError, match="DYNAMODB_TABLE_NAME_QUOTA"):
+            Config(quota_enabled=True)
+
+    def test_cap_on_with_a_table_is_fine(self):
+        assert Config(
+            quota_enabled=True, dynamodb_table_name_quota="my-quota"
+        ).quota_enabled is True
+
+    def test_cap_off_needs_no_table(self):
+        assert Config().quota_enabled is False
+
+
 class TestFactories:
     """
     Two runtimes, one shared reader, exactly one difference between them.
@@ -67,6 +86,7 @@ class TestFactories:
         monkeypatch.setenv("LLM_PROVIDER", "openai")
         monkeypatch.setenv("DB_PORT", "5433")
         monkeypatch.setenv("QUOTA_ENABLED", "true")
+        monkeypatch.setenv("DYNAMODB_TABLE_NAME_QUOTA", "my-quota")
         config = Config.new_from_env_var()
         assert config.schema_name == "acme_widgets"
         assert config.llm_provider == "openai"

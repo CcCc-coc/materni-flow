@@ -29,8 +29,10 @@ class StubTable:
     def __init__(self, item=None):
         self.item = item
         self.updates = []
+        self.keys = []
 
     def get_item(self, Key):
+        self.keys.append(Key)
         return {"Item": self.item} if self.item is not None else {}
 
     def update_item(self, **kwargs):
@@ -52,6 +54,7 @@ class StubSession:
 
 class StubConfig:
     def __init__(self, **overrides):
+        self.quota_enabled = True
         self.schema_name = "acme_widgets"
         self.dynamodb_table_name_quota = "quota-table"
         self.quota_max_invoke_per_month = 100
@@ -99,11 +102,12 @@ class TestGetUsage:
         assert isinstance(usage[ATTR_INVOKE], int)
         assert usage[ATTR_OUTPUT_TOKEN] == 0
 
-    def test_missing_table_name_says_so(self):
-        """Enabling the cap without configuring a table is a setup error."""
-        config = StubConfig(dynamodb_table_name_quota=None)
-        with pytest.raises(ValueError, match="DYNAMODB_TABLE_NAME_QUOTA"):
-            get_usage(StubSession(StubTable()), config, app_id="x")
+    def test_app_id_defaults_to_this_month(self):
+        """The production path: nobody passes app_id, it comes from the clock."""
+        table = StubTable(item=None)
+        config = StubConfig()
+        get_usage(StubSession(table), config)
+        assert table.keys == [{"app_id": get_app_id(config)}]
 
 
 class TestIncrementUsage:
@@ -148,15 +152,62 @@ class TestCheckQuota:
             check_quota(StubSession(at), StubConfig(), app_id="x")
 
 
-class TestDefaultOff:
+class TestDisabled:
+    """
+    The flag lives with the feature, not with the caller.
+
+    api/index.py calls both entry points unguarded, so "off" has to mean "does
+    nothing and touches no AWS" rather than "the caller remembered an if".
+    """
+
     def test_shipped_config_has_the_cap_disabled(self):
-        """
-        A student cloning the repo must not need a DynamoDB table to chat.
-        This is the assertion that keeps that true.
-        """
+        """A student cloning the repo must not need a DynamoDB table to chat."""
         from agent_app.config import Config
 
         assert Config().quota_enabled is False
+
+    def test_check_is_a_no_op(self):
+        session = StubSession(StubTable(item={ATTR_INVOKE: 10_000}))
+        config = StubConfig(quota_enabled=False)
+        # Way over the cap, and still allowed, because metering is off.
+        assert check_quota(session, config) is None
+
+    def test_increment_is_a_no_op(self):
+        table = StubTable()
+        increment_usage(
+            StubSession(table),
+            StubConfig(quota_enabled=False),
+            input_tokens=30,
+            output_tokens=8,
+        )
+        assert table.updates == []
+
+
+class TestMeteringFaultsDoNotDenyService:
+    """
+    A broken counter is cheaper than an outage, so infrastructure faults are
+    logged and swallowed here rather than in each caller.
+    """
+
+    class BrokenSession:
+        def resource(self, name):
+            raise RuntimeError("dynamodb is down")
+
+    def test_a_failed_check_lets_the_request_through(self, capsys):
+        assert check_quota(self.BrokenSession(), StubConfig()) is None
+        assert "dynamodb is down" in capsys.readouterr().err
+
+    def test_a_failed_increment_does_not_raise(self, capsys):
+        increment_usage(
+            self.BrokenSession(), StubConfig(), input_tokens=1, output_tokens=1
+        )
+        assert "dynamodb is down" in capsys.readouterr().err
+
+    def test_an_actual_refusal_still_propagates(self):
+        """The one thing that must NOT be swallowed: the answer itself."""
+        table = StubTable(item={ATTR_INVOKE: 100})
+        with pytest.raises(QuotaExceededError):
+            check_quota(StubSession(table), StubConfig(), app_id="x")
 
 
 if __name__ == "__main__":

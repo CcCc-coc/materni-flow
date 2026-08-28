@@ -46,6 +46,25 @@ learn-bi-agent-app-scaffold : fintech_smb_lending_pipeline_medium : 2026-08
 
 ---
 
+## 开关和失败策略都住在这个模块里
+
+两个入口 (`check_quota` / `increment_usage`) **自己检查 `quota_enabled` 并提前返回**, 所以
+调用方不需要包 `if`. 这一条以前不是这样: `api/index.py` 在两处各写了一遍
+`if one.config.quota_enabled:`, 于是开关住在使用者那里, 而不是住在拥有这个功能的模块里 ——
+第二个调用方只要忘了那个 `if`, 拿到的就是一次真实的 DynamoDB 调用。
+
+同理, **计量出故障绝不能拒绝服务**: DynamoDB 挂了、表不存在、凭证过期 —— 这些都在模块内部
+记一笔日志然后咽掉, 而不是让每个调用方各写一遍 `except Exception: pass`. 少记一次数, 比让
+一个用户已经付过钱的回复失败要便宜。
+
+唯一会往外抛的是 `QuotaExceededError` —— 那是**答案**, 不是故障。它在 try 块之外抛出, 所以
+永远不会被上面那层吞掉。
+
+## 配错在启动时就报, 不等第一个用户
+
+"打开了配额但没配表名"这件事, 检查在 `Config.__post_init__` 里。以前它在 `quota._table`
+里, 于是一个配错的公开部署**启动完全正常**, 直到有人打第一个字才炸。
+
 ## 为什么是裸 boto3 而不是 ORM
 
 item 只有四个属性, 而且不会再多。ORM 在这里只会换来三个依赖。`boto3` 本来就是核心依赖。

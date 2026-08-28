@@ -153,9 +153,10 @@ class Config:
         Normalize the provider, fill in its default model ID, check the schema name.
 
         Here rather than in the factories so that a hand-built ``Config()`` in a
-        test behaves exactly like one built from the environment. Checking the
-        schema name now turns what would be a PostgreSQL error several layers
-        away into a start-up failure naming the typo.
+        test behaves exactly like one built from the environment. Both checks
+        turn what would otherwise be a failure on some user's first request --
+        a PostgreSQL error several layers from the typo, or a metering call
+        against a table that was never named -- into a start-up failure.
         """
         if self.schema_name and not SCHEMA_NAME_PATTERN.fullmatch(self.schema_name):
             raise ValueError(
@@ -163,6 +164,12 @@ class Config:
                 f"PostgreSQL identifier -- lowercase letters, digits and "
                 f"underscores, not starting with a digit, at most 63 "
                 f"characters. Set it in .env.defaults."
+            )
+        if self.quota_enabled and not self.dynamodb_table_name_quota:
+            raise ValueError(
+                "QUOTA_ENABLED is on but DYNAMODB_TABLE_NAME_QUOTA is not set. "
+                "Point it at a DynamoDB table whose partition key is `app_id` (S), "
+                "or turn the cap off in .env.defaults."
             )
         self.llm_provider = (self.llm_provider or "").strip().lower()
         if self.llm_provider not in DEFAULT_MODEL_ID:
