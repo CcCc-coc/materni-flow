@@ -106,10 +106,10 @@ export default function BusinessContextModal({
               by forking the renderer. */}
           <div
             className="mt-8 text-base text-slate-600
- [&_h2]:font-display [&_h2]:text-xl [&_h2]:sm:text-2xl [&_h2]:font-normal
- [&_h2]:text-primary [&_h2]: [&_h2]:mt-10 [&_h2]:mb-3
- [&_h3]:text-lg [&_h3]:text-primary [&_h3]: [&_h3]:mt-6
- [&_li]:mb-2 [&_strong]:text-primary [&_strong]:"
+                       [&_h2]:font-display [&_h2]:text-xl [&_h2]:sm:text-2xl [&_h2]:font-normal
+                       [&_h2]:text-primary [&_h2]:mt-10 [&_h2]:mb-3
+                       [&_h3]:text-lg [&_h3]:text-primary [&_h3]:mt-6
+                       [&_li]:mb-2 [&_strong]:text-primary"
           >
             <Markdown>{markdown}</Markdown>
           </div>

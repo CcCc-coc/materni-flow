@@ -8,7 +8,7 @@ description: 这个仓库的事实标准. 它是什么性质的项目, 为什么
 这个 skill 是这个仓库的**总纲**. 它回答的是"这是什么, 为什么长成这样", 不回答"代码在哪"
 (那个看 `CLAUDE.md`) 也不回答"怎么换数据集" (那个看 `swap-dataset-cn`).
 
-`ref/` 分三个目录, 一篇一个主题. **按你要动的东西读对应那篇, 不要全读.**
+`ref/` 分四个目录, 一篇一个主题. **按你要动的东西读对应那篇, 不要全读.**
 
 `ref/architecture/` —— 架构与设计决定, 与具体某段代码无关:
 
@@ -40,11 +40,20 @@ description: 这个仓库的事实标准. 它是什么性质的项目, 为什么
 | :--- | :--- |
 | 开发服务器起不来 / 杀不掉, 或者要动 `kill-dev-servers.py` | [01-dev-servers.md](ref/operations/01-dev-servers.md) |
 
-前端 (`app/`, `components/`, `lib/`) 目前没有对应目录, 将来是 `ref/frontend/`.
+`ref/frontend/` —— 界面必须做到什么, 以及那些 TypeScript 为什么这么写:
 
-渲染器**内部**怎么实现的 (流式期间的残缺围栏, 懒加载, 安全等级, 兜底), 在另一个 skill:
-`agent-app-design-cn` 的 `ref/chat-frontend.md`. 它有 `paths` 触发器, 你编辑
-`components/chat/` 时会自动加载.
+| 你在做什么 | 读 |
+| :--- | :--- |
+| **要改界面上任何一块**, 想知道它的文字从哪来 | [frontend/02](ref/frontend/02-the-elements.md) 那张元素对照表 |
+| 加一个配置项 / 文案项, 或者动 `lib/site/` | [frontend/03](ref/frontend/03-content-pipeline.md) |
+| 动路由, 布局, SEO | [frontend/04](ref/frontend/04-pages-and-shell.md) |
+| 改首页 / 改 agent 页 | [frontend/05](ref/frontend/05-home-page.md) / [frontend/06](ref/frontend/06-chat-page.md) |
+| **加一种新的渲染块**, 或者动 Markdown 渲染 | [frontend/07](ref/frontend/07-markdown-and-blocks.md) |
+| 改配色 / 圆角 / 卡片外观 | [frontend/08](ref/frontend/08-design-tokens.md) |
+
+> **重复警告**: `agent-app-design-cn` skill 的 `ref/chat-frontend.md` 讲的是同一段代码,
+> 而且已经有过期内容 (它还在描述已经删掉的暗色模式). 它唯一的独有价值是那个
+> `components/chat/**` 的 `paths` 自动触发器. 两边合并之前, **以 `ref/frontend/` 为准**.
 
 ---
 
@@ -64,10 +73,12 @@ description: 这个仓库的事实标准. 它是什么性质的项目, 为什么
 .venv/bin/python .claude/skills/about-bi-agent-app-scaffold-cn/scripts/teaching_cli.py --help
 ```
 
-三个目录的分工: `architecture/` 讲**边界和设计决定** (什么该放哪一层, 换数据集时不能破
-什么), `backend/` 讲**某段 Python 为什么长这样** (一篇对一组模块), `operations/` 讲
-**日常维护**. 代码里的注释只留很短的工程 why, 展开的部分在这里 —— 两边都不完整, 加起来
-完整, 而且可以独立删掉其中一边. 这条规矩本身见
+四个目录的分工: `architecture/` 讲**边界和设计决定** (什么该放哪一层, 换数据集时不能破
+什么), `backend/` 和 `frontend/` 讲**某段代码为什么长这样** —— backend 按依赖顺序编号,
+frontend 前两篇讲需求后面才是代码走读 —— `operations/` 讲**日常维护**.
+
+代码里的注释只留很短的工程 why, 展开的部分在这里 —— 两边都不完整, 加起来完整, 而且可以
+独立删掉其中一边. 这条规矩本身见
 [architecture/09](ref/architecture/09-comments-and-docs.md).
 
 ## 一条贯穿全仓库的判断
