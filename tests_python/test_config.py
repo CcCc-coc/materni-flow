@@ -222,3 +222,91 @@ if __name__ == "__main__":
         "agent_app.config",
         preview=False,
     )
+
+
+class TestSystemPromptContent:
+    """The prompt is a committed file; reading it needs no infrastructure."""
+
+    def test_reads_the_committed_prompt(self):
+        from agent_app.paths import path_enum
+
+        content = path_enum.path_bi_agent_system_prompt_content
+        assert isinstance(content, str)
+        assert content.strip(), "an empty system prompt would give the agent no brain"
+
+    def test_read_once_per_process(self):
+        """cached_property: the agent is rebuilt more often than the file changes."""
+        from agent_app.paths import path_enum
+
+        assert (
+            path_enum.path_bi_agent_system_prompt_content
+            is path_enum.path_bi_agent_system_prompt_content
+        )
+
+
+class TestEnvReaders:
+    """
+    The three readers between ``os.environ`` and a typed field. Small, but every
+    branch is a decision about what a malformed value means, and getting one
+    wrong changes behaviour silently rather than raising.
+    """
+
+    def test_placeholder_and_unset_both_read_as_none(self, monkeypatch):
+        from agent_app.config import PLACEHOLDER, get_env
+
+        monkeypatch.setenv("X_TEST", PLACEHOLDER)
+        assert get_env("X_TEST") is None
+        monkeypatch.delenv("X_TEST")
+        assert get_env("X_TEST") is None
+
+    def test_a_real_value_comes_through(self, monkeypatch):
+        from agent_app.config import get_env
+
+        monkeypatch.setenv("X_TEST", "value")
+        assert get_env("X_TEST") == "value"
+
+    @pytest.mark.parametrize("spelling", ["1", "true", "TRUE", "Yes", " on "])
+    def test_bool_accepts_what_people_actually_type(self, monkeypatch, spelling):
+        from agent_app.config import get_env_bool
+
+        monkeypatch.setenv("X_FLAG", spelling)
+        assert get_env_bool("X_FLAG") is True
+
+    @pytest.mark.parametrize("spelling", ["0", "false", "NO", "Off"])
+    def test_bool_falsy_spellings(self, monkeypatch, spelling):
+        from agent_app.config import get_env_bool
+
+        monkeypatch.setenv("X_FLAG", spelling)
+        assert get_env_bool("X_FLAG", default=True) is False
+
+    def test_bool_unset_takes_the_default(self, monkeypatch):
+        from agent_app.config import get_env_bool
+
+        monkeypatch.delenv("X_FLAG", raising=False)
+        assert get_env_bool("X_FLAG", default=True) is True
+
+    def test_bool_gibberish_takes_the_default(self, monkeypatch):
+        """A malformed flag should leave its feature off, not stop the app booting."""
+        from agent_app.config import get_env_bool
+
+        monkeypatch.setenv("X_FLAG", "maybe")
+        assert get_env_bool("X_FLAG") is False
+        assert get_env_bool("X_FLAG", default=True) is True
+
+    def test_int_parses(self, monkeypatch):
+        from agent_app.config import get_env_int
+
+        monkeypatch.setenv("X_PORT", "5432")
+        assert get_env_int("X_PORT") == 5432
+
+    def test_int_unset_or_malformed_is_none(self, monkeypatch):
+        """
+        None is what callers already treat as "not configured", so a typo in
+        DB_PORT degrades instead of raising at import time.
+        """
+        from agent_app.config import get_env_int
+
+        monkeypatch.delenv("X_PORT", raising=False)
+        assert get_env_int("X_PORT") is None
+        monkeypatch.setenv("X_PORT", "not-a-number")
+        assert get_env_int("X_PORT") is None

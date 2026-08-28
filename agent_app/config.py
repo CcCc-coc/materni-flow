@@ -30,7 +30,7 @@ PLACEHOLDER = "..."
 SCHEMA_NAME_PATTERN = re.compile(r"^[a-z_][a-z0-9_]{0,62}$")
 
 
-def load_env_files() -> None:  # pragma: no cover
+def load_env_files() -> None:
     """
     Load ``.env`` then ``.env.defaults``.
 
@@ -43,7 +43,7 @@ def load_env_files() -> None:  # pragma: no cover
     load_dotenv(path_enum.path_env_defaults)
 
 
-def get_env(name: str) -> str | None:  # pragma: no cover
+def get_env(name: str) -> str | None:
     """
     Read an environment variable, treating the ``"..."`` placeholder as unset.
 
@@ -57,7 +57,7 @@ def get_env(name: str) -> str | None:  # pragma: no cover
     return value
 
 
-def get_env_bool(name: str, default: bool = False) -> bool:  # pragma: no cover
+def get_env_bool(name: str, default: bool = False) -> bool:
     """
     Read an environment variable as a boolean.
 
@@ -75,7 +75,7 @@ def get_env_bool(name: str, default: bool = False) -> bool:  # pragma: no cover
     return default
 
 
-def get_env_int(name: str) -> int | None:  # pragma: no cover
+def get_env_int(name: str) -> int | None:
     """
     Read an environment variable as an int.
 

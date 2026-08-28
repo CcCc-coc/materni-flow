@@ -26,7 +26,7 @@ RULE = "=" * 70
 THIN_RULE = "-" * 70
 
 
-def chat(
+def chat(  # pragma: no cover - drives a live agent
     agent: Agent,
     message: str,
     turn_number: int = 1,

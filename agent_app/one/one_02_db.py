@@ -128,7 +128,7 @@ class DbMixin:
                 schema_info,
             ],
         )
-        if not schema_info.tables:
+        if not schema_info.tables:  # pragma: no cover - needs an unsynced schema
             raise RuntimeError(
                 f"PostgreSQL schema {self.config.schema_name!r} has no tables. "
                 f"An absent schema and an empty one look identical to the "

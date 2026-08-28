@@ -21,7 +21,7 @@ class Boto3Mixin:
     """
 
     @cached_property
-    def boto_ses(self: "One") -> boto3.Session:
+    def boto_ses(self: "One") -> boto3.Session:  # pragma: no cover - needs AWS
         """Create a boto3 session with configured AWS credentials."""
         return boto3.Session(
             region_name=self.config.aws_region,

@@ -51,7 +51,7 @@ GEN_HINT = (
 )
 
 
-def _run(argv: list[str], step: str, verbose: bool = True) -> None:
+def _run(argv: list[str], step: str, verbose: bool = True) -> None:  # pragma: no cover
     """Run one subprocess from the project root, letting its output through."""
     if verbose:
         print(f"[{step}] {' '.join(argv)}")
@@ -129,7 +129,7 @@ def local_sqlite_engine() -> sa.Engine:
     return new_sqlite_engine(str(path_dataset_sqlite()))
 
 
-def install_generator_requirements(verbose: bool = True) -> None:
+def install_generator_requirements(verbose: bool = True) -> None:  # pragma: no cover
     """
     Install the generator's dependencies into this project's venv.
 
@@ -159,7 +159,7 @@ def install_generator_requirements(verbose: bool = True) -> None:
     )
 
 
-def generate_dataset(force: bool = False, verbose: bool = True) -> Path:
+def generate_dataset(force: bool = False, verbose: bool = True) -> Path:  # pragma: no cover
     """
     Build the dataset's database by running the generator that ships with it.
 
@@ -322,7 +322,7 @@ def sync_sqlite_to_postgres(
     schema_name: str,
     verbose: bool = True,
     batch_size: int = INSERT_BATCH_SIZE,
-) -> dict:
+) -> dict:  # pragma: no cover - needs a live PostgreSQL to write into
     """
     Sync the local SQLite database into this project's remote schema.
 
@@ -437,7 +437,7 @@ def sync_sqlite_to_postgres(
     return {"success": True, "schema": schema_name, "tables": summary}
 
 
-def reset_remote_database(verbose: bool = True) -> dict:
+def reset_remote_database(verbose: bool = True) -> dict:  # pragma: no cover
     """
     Reset the remote database by syncing from local SQLite.
 

@@ -258,6 +258,26 @@ class TestBuildRemoteMetadata:
         assert isinstance(local.tables["part"].c.part_name.type, sa.VARCHAR)
 
 
+class TestLocalSqliteEngine:
+    def test_opens_the_discovered_file(self, dataset_dir):
+        """
+        Through new_sqlite_engine, so the read-only guarantee holds on it -- an
+        engine built with a plain create_engine would not roll back a CTE write.
+        """
+        db = dataset_dir / "acme.sqlite"
+        engine = sa.create_engine(f"sqlite:///{db}")
+        with engine.begin() as conn:
+            conn.exec_driver_sql("CREATE TABLE widget (id INTEGER PRIMARY KEY)")
+
+        opened = dataset.local_sqlite_engine()
+        assert str(db) in str(opened.url)
+        with opened.connect() as conn:
+            names = [r[0] for r in conn.exec_driver_sql(
+                "SELECT name FROM sqlite_master WHERE type='table'"
+            )]
+        assert names == ["widget"]
+
+
 class TestNotOnTheProductionPath:
     def test_the_app_does_not_import_the_authoring_layer(self):
         """

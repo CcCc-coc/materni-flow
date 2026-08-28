@@ -20,3 +20,15 @@ if __name__ == "__main__":
         "agent_app.one.one_02_db",
         preview=False,
     )
+
+
+class TestEngines:
+    def test_remote_postgres_engine_is_unscoped(self):
+        """
+        The sync needs this one rather than `engine`: it creates the schema, so
+        it cannot assume there is already one to pin `search_path` to.
+
+        Building an engine opens no connection, so this needs no server.
+        """
+        assert one.remote_postgres_engine is not one.engine
+        assert one.remote_postgres_engine.url.drivername.startswith("postgresql")

@@ -50,7 +50,7 @@ def load_strands_model_class(class_name: str, provider: str):
 
     try:
         return getattr(models, class_name)
-    except (AttributeError, ImportError) as e:  # pragma: no cover
+    except (AttributeError, ImportError) as e:
         extra = PROVIDER_INSTALL_EXTRA[provider]
         raise ImportError(
             f"LLM_PROVIDER={provider!r} needs the {extra!r} SDK, which is not installed.\n"
@@ -64,7 +64,7 @@ class AgentMixin:
     """Mixin providing AI agent and tool definitions for database queries."""
 
     @cached_property
-    def bedrock_model(self: "One") -> BedrockModel:
+    def bedrock_model(self: "One") -> BedrockModel:  # pragma: no cover - needs AWS
         """Create a BedrockModel instance with configured model ID."""
         return BedrockModel(
             boto_session=self.boto_ses,
@@ -127,7 +127,7 @@ class AgentMixin:
         )
 
     @cached_property
-    def agent(self: "One") -> Agent:
+    def agent(self: "One") -> Agent:  # pragma: no cover - builds a real Agent
         """Create an Agent instance with the configured model."""
         return Agent(
             model=self.model,
