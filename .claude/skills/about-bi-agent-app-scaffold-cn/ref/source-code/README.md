@@ -14,6 +14,8 @@
 | [04-schema-encoding.md](04-schema-encoding.md) | 三步流水线 + 紧凑格式的完整规范 | `db_schema/` |
 | [05-database-sync.md](05-database-sync.md) | 表名一致, 插入顺序算而不配, 同步五步 | `tests/db_sync.py` |
 | [06-quota.md](06-quota.md) | 月度花费上限, partition key 为什么是三段 | `quota.py` |
+| [07-ai-sdk-adapter.md](07-ai-sdk-adapter.md) | SSE 协议形状, header 为什么和 generator 同住 | `ai_sdk_adapter.py` |
+| [08-agent-response.md](08-agent-response.md) | 最后一条消息不一定是答案, 三步为什么合成一个 | `agent_response.py`, `agent_debugger.py` |
 
 **边界规范** (什么该放哪一层, 换数据集不能破什么) 在上一级 `ref/` 的 01-08, 不在这里。
 这里只回答"这段代码为什么这么写"。

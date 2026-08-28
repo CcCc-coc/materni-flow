@@ -27,9 +27,7 @@ from agent_app.ai_sdk_adapter import get_last_user_message_text
 from agent_app.ai_sdk_adapter import read_request_body
 from agent_app.ai_sdk_adapter import request_body_to_agent_history
 from agent_app.one.api import one  # Main singleton with agent
-from agent_app.agent_debugger import extract_text_from_messages
-from agent_app.agent_debugger import normalize_render_blocks
-from agent_app.agent_debugger import parse_response_text
+from agent_app.agent_response import parse_agent_response
 from agent_app.quota import check_quota
 from agent_app.quota import increment_usage
 from agent_app.quota import QuotaExceededError
@@ -145,12 +143,7 @@ async def handle_chat_data(request: Request, protocol: str = Query("data")):
     )
 
     # --- Extract thinking and answer from agent response ---
-    full_text = extract_text_from_messages(agent.messages, msg_count_before)
-    thinking, answer = parse_response_text(full_text)
-
-    # Re-fence any chart/diagram the model wrapped in angle-bracket tags, which
-    # markdown would otherwise drop on the floor.
-    answer = normalize_render_blocks(answer)
+    thinking, answer = parse_agent_response(agent.messages, msg_count_before)
 
     debug(f"[Agent] Thinking: {len(thinking)} chars")
     debug(f"[Agent] Answer: {len(answer)} chars")

@@ -55,8 +55,7 @@ from agent_app.ai_sdk_adapter import ai_sdk_message_with_reasoning_generator
 from agent_app.ai_sdk_adapter import get_last_user_message_text
 from agent_app.ai_sdk_adapter import request_body_to_agent_history
 from agent_app.one.api import one
-from agent_app.agent_debugger import extract_text_from_messages
-from agent_app.agent_debugger import parse_response_text
+from agent_app.agent_response import parse_agent_response
 ```
 
 **关键模块说明：**
@@ -65,8 +64,8 @@ from agent_app.agent_debugger import parse_response_text
 |------|------|
 | `agent_app.vendor.vercel_ai_sdk.RequestBody` | 解析 Vercel AI SDK 格式的请求 |
 | `one` | 项目的单例对象，包含 Agent 实例 |
-| `extract_text_from_messages` | 从 Agent 消息中提取文本 |
-| `parse_response_text` | 分离思考过程和最终回答 |
+| `parse_agent_response` | 消息列表 → (思考, 回答), 三步一次做完 |
+
 | `ai_sdk_message_with_reasoning_generator` | 生成 SSE 事件流 |
 
 ### /api/chat 端点完整解析
@@ -178,11 +177,10 @@ Strands Agent 默认会把思考过程打印到控制台。在 API 中我们不�
 #### 第五步：提取结果
 
 ```python
-    full_text = extract_text_from_messages(agent.messages, msg_count_before)
-    thinking, answer = parse_response_text(full_text)
+    thinking, answer = parse_agent_response(agent.messages, msg_count_before)
 ```
 
-**`extract_text_from_messages` 做了什么？**
+**`parse_agent_response` 做了什么？**
 
 从 Agent 新增的消息中提取文本。重点是：
 - **Thinking**：收集**所有**消息的 `<thinking>` 内容
@@ -374,8 +372,7 @@ Agent calls: assign_bed tool
 Agent generates final answer
                     |
                     v
-extract_text_from_messages -> all thinking + final response
-parse_response_text -> separate thinking and answer
+parse_agent_response -> (thinking, answer), render blocks normalized
                     |
                     v
 Generate SSE event stream:
@@ -401,7 +398,7 @@ Markdown renders answer
 |------|------|
 | `api/index.py` | FastAPI 后端入口，处理 `/api/chat` 请求 |
 | `agent_app/ai_sdk_adapter.py` | 格式转换：AI SDK ↔ Agent 消息格式 |
-| `agent_app/agent_debugger.py` | 从 Agent 消息提取 thinking 和 answer |
+| `agent_app/agent_response.py` | 从 Agent 消息提取 thinking 和 answer |
 | `components/chat/message.tsx` | 前端消息组件，渲染 ReasoningBlock |
 
 ---
@@ -428,7 +425,7 @@ Markdown renders answer
 
 ### Q: Agent 的 stdout 输出去哪了？
 
-**答：** 我们用 `sys.stdout = io.StringIO()` 临时重定向了。Strands Agent 默认会打印思考过程到控制台，在 API 中我们不需要这些输出。实际的思考内容我们通过 `extract_text_from_messages` 从 Agent 消息中提取。
+**答：** 我们用 `sys.stdout = io.StringIO()` 临时重定向了。Strands Agent 默认会打印思考过程到控制台，在 API 中我们不需要这些输出。实际的思考内容我们通过 `parse_agent_response` 从 Agent 消息中提取。
 
 ---
 

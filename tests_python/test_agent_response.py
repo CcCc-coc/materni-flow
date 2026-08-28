@@ -8,9 +8,10 @@ break the split are exactly the ones that are hard to provoke on demand from a
 real model, so they are written out literally here.
 """
 
-from agent_app.agent_debugger import extract_text_from_messages
-from agent_app.agent_debugger import normalize_render_blocks
-from agent_app.agent_debugger import parse_response_text
+from agent_app.agent_response import extract_text_from_messages
+from agent_app.agent_response import normalize_render_blocks
+from agent_app.agent_response import parse_agent_response
+from agent_app.agent_response import parse_response_text
 
 
 def _assistant(text: str) -> dict:
@@ -79,6 +80,31 @@ class TestExtractTextFromMessages:
         assert answer == "New answer."
 
 
+class TestToolBlocksAreSkipped:
+    def test_tool_use_and_result_blocks_are_ignored(self):
+        """
+        A turn that calls a tool has content items that are not text at all.
+        Reading them as text would raise; there is a guard, and this is it.
+        """
+        messages = [
+            {
+                "role": "assistant",
+                "content": [
+                    {"text": "<thinking>let me query</thinking>"},
+                    {"toolUse": {"name": "execute_sql_query", "input": {"sql": "SELECT 1"}}},
+                ],
+            },
+            {
+                "role": "user",
+                "content": [{"toolResult": {"content": [{"text": "| n |"}]}}],
+            },
+            _assistant("Here is the count."),
+        ]
+        thinking, answer = parse_agent_response(messages)
+        assert thinking == "let me query"
+        assert answer == "Here is the count."
+
+
 class TestNormalizeRenderBlocks:
     def test_chart_tag_becomes_a_fence(self):
         """
@@ -120,3 +146,59 @@ if __name__ == "__main__":
         "agent_app.agent_debugger",
         preview=False,
     )
+
+
+class TestParseResponseText:
+    def test_splits_thinking_from_answer(self):
+        thinking, answer = parse_response_text(
+            "<thinking>Let me check</thinking>The answer is 42."
+        )
+        assert thinking == "Let me check"
+        assert answer == "The answer is 42."
+
+    def test_several_blocks_are_joined(self):
+        thinking, _ = parse_response_text("<thinking>a</thinking>x<thinking>b</thinking>")
+        assert thinking == "a\n\nb"
+
+    def test_no_thinking_leaves_the_answer_whole(self):
+        assert parse_response_text("plain answer") == ("", "plain answer")
+
+    def test_orphaned_heading_is_dropped(self):
+        """
+        A header whose body ended up inside a thinking block would otherwise
+        render as a bare "##" line above nothing.
+        """
+        _, answer = parse_response_text("## \n<thinking>the body</thinking>\nreal text")
+        assert "##" not in answer
+        assert answer == "real text"
+
+    def test_blank_runs_are_collapsed(self):
+        _, answer = parse_response_text("a\n\n\n\n\nb")
+        assert answer == "a\n\nb"
+
+
+class TestParseAgentResponse:
+    """
+    The three steps as one call, because a caller that runs two of them and
+    forgets the third fails silently -- the answer arrives with the chart gone.
+    """
+
+    def test_end_to_end(self):
+        messages = [
+            _assistant("<thinking>picking a chart</thinking>Here is the trend:"),
+            _assistant("<chart>\n{\"type\": \"bar\"}\n</chart>"),
+        ]
+        thinking, answer = parse_agent_response(messages)
+        assert thinking == "picking a chart"
+        assert answer.startswith("```chart")
+        assert "```" in answer
+
+    def test_normalizes_what_the_two_step_path_would_miss(self):
+        """This is the step the debug path used to skip."""
+        messages = [_assistant("<mermaid>\ngraph TD;\n</mermaid>")]
+        _, answer = parse_agent_response(messages)
+        assert answer.startswith("```mermaid")
+
+    def test_start_index_is_passed_through(self):
+        messages = [_assistant("old answer"), _user("new q"), _assistant("new answer")]
+        assert parse_agent_response(messages, 1)[1] == "new answer"

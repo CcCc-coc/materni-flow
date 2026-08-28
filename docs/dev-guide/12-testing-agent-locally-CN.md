@@ -75,8 +75,7 @@
 |------|------|-----------|
 | `chat()` | 发送消息给 Agent，返回思考过程和最终回答 | 每次和 Agent 对话 |
 | `print_summary()` | 打印多轮对话的摘要 | 测试结束后查看总结 |
-| `extract_text_from_messages()` | 从 Agent 消息中提取文本 | 底层函数，通常不直接调用 |
-| `parse_response_text()` | 把完整响应解析成思考+回答 | 底层函数，通常不直接调用 |
+| `parse_agent_response()` | 消息列表 → (思考, 回答) | 底层函数，在 `agent_response.py`，通常不直接调用 |
 
 ### chat() 函数详解
 
@@ -261,7 +260,7 @@ I need to transfer a patient to a different bed. Please find:
 2. An available bed in postpartum area
 """.strip()
 
-    thinking, answer = chat(agent, request_01, turn_number=1, debug=debug)
+    thinking, answer = chat(agent, request_01, turn_number=1)
     results.append(("Query", thinking, answer))
 
     # Turn 2: 执行 — 调用 assign_bed 工具
@@ -405,13 +404,16 @@ Transfer verified successfully:
 
 ## 调试技巧
 
-### 1. 开启 debug 模式查看消息结构
+### 1. 直接看 Agent 的消息结构
 
 ```python
-thinking, answer = chat(agent, request, turn_number=1, debug=True)
+import json
+print(json.dumps(agent.messages, indent=2, ensure_ascii=False, default=str))
 ```
 
-这会打印出 Agent 消息的详细结构，帮你理解 Strands Agent 的内部工作方式。
+`chat()` 以前有一个 `debug=True` 参数做这件事，但那意味着十几行 print 语句嵌在生产路径上
+的解析函数里。解析已经搬到 `agent_app/agent_response.py`，只做解析；要看消息结构就像上面
+这样直接打印。
 
 ### 2. 开启 verbose 模式查看原始输出
 
@@ -532,7 +534,7 @@ print(result)
 | **本地测试优先** | 在终端测试完再去 UI 验收 |
 | **test_agent.py** | 测试单轮查询，10 个从简单到复杂的问题 |
 | **test_agent_1~4.py** | 测试多轮对话 + 写入操作 |
-| **agent_debugger.py** | 调试助手，分离思考和回答 |
+| **agent_debugger.py** | 调试助手，打印一轮对话（解析在 `agent_response.py`） |
 | **chat() 函数** | 核心函数，返回 (thinking, answer) |
 | **debug/verbose 参数** | 开启更详细的调试输出 |
 
