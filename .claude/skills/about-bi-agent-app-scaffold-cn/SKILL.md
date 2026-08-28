@@ -22,7 +22,7 @@ description: 这个仓库的事实标准. 它是什么性质的项目, 为什么
 | 让 agent 画图 / 出表格, 或者加一种新的渲染块 | [06-rendering-contract.md](ref/architecture/06-rendering-contract.md) |
 | 加一个配置项, 或者写 `data/` 下那三个文件 | [07-config-and-content.md](ref/architecture/07-config-and-content.md) |
 | 想知道改完要跑什么, 或者要加/改一项检查 | [08-what-guards-the-boundaries.md](ref/architecture/08-what-guards-the-boundaries.md) |
-| 写注释 / docstring, 或者要加一篇文档但不知道放哪 | [09-comments-and-docs.md](ref/architecture/09-comments-and-docs.md) |
+| **写这些文档本身**, 写注释 / docstring, 或者要加一篇文档但不知道放哪 | [09-comments-and-docs.md](ref/architecture/09-comments-and-docs.md) |
 
 `ref/backend/` —— `agent_app/` 里某段 Python 为什么这么写, 一篇对一组模块:
 
