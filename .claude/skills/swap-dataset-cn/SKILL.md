@@ -1,735 +1,500 @@
 ---
 name: swap-dataset-cn
-description: 把整个仓库从当前数据集切换到另一个数据集和另一个业务领域. 输入默认是 tmp/dataset 目录 (summary, business context, ER, SQL queries, data/*.tsv, *.sqlite). 覆盖提示词, 两个配置文件, kickstart 问题, 数据库本体, 脚本里的硬编码问题, 以及之后的视觉改造. 用户敲 /swap-dataset-cn 时执行.
+description: 把整个仓库从当前数据集换到 dataset/ 里的新数据集, 然后重新设计前端. 两个阶段, 中间有一道用户验收闸门: 阶段一造库, 同步 PostgreSQL, 重写 data/ 下的提示词/文案/业务说明; 阶段二做视觉. 用户敲 /swap-dataset-cn 时执行.
 disable-model-invocation: true
+allowed-tools: Bash(mise run *) Bash(.venv/bin/python *) Bash(npx next build) Bash(pnpm exec *) Bash(git status *) Bash(git diff *) Bash(ls *) Bash(head *) Bash(grep *) Read Edit Write Glob Skill AskUserQuestion
 ---
 
 # 换数据集
 
----
+这个仓库的本质是三样东西: **一个提示词, 一个数据库, 一个网站**. 换数据集就是把这三样同时
+换掉, 而且必须换得一致.
 
-## 1. 这件事到底在做什么
-
-这个仓库的本质是三样东西: **一个提示词, 一个数据库, 一个网站**. 换数据集就是把这三样同时换掉, 而且必须换得一致. 网站说自己是贷款分析, 提示词教的是医院排班, 数据库里躺着电商订单, 这种状态是能跑起来的, 它不报错, 它只是全程撒谎.
-
-这就是这个 skill 存在的理由. 仓库历史上真发生过: 一次换数据集只改了提示词和前端, 留下了整整一个模块的医院写操作和三段描述 "产科病房排班数据库" 的 docstring, 在一个借贷代码库里躺了几个月. 没有任何测试失败.
-
-所以工作方式不是 "看到哪改哪", 而是**先建立完整映射, 再逐项执行, 最后靠工具验证**. 下面第 2.2 节那张清单就是完整映射, 它是这个 skill 最重要的部分. 漏掉其中一行, 就会重演上面那件事.
-
-还有一条贯穿始终的判断: **能配置化的东西早就配置化了, 剩下要手改的都是 "内容"**. 提示词, kickstart 问题, 数据库, 这三样不可能从配置里生成, 它们必须被重写. 不要试图把它们塞进配置文件.
-
-### 一个目录: `data/`
-
-这个仓库**一个 repo 只服务一个数据集**, 没有 `dataset/<name>/` 那种一个目录装一个
-App 的机制. 但换数据集要改的东西**全部在 `data/` 一个目录里**, 换数据集是把这个目录
-的内容整体重写:
-
-| 文件 | 装什么 | 谁读 |
-| :--- | :--- | :--- |
-| `.env.defaults` | `SCHEMA_NAME` —— 后端唯一要改的一行 (不在 `data/` 里) | Python |
-| `data/site.toml` | 界面上说的每一句话, 4 张能力卡, 12 条 kickstart | Next.js |
-| `data/business-context.md` | 首页那个 "这解决什么问题" 弹窗的正文 | Next.js |
-| `data/system-prompt.md` | agent 的领域大脑 | 提示词 |
-| `data/data.sqlite.example` | 数据本体, 播种到 `tmp/data.sqlite` | 两边 |
-
-**唯一的例外是写操作的 `@tool`**, 它在 `one_04_agent.py` 里, 因为那是代码不是内容.
-
-`site.toml` 曾经是 `config/site.ts`, 改成 TOML 是为了让一次换数据集变成"换一个目录"
-而不是"一个散落全仓库的 diff". 代价是编译器不再检查它, 补偿在 `lib/site/load.ts`:
-`REQUIRED_SITE_KEYS` 查缺 key, `assertIconsExist` 查图标名, 两者都在 `next build`
-时抛. 所以**换完数据集必须跑一次 `npx next build`**, 光跑 `mise run check` 查不到
-图标名和缺 key.
-
-**这个结构有一个代价, 必须正视.** ba 那种"一次接入只准碰一个目录, 用 `git status`
-就能验收"的机械标准, 在这里只对一半成立: `data/` 之外确实还有要动的 (脚本里的硬编码
-问题, 测试里的表名). 补偿办法是 2.2 那张完备性清单和 2.3 那一串验证, 两个都不能省.
+网站说自己是贷款分析, 提示词教的是医院排班, 数据库里躺着电商订单 —— 这种状态是能跑起来的.
+它不报错, 它只是全程撒谎. 所以工作方式不是"看到哪改哪", 而是**先建立完整映射, 再按固定
+顺序执行, 最后靠工具验证**.
 
 ---
 
-最后, 换数据集分**两个阶段**, 中间必须停下来让用户验收:
+## 十二步, 分两个阶段
 
-- **阶段一 (2.1 到 2.3)**: 换内容. 做完之后功能是对的, 但页面还穿着上一个行业的衣服.
-- **阶段二 (2.4)**: 换视觉. 配色, 排版, 图标, 首页和 chat 页的布局. 这一步要用 `frontend-design:frontend-design` skill, 而且必须在用户确认阶段一没问题之后才开始.
+**阶段一 (第 0 到 9 步)** 换内容, 做完之后功能是对的, 但页面还穿着上一个行业的衣服;
+**阶段二 (第 10 到 12 步)** 换视觉. **中间那道闸门 (第 9 步) 不能跳** —— 两个阶段混着做,
+一旦效果不对, 分不清是内容错了还是样式错了.
 
-不要把两个阶段混在一起做. 混在一起的话, 一旦效果不对, 分不清是内容错了还是样式错了.
+```
+0 开场白与模型自检            5 推导链: 提示词 -> kickstart -> 文案 -> 业务说明 -> 硬编码
+1 预检: 仓库现在健康吗        6 完备性核对表
+2 认输入: dataset/ 换了吗     7 验证: 三条命令 + SQL 真库跑一遍 + 数据体检
+3 问用户: 文档里没有的        8 自己先跑一遍网站
+4 建库并同步到 PostgreSQL     ───── 闸门: 用户验收 (第 9 步) ─────
+                              10 定调性并问用户   11 改视觉   12 收尾与交付
+```
+
+五份配套文档, 用到再读:
+
+| 读 | 什么时候 |
+| :--- | :--- |
+| [`ref/data-files-spec-cn.md`](ref/data-files-spec-cn.md) | 第 5 步. `data/` 三个文件各自长什么样 |
+| [`ref/writing-style-cn.md`](ref/writing-style-cn.md) | 第 5 步. 文案的口吻和格式规矩 |
+| [`ref/verification-cn.md`](ref/verification-cn.md) | 第 4 和第 7 步. 全部验证脚本 |
+| [`ref/frontend-redesign-cn.md`](ref/frontend-redesign-cn.md) | 第 11 步. 视觉要动哪些文件 |
+| [`ref/system-prompt-render-blocks.md`](ref/system-prompt-render-blocks.md) | 第 5 步. 逐字抄进提示词的那五节 |
 
 ---
 
-## 2. 工作流
+## 第 0 步. 开场白与模型自检
 
-### 2.1 鉴别输入信息
+**先说话, 再动手.** 用户敲下这个命令时, 他不知道接下来要花多久, 也不知道自己要在什么时候
+插手. 开场白就是回答这两件事.
 
-默认输入目录是 `tmp/dataset/`. 用户可能给别的路径, 但结构是固定的.
+照这个意思说一段 (措辞自便, 别照抄成模板腔):
 
-先 `ls` 一遍确认拿到了什么. 典型长这样 (`<name>` 是数据集名, 比如 `fintech_smb_lending_pipeline_medium`):
+> 这次要做两件事:
+>
+> **第一步, 换数据集.** 我会把 `dataset/` 里的新数据造成数据库, 同步到 PostgreSQL, 然后照
+> 着它重写 `data/` 下面的提示词, 全部界面文案和业务说明. 做完之后功能是对的, 但页面还是上
+> 一个行业的配色.
+>
+> **第二步, 重新设计前端.** 配色, 字体, 构图, 图表色板. 这一步要等你确认第一步没问题之后
+> 才开始.
+>
+> 中间会停下来让你自己跑一遍 `mise run dev` 点一点. 你说没问题, 我才往下走.
+
+然后**报一次自己的模型**, 并说明这件事够不够格:
+
+> 这个流程要写一份长提示词, 挑 12 个问题, 还要保证它们和提示词一致, 对模型的要求不低.
+> 建议用 **Claude Sonnet / GPT Terra / Gemini Flash 同档或更高**的模型.
+> 我现在是 `<你自己的模型名>`.
+
+- 够格 -> 说一句"这一档没问题", 继续
+- **不够格 -> 停下来.** 明确建议用户切换模型之后重新敲一次 `/swap-dataset-cn`, 并说清楚
+  为什么: 小模型在这个流程里的典型失败是提示词覆盖不全, 12 条 kickstart 的触发短语写漏,
+  以及文案里满是破折号. 这三样都不会报错, 全都要人回头返工
+
+**不要因为"想帮上忙"就用一个不够格的模型硬着头皮往下做.** 返工的成本比重来一次高.
+
+---
+
+## 第 1 步. 预检: 仓库现在是健康的吗
+
+在动任何东西之前先确认基线是绿的. **在一个本来就坏了的仓库上换数据集, 你分不清后面报的错
+是新引入的还是原来就有的.**
+
+```bash
+git status --short          # 工作区应该是干净的, 或者只有你知道的改动
+mise run cov                # 全部 Python + Node 测试, 带覆盖率. 必须全绿
+mise run kill               # dev 端口是干净的
+```
+
+`mise run cov` 红了就先停下来, 把结果报给用户, 问他要不要先修. 不要带着红的测试往下走.
+
+**再确认数据库凭据和 LLM 凭据是活的.** `.env` 里装的是密钥, **AI 不许读也不许改它**, 所以
+只能靠探活脚本间接确认:
+
+```bash
+.venv/bin/python scripts/test_05_connect_remote_database.py     # DB_* 通不通
+grep -n "^LLM_PROVIDER" .env.defaults                           # 默认走哪家
+```
+
+按 `LLM_PROVIDER` 跑对应的那一个探活脚本 (`.env` 可能覆盖了这个值, 但你读不到, 所以跑挂了
+就直接问用户):
+
+| provider | 脚本 |
+| :--- | :--- |
+| `bedrock` | `scripts/test_11_ai_aws_bedrock.py` |
+| `anthropic` | `scripts/test_13_ai_anthropic_claude.py` |
+| `openai` | `scripts/test_14_ai_openai.py` |
+| `google` | `scripts/test_15_ai_google_gemini.py` |
+
+**最后确认开发服务器能起来.** `mise run dev` 永远不会自己退出, 所以后台起, 另开一个会自己
+退出的循环去等两个就绪标记 (Next.js 打 `Ready in`, uvicorn 打 `Application startup
+complete.`), 看到之后立刻 `TaskStop` 停掉:
+
+```bash
+until grep -q "Ready in" <task-output-file> \
+   && grep -q "Application startup complete" <task-output-file>; do sleep 0.5; done
+```
+
+`kill` 步骤返回 1 且没起服务, 说明有**别的 checkout** 占着 3000 或 8000. 那不是 bug, 是设计
+好的拦截 —— 报给用户, 让他自己处理, 不要 `--force` 抢端口.
+
+**最后一项: `frontend-design` plugin 装了吗.** 阶段二要用它. 看你自己的可用 skill 列表里
+有没有 `frontend-design:frontend-design`. 没有的话**现在**就告诉用户, 让他从官方
+marketplace 装上, 而不是等到阶段二才发现:
+
+```bash
+ls ~/.claude/plugins/cache/*/frontend-design 2>/dev/null || echo "NOT INSTALLED"
+```
+
+**没装不阻塞阶段一**, 只要在第 9 步交接的时候再提醒一次.
+
+---
+
+## 第 2 步. 认输入: `dataset/` 真的换成新的了吗
+
+这一步要回答的只有一个问题: **`dataset/` 里躺着的, 是新数据集还是当前这个?**
+
+```bash
+ls -la dataset/
+head -40 dataset/00-*summary*.md
+grep -m 3 "^# \|^## " data/system-prompt.md
+grep -n "displayName\|tagline" data/site.toml
+```
+
+| 你看到的 | 怎么办 |
+| :--- | :--- |
+| `dataset/` 的领域和 `data/` 完全不同 | 正常, 往下走 |
+| `dataset/` 的领域和 `data/` 是同一个 | **停下**. 告诉用户新数据集还没放进去, 让他先把六个文件替换掉再来 |
+| 一半新一半旧 (比如只换了两份文档) | **停下**. 半个数据集写不出一致的提示词, 让他补齐 |
+| 有多个 `.sqlite` 或多个 `04-*generator*.py` | **停下**. `agent_app/dataset.py` 靠 discovery 找它们, 多个就抛异常. 让用户删掉不用的那些 |
+
+### `dataset/` 里应该有什么
 
 | 文件 | 里面是什么 | 拿它干什么 |
 | :--- | :--- | :--- |
-| `00-<name>_summary.md` | 一段话讲清公司, 业务, 表数量, 行数, 能回答什么问题 | 最先读. 它是全局地图, 决定 site.ts 的措辞基调 |
-| `01-<name>_business_context.md` | 公司画像, 商业模式, 行业科普, 术语表, 关键指标公式 | 提示词的 "Core Domain Concepts" 和 "Derived Business Concepts" 全部来自这里 |
-| `02-<name>_er_document.md` | ER 图, 表定义, 完整 DDL, 数据生成规则 | 表清单, 外键依赖顺序, 提示词的 "Table Relationships" |
-| `03-<name>_sql_queries.md` | 20 条业务 SQL, 每条带业务背景和难度 | 提示词的 "SQL Patterns", kickstart 问题, 脚本里的测试问题 |
-| `04-<name>_data_generator.py` | 造数脚本 | 一般不用. 只在需要理解字段取值范围时翻 |
-| `<name>.sqlite` | 数据库本体 | 直接替换 `data.sqlite.example` |
-| `data/NN_<table>.tsv` | 每张表的数据 | **每个只看前 3 行**, 确认字段名和取值形态即可. 不要整个读, 有几十 MB |
+| `00-<name>_summary*.md` | 一段话讲清公司, 业务, 表数量, 行数, 能回答什么问题 | **最先读**. 全局地图, 决定文案基调 |
+| `01-<name>_business_context*.md` | 公司画像, 商业模式, 行业科普, 术语表, 关键指标公式 | 提示词的领域概念; 业务说明的前两节 |
+| `02-<name>_er_document*.md` | ER 图, 表定义, 完整 DDL, 数据生成规则 | 表清单, 外键顺序, 提示词的 Table Relationships |
+| `03-<name>_sql_queries*.md` | 20 条业务 SQL, 每条带业务背景和难度 | 提示词的 Analysis Index 和 SQL Patterns |
+| `04-<name>_data_generator*.py` | 造数脚本 | **只跑, 不改**. 只在要理解字段取值范围时翻 |
+| `requirements.txt` | 生成器的依赖 | `gen-data` 会装它 |
+| `<name>.sqlite`, `data/*.tsv` | 生成器的产物 | **不进 Git**, 新 clone 里不存在, 第 4 步造 |
 
-带 `-cn` 后缀的是中文版, 内容等价. **读英文版**, 因为产出的代码和提示词都是英文的, 读中文版会在翻译上浪费一轮.
+带 `-cn` 后缀的是中文版. **有英文版就读英文版**, 只有中文版就读中文版 —— 但无论读哪个,
+**产出一律是英文**.
 
-读完之后, 你手上应该能回答这几个问题. 答不上来就回去再读:
+`.tsv` **每个只看前 3 行**, 确认字段名和取值形态即可. 不要整个读, 有几十 MB.
+
+### 读完之后你应该能回答这四个问题
+
+答不上来就回去再读:
 
 - 这家公司做什么生意, 靠什么赚钱?
 - 有哪些表, 外键依赖顺序是什么 (父表在前)?
-- 这个领域有哪些**外行会猜错** 的术语和公式? (这些是提示词的核心, 通用 SQL 知识不是)
-- 用户最想问的 5 到 10 个业务问题是什么?
-
-### 2.2 推导链: 顺序本身就是质量保证
-
-**这一节是整个 skill 最重要的部分, 比下面那张清单重要.**
-
-换数据集要产出的东西 (提示词, kickstart 问题, 首页文案, tooltip, businessContext)
-描述的是**同一份领域知识**. 如果它们各自去读数据集文档、并行地写出来, 就一定会漂
-移 —— 不是可能, 是一定. 这不是假设, 仓库里就有现成的事故:
-
-> 借贷那版的提示词只保留了源文档 20 条 query 里的 13 条, 丢掉了第 6 条
-> "Monthly Application Volume Trends" 和第 7 条 "Loan Officer Performance
-> Scorecard". 而 12 个 kickstart 问题是**另起炉灶从数据集文档写的**, 于是又把这两
-> 条捡了回来. 结果: 首页有两个按钮, 问的分析提示词根本没教. 所有测试通过, 构建
-> 成功, 没有任何东西报错 —— 用户点下去, 模型只能即兴发挥.
-
-**根治办法不是加校验, 是改顺序.** 自然语言的一致性没法 lint, 那是模糊标准, 硬做
-只会得到一堆 warn 然后没人看. 但**串行推导可以让漂移根本无法发生**: 每一步只从上
-一步的产物推导, 不回头读原始文档.
-
-#### 铁律
-
-> **提示词定义能力边界. 下游只能换措辞, 不能新增一项提示词没教的能力.**
-
-kickstart 问题、能力卡、tooltip、businessContext 的"能问什么", 全部是提示词的**改写**,
-不是数据集文档的**再解读**. 想让首页出现某个分析, 唯一的合法路径是先把它写进提示词.
-
-#### 六步, 严格按顺序
-
-**第 1 步. 数据库落地. 而且"落地"到 PostgreSQL 才算数.**
-
-**先确认输入目录里有没有 `.sqlite`**, 因为数据集有两种给法:
-
-```bash
-ls tmp/dataset/*.sqlite
-```
-
-| 情况 | 怎么办 |
-| :--- | :--- |
-| 有 `.sqlite` | 直接用它 |
-| 没有, 只有 `04-<name>_data_generator.py` | **先跑生成器造出 sqlite**, 再往下走 |
-
-跑生成器之前先读一眼它的开头: 它通常要指定输出路径, 有的还要装额外的包 (faker 之类).
-造完再 `ls -lh` 看一眼大小对不对得上 er_document 里声称的量级 -- 生成器跑挂一半会留下
-一个能打开但只有几张表的文件, 那种失败不报错.
-
-拿到 sqlite 之后:
-
-```bash
-cp tmp/dataset/<name>.sqlite data/data.sqlite.example
-mise run setup-db      # 播种到 tmp/data.sqlite
-# 填 .env.defaults 的 SCHEMA_NAME (建表顺序是算出来的, 不用填)
-mise run check         # 种子有没有表, 外键成不成环, 当场就报
-mise run sync-db       # 发布到 PostgreSQL 的本项目 schema
-mise run verify-db     # 逐表对行数
-```
-
-**最后两步不是可选的.** agent 在任何环境下读的都是 PostgreSQL, 本地也一样, 所以不同步
-就等于没有数据库: 第 2 步验证 SQL 会报 schema 缺表, `mise run dev` 起来的 agent 也答
-不出东西. `data/data.sqlite.example` 现在只是**种子和同步源**, 不再是任何人查询的对象.
-
-`schemaName` 用数据集名 (下划线, 不要连字符, 63 字符以内). 它是这个项目在共享 Neon 实例
-里的命名空间, 别的项目在别的 schema 里, 我们的任何一条 SQL 都不会提到它们.
-
-*为什么必须第一:* 后面每一步的验证都要拿它当基准. 顺序错了当场就报.
-
-**同时把体积预算过一眼.** 线上是 NeonDB 的 500MB 配额, 而且那个库是**和别的项目共用
-的**, 我们只占其中一个 schema, 所以真实预算比 500MB 还小. 这条比下面任何一条内容质量
-的要求都硬 -- 内容写差了可以改, 数据塞不进去是直接上不了线.
-
-```bash
-ls -lh data/data.sqlite.example
-```
-
-PostgreSQL 存同一份数据比 SQLite 大 (每行的元组头, 对齐填充, 索引和主键约束). 这个
-数据集实测是 7.4MB -> 11MB, 约 1.5 倍; 宽表多, 索引多的数据集会更高. 拿 **乘 4** 当
-上界估还是稳的: sqlite 超过 **120MB** 就在动手前跟用户确认要不要减行, 别等同步的时候
-才发现.
-
-估算只是估算, 真实数字在同步之后量, 见 2.3.
-
-**第 2 步. 写提示词. 这是唯一允许通读数据集全部文档的一步.**
-输入: business_context + er_document + sql_queries 全文.
-
-- **必须覆盖 sql_queries 里的每一条 query.** 做法是先写一节 `## Analysis Index`,
-  20 条每条一行 (这条分析回答什么问题), 然后挑其中**外行会算错的**那些, 在
-  `## Derived Business Concepts` 里给出精确公式和 SQL. 覆盖靠索引, 篇幅靠取舍 ——
-  两者不要混为一谈.
-- **把 [`ref/system-prompt-render-blocks.md`](ref/system-prompt-render-blocks.md)
-  整段逐字抄进去**, 放在 `## Response Guidelines` 之后, `## Safety` 之前. 只替换里面
-  的例子 (表名, 指标名, 数字), 不要改结构, 不要改措辞, 不要精简.
-
-  那五节 (`Rendering Triggers` / `The Fence Rule` / `Showing the SQL` / `Diagrams` /
-  `Charts`) 管的是**前端能渲染什么**, 与数据集无关, 措辞是对着
-  `components/chat/blocks/` 的真实行为调出来的. 仓库里已经有一个补丁
-  (`agent_app/agent_debugger.py` 的 `normalize_render_blocks`) 专门收拾模型把 chart
-  包进 `<chart>` 标签的毛病, 改写这几节等于把那个教训重踩一遍.
-
-  **`Rendering Triggers` 那张表和第 3 步的 kickstart 措辞是同一份契约的两半.** 表里
-  写的短语, 就是 kickstart 的 `action` 里要原样出现的短语. 两边对不上, 触发就不稳定.
-- 写完**把提示词里每一段 SQL 对着真库跑一遍**. 跑不通的例子比没有例子更糟, 模型会
-  照抄.
-
-*一个坑:* `mise run check` 会把 `FROM x` / `JOIN x` 当表名校验, 它分不清散文和 SQL.
-`drawn from a zero baseline` 里的 `from a` 会被判成表 `a`. 换个说法即可.
-
-*另一个坑, 这条曾经真的上过线:* **提示词里的 SQL 一律写 PostgreSQL 方言.**
-
-这个仓库以前本地读 SQLite, 线上读 PostgreSQL, 于是每一段提示词 SQL 都是对着 SQLite
-写的、对着 SQLite 验的, 然后发到 PostgreSQL 环境. 症状不是崩溃 -- agent 的 SQL 工具把
-数据库报错转成字符串还给模型, 所以只表现为答案变差, 没人看得见. 这次改成两边都读
-PostgreSQL 之后回头验了一遍旧提示词: **16 段例子里 6 段在 PostgreSQL 上跑不通.**
-
-写的时候直接避开这几个:
-
-| 别写 (SQLite) | 写成 (PostgreSQL) |
-| :--- | :--- |
-| `strftime('%Y-%m', d)` | `TO_CHAR(d, 'YYYY-MM')` |
-| 用 `strftime('%m', ...)` 算季度 | `EXTRACT(QUARTER FROM d)` |
-| `DATE(d, '-90 days')` | `d - INTERVAL '90 days'` |
-| `JULIANDAY(a) - JULIANDAY(b)` | `a - b` (日期相减直接得整数天) |
-| `WHERE is_flag = 1` | `WHERE is_flag` (布尔就是布尔) |
-| 浮点列上的 `ROUND(x, 2)` | `ROUND(x::numeric, 2)` |
-
-最后一条最阴: `ROUND(numeric, int)` 存在而 `ROUND(double precision, int)` 不存在, 所以
-`ROUND(100.0 * a / b, 2)` 没问题 (`100.0` 这个字面量把整个表达式变成 numeric), 而表达式
-里一旦混进 float 列就炸. 表达式里有浮点列就加 `::numeric`.
-
-另外 PostgreSQL 比 SQLite 严的两处, 写的时候就绕开: `GROUP BY` 要列全 SELECT 里所有
-非聚合列; `HAVING` 不认 SELECT 里的别名, 把表达式重写一遍.
-
-**提示词里那节 `## SQL Dialect` 是给模型看的同一份规则**, 换数据集时保留结构只换例子,
-和 `## Rendering Triggers` 一样待遇.
-
-**第 3 步. 写 kickstart 12 条.**
-输入: **只看第 2 步产出的提示词**, 不要回头翻 sql_queries.
-
-逐条对着 `## Analysis Index` 挑 11 条改写成用户口吻的问题 (第 1 条固定是
-"Introduction / What can you do?"). 挑不出来说明提示词覆盖不够, 回第 2 步补, 不要
-在这里现编.
-
-##### 渲染配额: 这 12 条是橱窗, 不是问题列表
-
-随手写 12 个问题, 结果大概率是 12 段纯文字 -- 于是 mermaid 渲染器
-(`MermaidBlock.tsx`), chart 渲染器 (`ChartBlock.tsx`), SQL 高亮 (`CodeBlock.tsx`)
-全都没人看得见. 这个 App 是拿去给人看的, 三个渲染器一个都不露面, 等于白写. 所以配额
-写死, **四类各恰好 3 条**:
-
-| 类别 | 要出什么 | `action` 里必须原样出现 |
-| :--- | :--- | :--- |
-| 表格 | Markdown 表格 **且** SQL | `as a Markdown table` 且 `show the SQL` |
-| 流程图 | mermaid 流程图 | `as a flowchart` |
-| 图表 | chart 图表 | `as a bar chart` 或 `as a line chart` |
-| 自由 | 散文 (含第 1 条 Introduction) | 以上短语**一个都不能出现** |
-
-这些短语和第 2 步那份 `Rendering Triggers` 表是同一份契约的两半. 措辞对不上, 触发就
-不稳定 -- 尤其在小模型上, 它跟的是措辞不是意图.
-
-**两半缺一不可.** 每条都要写 `render` 字段, 它是**按钮对读者的承诺** -- 前端据它在
-按钮上画一个表格 / 流程 / 柱状的小图标 (`components/chat/RenderBadge.tsx`), 读者不
-点开就知道会画出什么, `render = "free"` 故意什么都不画. 而真正让块出现的是 `action`
-里那句短语.
-
-只查短语, 图标会撒谎; 只查 `render`, 一个标着图表的问题会回一段散文.
-`mise run check` 的 render quota **两个方向都验**, 所以两边写反了当场就报.
-
-**选题比措辞更要紧**, 不是随便挑三条加上短语就行:
-
-- **流程图**挑本来就是流程或状态迁移的问题: 生命周期, 漏斗, 状态流转. 给一个排名
-  问题硬套流程图, 出来的是装饰. 让节点标签带上查出来的数字, 那才是它比表格强的地方.
-- **图表**挑形状就是答案的问题: 排名, 趋势, 两个量的差距. `line` 留给有序刻度 (时间,
-  账龄), 其余用 `bar`. 差距类问题用双 series (一条是定价假设的, 一条是实际发生的).
-- **表格 + SQL** 挑读者会想验算的问题: 评分卡, 分档明细, 敞口清单.
-
-**点名要哪几列.** 说清楚要 grade, loan count, implied rate, actual rate 这四列, 比说
-"给我一张表" 更能让模型真的吐出表格, 顺带还能让回答快下来.
-
-**问题问小一点.** 一条要连着调三次以上工具才能凑齐答案的问题, 不要靠调措辞救, 直接
-拆小. 这是给人现场点开看的按钮, 转很久的圈就等于坏了, 哪怕最后答案是对的.
-
-**第 4 步. 写 site.ts 的业务部分.**
-输入: 提示词 (定能力) + 数据库 (定数字) + business_context (定叙事口吻).
-
-- `home.capabilities` 四条 = 提示词里最重要的四条主线, tooltip 是它们的白话解释
-- `chat.insights` 四条 = 同样四条主线, 换成更短的措辞
-- `businessContext` 六节 = 见下面的 spec
-- **`database.blurb` 里的表数和行数, 此刻现场从数据库数出来.** 不要抄旧值, 不要
-  估. 借贷那版曾经写着 "~52,500 records" 而真实是 111,153, 差一倍多, 而它恰好摆在
-  读者判断"这 demo 有多真"的位置
-
-```bash
-.venv/bin/python -c "
-import sqlite3; db=sqlite3.connect('tmp/data.sqlite')
-ts=[r[0] for r in db.execute(\"SELECT name FROM sqlite_master WHERE type='table'\")]
-print(len(ts),'tables', sum(db.execute(f'SELECT COUNT(*) FROM {t}').fetchone()[0] for t in ts),'rows')"
-```
-
-**第 5 步. 改脚本和测试里的硬编码.**
-输入: 提示词 + 数据库. 见下面 D 组清单.
-
-**第 6 步. 重新生成 schema 参考文件.**
-`.venv/bin/python scripts/test_04_print_database_schema.py`
-
-#### 为什么不加 lint
-
-我评估过给这些一致性加检查 (前端词汇正向扫描、kickstart 与提示词的覆盖校验), 结论
-是**不值得**: 判据是自然语言语义, 只能做成模糊匹配, 必然产出一堆需要人工判断的
-warn, 最后没人看. **顺序是零成本的, 检查是有成本且不可靠的.**
-
-保留的检查只有机械可判的那几条: 表顺序对撞 sqlite, 提示词 FROM/JOIN 的表名, 内容
-文件存在性, 以及 2.3 里新加的那两个脚本 (渲染配额的短语计数, 数据的空表 / 孤儿外键 /
-日期越界). 这些判据都是字符串匹配或整数比较, 没有歧义, 所以值得自动化.
-
-分界线就在这里: **"这 12 条里有没有恰好 3 条写了 `as a flowchart`" 是机械问题,
-"这 12 条问得好不好" 不是.** 前者写成脚本, 后者靠 2.2 的推导顺序和用户验收.
+- 这个领域有哪些**外行会猜错**的术语和公式? (这些是提示词的核心, 通用 SQL 知识不是)
+- 用户最想问的 12 个业务问题是什么?
 
 ---
 
-下面这张清单**不是执行顺序, 是完备性核对表**. 按上面六步做完之后, 逐行过一遍确认
-没有漏项.
+## 第 3 步. 问用户: 文档里不会有的那几样
 
-**A. 业务大脑.**
+这几样任何业务文档里都没有. **开工前一次问完, 不要自己编了就往下走**, 也不要挤牙膏式地
+问四轮. 用 AskUserQuestion, 每项都给一个你推荐的默认值:
 
-| 文件 | 来源 | 说明 |
+| 要问的 | 决定什么 | 你该给的建议 |
 | :--- | :--- | :--- |
-| `data/system-prompt.md` | 第 2 步 | 整份重写, 含 Analysis Index |
+| **品牌名 / 产品名** | `[brand]` 的 displayName, logoPrefix + logoAccent (会被拆成两种颜色), footerName; `[home.headline]` | 从 summary 里提两三个候选 |
+| **agent 的名字** | `[chat] agent`, chat 页面里它怎么称呼自己 | 通常是品牌名的短形式 |
+| **`SCHEMA_NAME`** | PostgreSQL schema 名, 也是 `quota.py` 的配额分区 key | 默认建议**数据集目录里的那个 `<name>`**: 小写字母/数字/下划线, 首字符非数字, <= 63 字符 |
+| **教学材料改不改** | `README.md` / `TICKET.md` / `README-cn.md` / `docs/` | **默认不改**. 那是课程材料, 换数据集不等于改课程 |
 
-**B. 配置.** 后端一行, 前端一个 TOML.
+配色方向**留到阶段二再问**. 现在问, 用户还没见过新网站长什么样, 答不准.
 
-| 文件 | 要改的 key | 来源 |
-| :--- | :--- | :--- |
-| `.env.defaults` | `SCHEMA_NAME` (PostgreSQL schema 名, 也是配额分区 key) | 数据集名转成合法标识符: 小写字母/数字/下划线, 首字符非数字, <= 63 |
-| `data/site.toml` | `[brand]` (displayName, logoPrefix, logoAccent, footerName) | **用户提供品牌名** |
-| | `[seo]` (title, description, keywords) | summary |
-| | `[[capabilities]]` × 4 (icon, title, subtitle, tooltip) | 提示词的四条主线, 见下 |
-| | `[home]` (tagline, description, blurb, techStack, headline, cta) | summary + business_context |
-| | `[home.businessContext]` (triggerLabel, title, subtitle) | 弹窗的标题, 正文在 `business-context.md` |
-| | `[chat]` (agent, welcomeSubtitle, tryExamples, suggestionsHint, inputPlaceholder) | 用户提供 agent 名 + sql_queries 的主题分类 |
-| | `[chat.messages]` (welcomeMessage, rateLimited, waitForResponse) | 与数据集无关, 照抄 |
-| | `[[chat.suggestedActions]]` × 12 | 第 3 步, 见渲染配额那节 |
+---
 
-**`[[capabilities]]` 只有一份, 首页和 agent 页渲染的是同一份.** 别去找
-`chat.insights` —— 那是旧形态, 它和 `home.capabilities` 曾经各写各的, 结果第二条
-在首页叫 "Portfolio Concentration" 在 agent 页叫 "Portfolio Health", 图标不同,
-tooltip 只有一边有. 现在两边都走 `components/CapabilityCard.tsx`.
-| | `businessContext.*` (triggerLabel, title, subtitle, sections × 6) | **business_context 全文** + sql_queries 的主题分类. 见下面的 spec |
+## 第 4 步. 建库并同步到 PostgreSQL
 
-`capabilities` 和 `insights` 里的 `icon` 必须是 `lib/icons.ts` 里已注册的名字, 否则**编译报错**. 需要新图标就在那个文件里 import 并加进 `ICONS`. 从 lucide-react 挑.
-
-#### 前端文案的写法规范 (所有 `data/site.toml` 字符串都适用)
-
-这一节管的是 `site.ts` 里每一个会显示给用户的字符串: seo, home, chat, tooltip,
-businessContext 全部在内. 也管 `data/business-context.md`. 不管代码注释和
-提示词.
-
-**第一条: 不要用破折号.**
-
-不要用 `—`, 也不要用 `--` 当停顿. 这是最容易暴露"AI 写的"的一个特征, 因为模型
-极其偏爱用它来塞入补充说明, 一段话里出现三四次是常态, 而人类文案很少这样写.
-
-破折号出现的地方, 通常说明这句话本来就该断开. 三种改法, 按优先级:
-
-| 原样 | 改成 |
-| :--- | :--- |
-| `... is underpriced — and because ...` | 断成两句. `... is underpriced. And because ...` |
-| `Each is structural — a consequence of X — and ...` | 换成逗号从句. `Each one is structural, a consequence of X, and ...` |
-| `term: "Interest — the main revenue line"` | 把补充说明挪进 detail. `term: "Interest"`, detail 以 `The main revenue line, ...` 开头 |
-
-标题里如果非要分隔, 用冒号: `"SMB Lending Lens: AI-Powered Fintech Analytics Agent"`.
-
-**第二条: 叙述性语言, 简单格式.**
-
-用完整的句子把事情讲清楚, 不要写成关键词罗列. 允许的格式只有三样: **加粗**, 标题,
-bullet. 不要用表格, 不要嵌套列表, 不要 emoji, 不要行内代码块 (那是给开发者看的,
-这里的读者不是).
-
-**第三条: business-context.md 允许一张 mermaid 流程图.**
-
-写成普通的 ` ```mermaid ` 围栏块, 整份说明里**最多用一次**, 十个节点以内. 它是留给"读者必须一次性装进脑子里的顺序或分支"的, 比如借贷那版画的是
-"申请 -> 批/拒 -> 放款 -> 还款 -> 结清/违约" 这条主线.
-
-判断标准很简单: **如果这张图只是把上一句话又说了一遍, 那就删掉图, 留那句话.**
-第二张图一定是装饰.
-
-渲染走 `components/chat/blocks/MermaidBlock.tsx` (已做懒加载和 `securityLevel:
-"strict"`), 组件与数据集无关, 不用改. 弹窗和 chat 页共用它, 所以这里能画的图和
-agent 能画的图是同一套能力.
-
-**改完自查一遍:**
+**这一步必须在写任何内容之前完成**, 因为后面每一步的验证都拿它当基准. 顺序错了当场就报.
 
 ```bash
-grep -n "—" data/site.toml data/business-context.md | grep -v "^\s*#"
+CLI=.claude/skills/about-bi-agent-app-scaffold-cn/scripts/teaching_cli.py
+
+.venv/bin/python $CLI gen-data --force      # 装 dataset/requirements.txt, 跑生成器
+ls -lh dataset/*.sqlite                     # 大小对得上 er_document 声称的量级吗
 ```
 
-有输出就是还有破折号没清干净 (那两个 `grep -v` 是排除代码注释).
+`--force` 会**先删光 `dataset/` 下所有 `.sqlite`** 再造. 换数据集必须用它: 上一个数据集留下
+的文件会让 discovery 拒绝在两个文件之间选, 于是一次刚刚成功的重建看起来是坏的.
 
-#### capabilities[].tooltip: 把概念名翻译成人话
+生成要几分钟. 跑挂一半会留下一个能打开但只有几张表的文件, **那种失败不报错**, 所以造完
+要看一眼大小.
 
-首页那四张能力卡上写的是**概念名** —— "Sponsor Exposure Audit" 对内行精确, 对其他
-所有人等于没写. 每张卡 hover / 聚焦 / 点按时弹出的这段 tooltip 就是用来补这一刀的,
-组件是 `app/(marketing)/_components/ConceptTooltip.tsx` (与数据集无关, 不用改).
+接着改配置, 然后同步:
 
-写法:
+```bash
+# 1. 改 .env.defaults 的 SCHEMA_NAME (它进 Git, AI 可以自由编辑)
+#    .env 装密钥, AI 不许读也不许改
+# 2. 估一次体积: sqlite 超过 120MB 先和用户确认要不要减行
+# 3. 先体检再同步 —— 脚本见 ref/verification-cn.md
+mise run check                              # 空表 / 外键成环, 当场就报
 
-- **两到三句白话.** 先定义这个词, 再说这个数为什么会动.
-- **解释里不能再有黑话.** 这是最容易犯的错 —— 用一个内行词去解释另一个内行词.
-- 来源是 business_context 的术语表和关键指标公式, 但要重写成口语, 不要直接抄公式.
+.venv/bin/python $CLI sync-db               # 发布进 PostgreSQL 的 SCHEMA_NAME
+.venv/bin/python $CLI verify-db             # 逐表对行数, 不一致就 exit 1
+# 4. 量一次真实体积 —— 脚本见 ref/verification-cn.md
+```
 
-四条要和 `capabilities` 一一对应, 也就是和四条业务主线一一对应.
+**`sync-db` 和 `verify-db` 不是可选的.** agent 在任何环境下读的都是 PostgreSQL, 本地也一样,
+所以不同步就等于没有数据库. 而且失败方式很阴: **空 schema 和不存在的 schema 在反射器看来
+一模一样** —— agent 会以为这个库没有表, 然后凭空编出一些看起来合理的表名来回答, 答得还很
+自信.
 
-#### `data/business-context.md` 的 spec
+同步是幂等的, 而且**只碰自己那个 schema**, 共用实例上别的项目的表不会被动到.
 
-这是整份内容里最花笔墨的一项, 也最容易做砸, 所以单独定一份 spec. 它是首页那个按钮
-打开的弹窗, 2 到 3 屏可滚动内容, 由 `components/BusinessContextModal.tsx` 渲染
-(组件与数据集无关, 换数据集时不用动).
+`dataset/<name>.sqlite` 现在**只是种子和同步源**, 不是任何人查询的对象.
 
-**它是一份普通 Markdown**, 走的是 chat 页那个同一个 Markdown 渲染器, 所以里面的
-` ```mermaid ` 围栏会真的画成图, 而且是懒加载 + `securityLevel: "strict"` 那一套.
-六节就是六个 `##` 标题, 术语表用加粗开头的 bullet.
+---
 
-弹窗的标题和副标题不在这个文件里, 在 `site.toml` 的 `[home.businessContext]` --
-那三行是**按钮和窗框的标签**, 不是正文.
+## 第 5 步. 推导链: 顺序本身就是质量保证
 
-**它讲的是这个 agentic App, 不是这个数据集.**
+**这一节是整个 skill 最重要的部分, 比第 6 步那张清单重要.**
 
-这条决定了全篇的取景. 对外展示时露出去的是"一个数据集加一个能查它的 agent", 但读
-者真正需要知道的是**这个 App 是干什么的** —— 它替谁解决什么问题, 凭什么解决, 以及
-它今天做到哪一步. 所以标题走 "The business behind the agentic App" 这个调子, 不要
-写成 "The business behind the data". 一字之差, 前者在介绍产品, 后者在介绍附件.
+要产出的东西 (提示词, kickstart 问题, 能力卡, 首页文案, tooltip, 业务说明) 描述的是**同一份
+领域知识**. 如果它们各自去读数据集文档, 并行地写出来, 就一定会漂移 —— 不是可能, 是一定.
 
-**两条硬要求:**
+失败长这样, 而且**没有任何东西会报错**: 提示词只覆盖了源文档 20 条 query 里的 13 条, 而 12
+个 kickstart 是另起炉灶从源文档写的, 于是首页多出两个按钮, 问的分析提示词根本没教. 测试
+全过, 构建成功, 只有用户点下去的时候模型才开始即兴发挥.
 
-- **写给完全不懂这行的陌生人看, 只靠常识就能读完.** 内行缩写和黑话要用就当场解释.
-- **讲行业, 不讲雇主; 讲问题, 不讲项目.** 不出现实习, 公司名, 个人经历, 课程, 作业
-  这类痕迹 —— 和仓库"不放作者身份"是同一条规矩 (见 CLAUDE.md).
+**根治办法不是加校验, 是改顺序.** 串行推导可以让漂移**根本无法发生**: 每一步只从上一步的
+产物推导, 不回头读原始文档.
 
-**六节结构, 按顺序填. 前三节讲世界, 后三节讲这个 App 在这个世界里干什么:**
+### 铁律
 
-| # | 节 | 必须回答 | 来源 |
-| :--- | :--- | :--- | :--- |
-| 1 | 这门生意怎么赚钱 | 收入几条线各占多少, 最大的成本是什么 | business_context 商业模式段 |
-| 2 | 钱从哪里悄悄漏掉 | 每条都要回答"**为什么它不会自己暴露**" | business_context 的四个 Q |
-| 3 | 这些事在数据里长什么样 | **先说清楚为什么这些线索必须放在一起看**, 再说记录了什么, 覆盖多长时间, 并点明 REFERENCE_DATE 是固定的 | er_document + summary |
-| 4 | agent 拿这些数据做什么 | 读 schema, 写 SQL, 解读结果; 该出图时出 diagram 和 chart | 通用能力, 不来自数据集 |
-| 5 | 你可以问什么, 以及怎么读答案 | 按四条主线分组的问题清单, 末尾补这个领域特有的解读陷阱 (比如平均值会稀释掉结论) | sql_queries 的主题分类 + er_document 的 Embedded Business Traps |
-| 6 | 只读之外 (本 App 不含) | 同一套架构可以做真写操作, 前提是权限护栏加可审计轨迹 | 通用, 见下 |
+> **提示词定义能力边界. 下游只能换措辞, 不能新增一项提示词没教的能力.**
 
-**第 2 节是全篇的重心.** 每一条都要回答"为什么这个亏损在财报上看不出来" —— 那才是
-这个 App 存在的理由. 只罗列"我们能查 X"没有说服力, 因为读者不知道为什么需要查.
+想让首页出现某个分析, 唯一的合法路径是**先把它写进提示词**.
 
-**第 6 节的分寸.** 这一节讲产品边界和方向, 必须同时说清三件事, 少一件就变成吹牛:
+### 五步, 严格按顺序
 
-1. 这个 App 是**故意**只读的 —— 它是给外部看的演示;
-2. 同一套 agent 架构可以挂上写操作的 tool, 真正改后端状态 (这不是设想, 仓库本来就
-   支持: 写操作是 dataset-specific 的 `@tool`, 见 `one_04_agent.py`);
-3. 真要上写操作, 前提是**权限护栏**和**可审计轨迹** —— 谁在什么时候改了什么, 每一
-   笔都要留痕, 而不是让模型直接对生产库动手.
+每一步的文件形状见 [`ref/data-files-spec-cn.md`](ref/data-files-spec-cn.md), 文案口吻见
+[`ref/writing-style-cn.md`](ref/writing-style-cn.md).
 
-第 3 点不能省. 少了它, 这一节读起来就是"我们还能让 AI 乱改数据", 反而减分.
+**第 1 步. `data/system-prompt.md` —— 唯一允许通读全部数据集文档的一步.**
+输入: business_context + er_document + sql_queries 全文.
 
-**C. 内容.** 无法配置化, 只能手写.
+- 先写 `## Analysis Index`, 源文档每条 query 一行, **一条都不能漏**
+- 再从中挑**外行会算错的**, 在 `## Derived Business Concepts` 里给精确公式和 SQL
+- 把 [`ref/system-prompt-render-blocks.md`](ref/system-prompt-render-blocks.md) **整段逐字
+  抄进去**, 只换例子
+- **SQL 一律写 PostgreSQL 方言.** 方言对照表在 spec 里
+- 写完**把每一段 SQL 对着真库跑一遍** (脚本见 `ref/verification-cn.md`). 跑不通的例子比没有
+  例子更糟, 模型会照抄然后在用户面前失败
 
-| 文件 | 数量 | 来源 |
-| :--- | :--- | :--- |
-| `data/business-context.md` | 六节 | business_context 全文, 见下面的 spec |
-| `data/data.sqlite.example` | 1 个文件 | 直接复制 `tmp/dataset/<name>.sqlite` 覆盖 |
+**第 2 步. `[[chat.suggestedActions]]` 12 条.**
+输入: **只看第 1 步产出的提示词**, 不要回头翻 sql_queries.
 
-覆盖数据库之后必须跑 `mise run setup-db`, 它把 `data/data.sqlite.example` 播种到
-`tmp/data.sqlite`, 后者才是本地实际读的库.
+逐条对着 `## Analysis Index` 挑 11 条改写成用户口吻的问题 (第 1 条固定是 Introduction).
+**挑不出来说明提示词覆盖不够, 回第 1 步补, 不要在这里现编.**
 
-kickstart 12 条不在这张表里, 它们是 `site.toml` 的 `[[chat.suggestedActions]]`, 见
-B 组.
+渲染配额 (四类各恰好 3 条) 和选题的判据在 spec 里, 这是整个 `site.toml` 里最容易做砸的一节.
 
-**D. 脚本和测试里的硬编码.** 这一组最容易漏.
+**第 3 步. `site.toml` 的其余部分.**
+输入: 提示词 (定能力) + 数据库 (定数字) + business_context (定叙事口吻) + 用户给的品牌名.
+
+`[[capabilities]]` 四条 = 提示词里最重要的四条主线. `home.blurb` 里的表数和行数**此刻现场
+从数据库数出来**, 不要抄旧值也不要估.
+
+**第 4 步. `data/business-context.md`.**
+输入: 提示词 (定第 5 节) + business_context 全文 (定第 1 2 节) + er_document (定第 3 节).
+
+六节结构和每节必须回答的问题在 spec 里.
+
+**第 5 步. 清掉脚本和测试里的硬编码.** 见下面 D 组.
+
+### 为什么不给这些一致性加 lint
+
+判据是自然语言语义, 只能做成模糊匹配, 必然产出一堆需要人工判断的 warn, 最后没人看.
+**一个会误报的检查比没有检查更糟, 因为它训练人忽略输出.**
+
+分界线在这里: **"这 12 条里有没有恰好 3 条写了 `as a flowchart`" 是机械问题, "这 12 条问得
+好不好" 不是.** 前者写成脚本 (`mise run check` 已经在做), 后者靠上面这个顺序和用户验收.
+
+---
+
+## 第 6 步. 完备性核对表
+
+**这不是执行顺序, 是核对表.** 按第 5 步做完之后, 逐行过一遍确认没有漏项.
+
+**A. 业务大脑**
+
+| 文件 | 说明 |
+| :--- | :--- |
+| `data/system-prompt.md` | 整份重写, 含 Analysis Index 和逐字抄的渲染层五节 |
+
+**B. 配置** —— 后端只有一行
+
+| 文件 | 要改的 key |
+| :--- | :--- |
+| `.env.defaults` | `SCHEMA_NAME` —— **后端唯一要改的一行** |
+| `.env` | **一个字都不许动**, 也不许读. 它装的是密钥 |
+
+**C. 内容** —— 无法配置化, 只能手写
+
+| 文件 | 数量 |
+| :--- | :--- |
+| `data/site.toml` | 全部段落, 含 4 张能力卡和 12 条 kickstart |
+| `data/business-context.md` | 六节 |
+
+**D. 脚本和测试里的硬编码** —— 这一组最容易漏
 
 | 文件 | 里面是什么 |
 | :--- | :--- |
 | `scripts/test_21_agent.py` | 10 个 `request_NN` 变量, 全是上一个领域的业务问题, 全部重写 |
 | `scripts/test_02_run_sql_locally.sql` | 一条示例 SQL, 引用了旧表名 |
-| `tests_python/one/test_one_one_04_agent.py` | 断言里写死了 `FROM loan` 和 `DROP TABLE loan`, 换成新库里真实存在的表 |
-| (schema 参考) | **没有需要维护的文件.** 要看 schema 就跑 `.venv/bin/python scripts/test_04_print_database_schema.py`, 它直接读库, 永远是真的 |
+| `tests_python/one/test_one_one_04_agent.py` | 断言里写死了旧表名 (`FROM loan`, `DROP TABLE loan`), 换成新库里真实存在的表 |
 
-**E. 用户必须提供的.** 输入文档里不会有这些.
+**E. 明确不用改的**
 
-这几样任何业务文档里都不会有, 开工前先问用户. 不要自己编了就往下走:
+- **`agent_app/` 下除提示词外的所有代码.** 包名 `agent_app` 就是为了换数据集时不用改
+- **`components/chat/blocks/` 渲染层.** Mermaid 和 chart 与数据集无关
+- **`README.md`, `TICKET.md`, `README-cn.md`, `docs/`.** 那是教学材料 (第 3 步已经问过用户)
+- **schema 参考文件.** 没有需要维护的文件, 要看就跑
+  `.venv/bin/python scripts/test_04_print_database_schema.py`, 它直接读库, 永远是真的
 
-- **品牌名 / 产品名**: 决定 `displayName`, `logo.prefix` + `logo.accent` (会被拆成两种颜色), `footerName`
-- **`database.schemaName`**: 远程 Postgres 的 schema 名, 多项目共用一个库靠它隔离 (不是表
-  前缀 —— 表名两边必须一样). 也是 `quota.py` 的配额分区 key. 必须是合法标识符: 小写字母/
-  数字/下划线, 首字符不能是数字, <= 63 字符; 写错了 `ProjectConfig` 加载时就报
-- **agent 的名字**: chat 页面里它怎么称呼自己
-- **配色方向**: 可以从行业推断 (金融偏藏青, 医疗偏青绿), 但要让用户确认
+E 组第一行能成立, 靠的是一条纪律: **通用代码的注释和 docstring 里不许用本数据集的表名举
+例.** 写 `# e.g. the "loan" table` 等于把当前数据集焊进了通用代码 —— 换数据集之后它不报错,
+不失败, 只是变成一句谎话躺在那里. 用永远虚构的 `acme` / `widget` / `part`.
 
-**F. 明确不用改的.**
+新写通用代码时同样适用: 只要你在 `agent_app/` 或 `scripts/` 里写下一个表名做例子, 先问一句
+**换数据集之后这句话还对吗**.
 
-不要浪费时间在这些上面:
+---
 
-- `agent_app/` 下除提示词外的所有代码. 它是通用的, 包名 `agent_app` 就是为了换数据集时不用改
+## 第 7 步. 验证
 
-**这条能成立, 靠的是一条纪律: 代码注释和 docstring 里的例子必须与数据集无关.**
-
-在通用代码里写 `# e.g. the "loan" table` 这种例子, 等于把当前数据集焊进了通用代码. 换数据集之后它不报错、不失败, 只是变成谎话躺在那里 —— 和 skill 开头讲的那个
-"医院 docstring 躺在借贷仓库里几个月"是同一个形状, 只是规模小.
-
-正确写法是用永远虚构的占位领域:
-
-```python
-#   local SQLite          remote PostgreSQL
-#   widget          ->    acme_widget
-#   part            ->    acme_part
-```
-
-`acme` / `widget` / `part` 这类词不属于任何真实数据集, 所以永远不会过期, 也就永远
-不需要出现在换数据集的清单里. 已经明显虚构的例子 (比如 `db_schema/encoder.py` 里那
-段 `Schema ecommerce(...)` 的格式示例) 不用动, 它本来就不声称在描述本数据集.
-
-**新增通用代码时同样适用.** 只要你在 `agent_app/` 或 `scripts/` 里写下一个表名做
-例子, 先问一句: 换数据集之后这句话还对吗?
-- `components/chat/blocks/` 渲染层. Mermaid 和 chart 与数据集无关
-- `README.md`, `TICKET.md`, `README-cn.md`, `docs/`. 那是教学材料, 换数据集不等于改课程. **要改就单独问用户**
-
-### 2.3 验证
-
-执行顺序在 2.2, 不要在这里再排一遍. 这一节只讲怎么验.
-
-**每做完一步就验一次, 不要攒到最后.** 攒到最后的问题是, 一次报出十个错时你分不清
-哪个是根因、哪个是连锁反应.
+全部脚本和判据在 [`ref/verification-cn.md`](ref/verification-cn.md). 这里只列该跑什么:
 
 ```bash
-mise run check     # 表顺序 / 提示词表名 / 内容文件 / 渲染配额
-mise run test      # Python + Node
-npx next build     # site.toml 的缺 key 和图标名, 只有这里查得到
+mise run check      # 建表顺序 / 提示词表名 / 内容文件 / 渲染配额
+mise run test       # check + Python + Node
+npx next build      # site.toml 的缺 key 和图标名, 只有这里查得到
 ```
 
-**三条都要跑, 它们查的东西不重叠.** `mise run check` 读 TOML 的形状和配额;
-`next build` 是唯一会把 `site.toml` 的 `icon` 拿去对 `lib/icons.ts` 的地方, 也是唯一
-会真的把 `business-context.md` 渲染一遍的地方.
+**三条都要跑, 它们查的东西不重叠.** 只跑前两条的话, 一个拼错的图标名会安静地渲染成兜底
+图标, 卡片看着好好的, 就是配错了图.
 
-**第 2 步做完额外做一件事: 把提示词里每一段 SQL 对着真库跑一遍.**
+外加四件 `mise` 查不到的:
 
-**必须走 `one.engine`, 也就是 PostgreSQL.** 拿本地 sqlite 验过的 SQL 在这里一条都不
-算数 -- 那正是这套流程以前踩的坑.
+1. **提示词里每一段 SQL 对着真库 (PostgreSQL) 跑一遍**
+2. **数据体检**: 空表 / 孤儿外键 / 日期越界, 外加用眼睛看核心指标算出来的数字合不合常识
+3. **破折号自查**: `data/site.toml` 和 `data/business-context.md` 里一个都不许有
+4. **体积**: 同步之后量一次真实数字, 别顶到 500MB 那条共享线
 
-```bash
-.venv/bin/python - <<'EOF'
-import re, pathlib, sqlalchemy as sa
-from agent_app.api import one
-blocks = re.findall(r"```sql\n(.*?)```",
-                    pathlib.Path("data/system-prompt.md").read_text(), re.S)
-ok = fail = 0
-for i, b in enumerate(blocks, 1):
-    if not b.strip().upper().startswith(("SELECT", "WITH")):
-        continue
-    try:
-        with one.engine.connect() as c:
-            rows = c.execute(sa.text(b)).fetchall()
-            c.rollback()
-        ok += 1
-        print(f"[{i}] OK   {len(rows)} rows | {rows[0] if rows else ''}"[:110])
-    except Exception as e:
-        fail += 1
-        print(f"[{i}] FAIL {str(e).splitlines()[0][:130]}")
-print(f"\n{ok} ok, {fail} fail")
-EOF
-```
+---
 
-跑不通的 SQL 例子比没有例子更糟: 模型会照抄, 然后在用户面前失败. 顺便这一步还会
-暴露"公式写错了但语法没错"的情况 —— 结果数字明显不对就能看出来.
+## 第 8 步. 自己先跑一遍网站
 
-**第 3 步做完核对渲染配额.** 不用自己写脚本, `mise run check` 里的 `render quota`
-那一项就是干这个的, 两个方向都验:
+**不要把一个自己没打开过的网站交给用户验收.**
 
-```bash
-mise run check
-```
+后台起 `mise run dev`, 等两个就绪标记 (方法见第 1 步), 然后自己过一遍:
 
-它会报三类问题: 条数不是 12 或四类不是各 3 条; 某条的 `render` 和它 `action` 里的
-措辞对不上; 某条同时命中两种格式的短语. 报出来的信息带序号和标题, 直接能定位.
+- 打开 `/`, 确认四张能力卡, 弹窗, 页脚都是新领域的话
+- 打开 `/chat`, **至少各点一条**: 一条 table, 一条 flowchart, 一条 chart. 确认块真的出来了
+- 出不来最常见的原因是提示词里 `Rendering Triggers` 那节被精简过
 
-**图标名和缺 key 它查不到**, 那两样在 `next build` 时由 `lib/site/load.ts` 抛:
+自己跑完就 `TaskStop` 停掉这个服务器 —— 它是你为了验证起的, 归你清理.
 
-```bash
-npx next build
-```
+---
 
-这两条要一起跑. 只跑 `mise run check` 的话, 一个拼错的图标名会安静地渲染成兜底图标,
-卡片看着好好的, 就是配错了图.
+## 第 9 步. 闸门: 交给用户验收
 
-**数据本身要体检一遍. 这一条 ba 那个仓库可以跳过, 我们不行.**
-
-体检的对象是 `tmp/data.sqlite` 这个**种子**, 不是线上的 PostgreSQL: 同步是逐行复制,
-种子干净则线上干净, 而 SQLite 的 `PRAGMA foreign_key_list` 拿孤儿行比写 PostgreSQL 的
-等价查询省事得多. 顺序上先体检再同步, 别把脏数据发上去再回头查.
-
-那边是纯 demo, 图表里的数字"大差不差就行". 这个 App 是要拿去给人认真看的, 所以数据
-不能出现**一眼假**的结论: 违约率 0%, 某张表全是空的, 日期落在 1970 年, 金额是负数.
-标准也就到这里为止 -- 不需要逐行对账, 不需要和源文档的统计量严格吻合, **能跑, 且没有
-一眼假的结论**, 就算过.
-
-```bash
-.venv/bin/python - <<'EOF'
-import sqlite3, datetime
-
-db = sqlite3.connect("tmp/data.sqlite")
-db.row_factory = sqlite3.Row
-tables = [r[0] for r in db.execute(
-    "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'")]
-
-print(f"{len(tables)} tables\n")
-issues = []
-for t in tables:
-    n = db.execute(f"SELECT COUNT(*) FROM {t}").fetchone()[0]
-    if n == 0:
-        issues.append(f"{t}: 空表")
-    print(f"  {t:<28} {n:>9,} rows")
-
-    # 外键指向一个不存在的父行
-    for fk in db.execute(f"PRAGMA foreign_key_list({t})").fetchall():
-        col, parent, pcol = fk["from"], fk["table"], fk["to"] or "id"
-        orphans = db.execute(
-            f"SELECT COUNT(*) FROM {t} c LEFT JOIN {parent} p ON c.{col} = p.{pcol} "
-            f"WHERE c.{col} IS NOT NULL AND p.{pcol} IS NULL").fetchone()[0]
-        if orphans:
-            issues.append(f"{t}.{col} -> {parent}.{pcol}: {orphans} 条孤儿行")
-
-    # 落在常识之外的日期
-    for col in db.execute(f"PRAGMA table_info({t})").fetchall():
-        if "date" not in col["name"].lower() and "DATE" not in col["type"].upper():
-            continue
-        lo, hi = db.execute(
-            f"SELECT MIN({col['name']}), MAX({col['name']}) FROM {t}").fetchone()
-        if lo is None:
-            continue
-        for label, v in (("min", lo), ("max", hi)):
-            try:
-                y = datetime.date.fromisoformat(str(v)[:10]).year
-            except ValueError:
-                continue
-            if not (1990 <= y <= 2035):
-                issues.append(f"{t}.{col['name']} {label} = {str(v)[:10]}")
-
-print()
-print("❌ " + "\n❌ ".join(issues) if issues
-      else "✅ 无空表, 无孤儿外键, 日期都在常识范围内")
-EOF
-```
-
-脚本查的是机械可判的那几样. 剩下**要靠眼睛看一遍**的, 是提示词里那几条核心指标算出来
-的数字: 违约率, 定价缺口, 逾期率. 拿第 2 步跑 SQL 那一步的输出直接看:
-
-- 比率类落在这个行业说得过去的区间里 (不是 0%, 不是 80%)
-- 分档之间的排序符合常识 (风险高的档位违约率更高)
-- 金额没有负数, 没有比总资产还大的单笔
-
-有一条明显离谱, 说明数据集本身有问题, 回去找用户确认, 不要在提示词里绕过它.
-
-**同步到线上之后, 量一次真实体积.** 第 1 步只是估.
-
-```bash
-mise run sync-db
-mise run verify-db
-.venv/bin/python - <<'EOF'
-import sqlalchemy as sa
-from agent_app.api import one
-
-sql = sa.text('''
-    SELECT pg_size_pretty(COALESCE(SUM(pg_total_relation_size(c.oid)), 0)) AS ours,
-           COUNT(*) AS n_tables,
-           pg_size_pretty(pg_database_size(current_database())) AS whole_db
-    FROM pg_class c
-    JOIN pg_namespace n ON n.oid = c.relnamespace
-    WHERE c.relkind = 'r' AND n.nspname = :schema
-''')
-with one.remote_postgres_engine.connect() as conn:
-    r = conn.execute(sql, {"schema": one.config.schema_name}).one()
-print(f"我们这 {r.n_tables} 张表占 {r.ours}; 整库 {r.whole_db} / 500 MB")
-EOF
-```
-
-那 500MB 是整库配额, **和别的项目共用**, 所以看的是两个数: 我们这个 schema 别失控,
-整库别顶到线. 逼近了就回去减行, 通常是把最大那张流水表按时间截一段, 而不是删表 -- 删表会让提
-示词里的分析失效.
-
-**起本地服务看效果:**
+**明确告诉用户: 内容已经换完, 但页面还是上一个行业的视觉, 请先自己跑一下看功能对不对.**
 
 ```bash
 mise run dev
 ```
 
-Next.js + FastAPI 一起起, 会先杀掉旧进程, 不用手动清理. 打开 `/` 和 `/chat`.
-
-**最后跑一次旧领域词汇扫描.** 词表是一次性参数, 不提交进仓库:
-
-```bash
-mise run check -- --retired "loan,lending,borrower,default_event,risk_grade"
-```
-
-把上一个数据集**最有辨识度的名词**填进去. 有残留它会精确报出文件和行号.
-
-**一个环境坑:** `tmp/data.sqlite` 不进 git, 切分支不会跟着变. 如果测试报了一堆表
-不存在, 先 `mise run setup-db` 再说, 别急着改代码.
-
-### 2.4 停下来让用户验收, 然后做视觉
-
-阶段一到此为止. **明确告诉用户: 内容已经换完, 但页面还是上一个行业的视觉, 请先跑一下看功能对不对.** 让他确认这几件事:
+告诉他打开 `http://localhost:3000/` 和 `http://localhost:3000/chat`, 然后**给他这张清单**:
 
 - agent 回答得像不像这个领域的专家
-- **12 条 kickstart 逐条点一遍, 该出的块真的出来了**: 3 条出表格加 SQL 高亮, 3 条出
-  流程图, 3 条出图表. 这一条必须手点, 不能靠读配置 -- 配额脚本只能证明问法写对了,
-  证明不了模型照做了. 出不来最常见的原因是提示词里 `Rendering Triggers` 那节被精简过
-- 答案里的数字没有一眼假的 (违约率不是 0%, 排序符合常识). 不必逐行对账, 但明显离谱
-  的必须回去查
+- **12 条 kickstart 逐条点一遍, 该出的块真的出来了**: 3 条出表格加 SQL 高亮, 3 条出流程图,
+  3 条出图表. 这一条必须手点 —— 配额脚本只能证明问法写对了, 证明不了模型照做了
+- 每条问题不要转太久. 转很久的那条不是慢, 是要回去把问题问小
+- 答案里的数字没有一眼假的 (比率不是 0%, 排序符合常识). 不必逐行对账, 但明显离谱的必须查
 - 首页文案和 chat 页文案有没有残留旧领域的说法
-- 所有前端文案里没有破折号, 且 businessContext 里最多一张 mermaid 图
-- 点开首页那个 business context 弹窗, 一个完全不懂这行的人读完能不能明白这个 App 解决什么问题
-- 四张能力卡 hover / Tab 聚焦 / 手机点按, tooltip 都能弹出, 窄屏下不跑出屏幕
+- 点开首页那个业务说明弹窗, 一个完全不懂这行的人读完能不能明白这个 App 解决什么问题
+- 四张能力卡 hover / Tab 聚焦 / 手机点按, tooltip 都能弹出, 窄屏下不跑出屏幕.
+  **首页和 agent 页各看一遍** —— 两边渲染的是同一份 `[[capabilities]]`
 
-用户满意之后再进入视觉改造.
+然后说清楚**怎么进入第二步**:
 
-**这一步开始之前, 先做两件事, 顺序不能反:**
+> 有意见随时说, 我改完你再看, 直到功能你满意为止. 满意之后跟我说一声"进入第二步"或者
+> "开始改前端", 我就开始做视觉: 配色, 字体, 构图, 图表色板.
 
-1. **用一句话告诉用户你要进入阶段二了, 并且明说你正在加载视觉设计 skill.** 比如:
-   "阶段一验收通过, 我现在进入视觉改造, 先加载 `frontend-design` skill 拿它的设计
-   规范." 不要闷头就开始改颜色 -- 用户看到的是一堆 diff, 不知道你依据的是什么.
-2. **真的用 Skill 工具加载 `frontend-design:frontend-design`** (注意是带 plugin 前缀
-   的全名), 然后按它给的规范做. 不要凭记忆写"我觉得好看的配色".
+如果第 1 步发现 `frontend-design` plugin 没装, **在这里再提醒一次**.
 
-同理, 改图表配色那一步要加载 `dataviz` skill, 跑它自带的调色板 validator, 别靠眼睛
-判断.
+**用户没有明确说满意之前, 不要开始阶段二.** 他说了三处小意见并不等于验收通过 —— 改完再问
+一次.
 
-视觉相关的代码就这些, 别只改首页就收工:
+---
 
-| 层面 | 文件 |
-| :--- | :--- |
-| 配色系统 | `tailwind.config.ts` (现在是 Navy + Gold 的 "Fintech Color System"), `app/globals.css` 的 `:root` 变量 |
-| 字体 | `app/layout.tsx` 里的 `next/font/google` (现在是 Inter + Figtree + Noto Sans) |
-| favicon | `app/icon.png` |
-| 导航栏 | `app/_components/layouts/Navigation.tsx` (logo 的两段式着色在这里) |
-| 首页 | `app/(marketing)/_components/Hero.tsx`, `app/(marketing)/HomePageContent.tsx` |
-| **business context 弹窗** | `components/BusinessContextModal.tsx` (遮罩, 面板, 滚动条, Markdown 排版), `components/ConceptTooltip.tsx` (气泡与小尖角) |
-| **chat 空状态** | `components/chat/overview.tsx` (标题 + 4 张能力卡, 卡片本身是 `components/CapabilityCard.tsx`, 首页共用) |
-| **chat 输入区** | `components/chat/multimodal-input.tsx` (12 张 kickstart 卡片的排布), `components/chat/RenderBadge.tsx` (按钮上那个表格/流程/柱状小图标) |
-| **chat 对话气泡** | `components/chat/message.tsx` (AI 头像那个方块, 用户头像, 气泡配色) |
-| **chat 顶部横幅** | `components/chat/chat.tsx` (那条介绍 agent 的 banner) |
-| 图表配色 | `app/globals.css` 的 `.viz-root` token |
+## 第 10 步. 阶段二: 定调性并问用户
 
-加粗的四行是最常被忘掉的. 首页改得很漂亮而 chat 页还是旧配色, 是这一步最典型的失败.
+用户放行之后, 先做两件事, 顺序不能反:
 
-图标有两个来源: 从 lucide-react 挑现成的 (记得同步注册进 `lib/icons.ts`), 或者自己画 SVG 放进 `components/chat/icons/`. 后者适合行业特有的形状.
+**一, 说一句话告诉用户你要进入阶段二了, 并且明说你正在加载视觉设计 skill.** 用户看到的是
+一堆 diff, 他需要知道你依据的是什么.
 
-改图表配色时注意 `app/globals.css` 里 `.viz-root` 的深色 token 只认 `.dark` class, 不认系统偏好, 因为全站 Tailwind 是 `darkMode: ["class"]` 策略, 别去接 `prefers-color-scheme`. 换配色之后跑一遍 `dataviz` skill 的调色板 validator (上面已经说过要加载它).
+**二, 真的用 Skill 工具加载 `frontend-design:frontend-design`** (带 plugin 前缀的全名), 按它
+给的规范做. **不要凭记忆写"我觉得好看的配色".**
 
-视觉改完再跑一次 `mise run check` 和 `mise run test`, 因为改图标名或删组件都可能把编译打断.
+然后**先分析调性, 再问用户**. 调性从这个 App 的**行业观感**来, 不是从个人偏好来: 干这行的
+人每天盯着的屏幕长什么样?
+
+用 AskUserQuestion 给**两到三个方向**, 每个方向要**连色值带构图一起说清楚**, 而不是只给一句
+形容词. 至少覆盖: 情绪一个词, 浅底还是深底, 主色加强调色, 排版气质. 判据和展开见
+[`ref/frontend-redesign-cn.md`](ref/frontend-redesign-cn.md).
+
+---
+
+## 第 11 步. 动手改视觉
+
+文件清单, 三样不许重写的东西, 两条样式约束, 全在
+[`ref/frontend-redesign-cn.md`](ref/frontend-redesign-cn.md).
+
+三件最容易出事的:
+
+- **别只改首页.** 首页很漂亮而 chat 页还是旧配色, 是这一步最典型的失败
+- **改图表配色时加载 `dataviz` skill**, 跑它自带的调色板 validator, 别靠眼睛判断
+- **加了新图标要同步注册进 `lib/icons.ts`**, 否则 `next build` 直接失败
+
+改完再跑一次 `npx next build` / `mise run check` / `mise run test` —— 改图标名或删组件都可能
+把编译打断.
+
+然后**亲眼看两个页面**, 按 `ref/frontend-redesign-cn.md` 那张验收清单走一遍, 再交给用户.
+
+---
+
+## 第 12 步. 收尾与交付
+
+用户对视觉也满意之后, 做完这四件事才算结束:
+
+**一, 旧领域词汇扫描.** 词表是一次性参数, 不提交进仓库:
+
+```bash
+mise run check -- --retired "旧数据集最有辨识度的几个名词"
+```
+
+挑词要挑准 —— 拿 `node` 这种通用词去扫会报出一堆正常用词, 你会学会忽略这个检查.
+
+**二, 清理上一个数据集在 PostgreSQL 上的残表.** 它们住在别的 schema 里, 新的同步永远不会
+碰到, 所以会一直占着那个**和别的项目共用**的 500MB 配额而不发出任何声音.
+
+先列出全库的 schema (脚本在 `ref/verification-cn.md`), **把旧 schema 的名字报给用户, 等他
+明确说删, 再删**. 那个库上还住着别的项目, 删错一个是不可逆的.
+
+**三, 最后跑一次全套:**
+
+```bash
+mise run check
+mise run test
+npx next build
+git status --short
+```
+
+`git status` 应该只落在这几处: `data/`, `dataset/`, `.env.defaults`, 视觉相关的
+`app/ components/ lib/icons.ts tailwind.config.ts`, 以及 D 组那三个硬编码文件. **落到别处
+就是信号**, 回去看一眼那是不是越界了.
+
+**四, 给用户一段交付说明**, 讲清四件事:
+
+- 换成了什么数据集, schema 名是什么, 多少张表多少行
+- 视觉定的调性是什么, 一句话
+- 还需要他自己做的事 (比如部署时要在 Vercel 面板里录 `.env` 那些密钥, 因为 `.env` 不进 Git)
+- 旧 schema 删了没有
+
+顺便提一句: 要把这个仓库作为作品集交付出去的话, **教学层是可以整块删掉的** (`README.md`,
+`TICKET.md`, `docs/`, `.claude/skills/`, `dataset/`, `agent_app/dataset.py`,
+`tests_python/test_dataset.py`, `scripts/`, 外加 `mise.toml` 里依赖 `scripts/` 的 `check`
+任务), 删完仍然是一个能跑的 app, 一行代码都不用改. **这件事要单独问用户, 不要顺手做掉.**
