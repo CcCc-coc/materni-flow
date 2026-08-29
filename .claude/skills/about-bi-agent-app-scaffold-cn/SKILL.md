@@ -20,7 +20,7 @@ description: 这个仓库的事实标准, 分四块: architecture (边界与设�
 | 填 `.env`, 换 LLM provider, 打开花费配额 | [operations/02](ref/operations/02-configuration.md) |
 | 造数据集, 同步 PostgreSQL, 换完数据集重灌 | [operations/03](ref/operations/03-the-database.md) |
 | 起 / 停开发服务器, 搞不清 mise 和 pnpm/uv 谁调谁 | [operations/04](ref/operations/04-dev-servers.md) |
-| 改完之后要跑什么才算验过 | [architecture/08](ref/architecture/08-what-guards-the-boundaries.md) |
+| 改完之后要跑什么才算验过, **或者要加一项检查** | [architecture/08](ref/architecture/08-what-guards-the-boundaries.md) |
 | | |
 | 重构, 挪文件, 加模块, **判断一个东西该放哪一层** | [architecture/04](ref/architecture/04-modular-design.md) |
 | 加东西时拿不准算教学层还是生产层 | [architecture/02](ref/architecture/02-teaching-and-production.md) |

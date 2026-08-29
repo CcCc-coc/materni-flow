@@ -58,6 +58,14 @@ test = [
     "moto>=5.2.3,<6.0.0", # Mock AWS Service
 ]
 
+# The app's own command line. `mise.toml` calls this name, not a file path, so
+# where a command's implementation lives can move without every task and habit
+# moving with it. Building and syncing the dataset are deliberately NOT here:
+# they belong to the teaching layer, which is deleted as whole directories, and
+# a shared entry point would leave a broken subcommand behind.
+[project.scripts]
+agent-app = "agent_app.cli:main"
+
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["agent_app*"]

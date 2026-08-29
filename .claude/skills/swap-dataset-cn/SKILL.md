@@ -2,7 +2,7 @@
 name: swap-dataset-cn
 description: 把整个仓库从当前数据集换到 dataset/ 里的新数据集, 然后重新设计前端. 两个阶段, 中间有一道用户验收闸门: 阶段一造库, 同步 PostgreSQL, 重写 data/ 下的提示词/文案/业务说明; 阶段二做视觉. 用户敲 /swap-dataset-cn 时执行.
 disable-model-invocation: true
-allowed-tools: Bash(mise run *) Bash(.venv/bin/python *) Bash(npx next build) Bash(pnpm exec *) Bash(git status *) Bash(git diff *) Bash(ls *) Bash(head *) Bash(grep *) Read Edit Write Glob Skill AskUserQuestion
+allowed-tools: Bash(mise run *) Bash(.venv/bin/python *) Bash(.venv/bin/agent-app *) Bash(pnpm exec *) Bash(git status *) Bash(git diff *) Bash(ls *) Bash(head *) Bash(grep *) Read Edit Write Glob Skill AskUserQuestion
 ---
 
 # 换数据集
@@ -217,7 +217,7 @@ ls -lh dataset/*.sqlite                     # 大小对得上 er_document 声称
 #    .env 装密钥, AI 不许读也不许改
 # 2. 估一次体积: sqlite 超过 120MB 先和用户确认要不要减行
 # 3. 先体检再同步 —— 脚本见 ref/verification-cn.md
-mise run check                              # 空表 / 外键成环, 当场就报
+mise run check-content                      # 空表 / 外键成环, 当场就报
 
 .venv/bin/python $CLI sync-db               # 发布进 PostgreSQL 的 SCHEMA_NAME
 .venv/bin/python $CLI verify-db             # 逐表对行数, 不一致就 exit 1
@@ -298,7 +298,7 @@ mise run check                              # 空表 / 外键成环, 当场就�
 **一个会误报的检查比没有检查更糟, 因为它训练人忽略输出.**
 
 分界线在这里: **"这 12 条里有没有恰好 3 条写了 `as a flowchart`" 是机械问题, "这 12 条问得
-好不好" 不是.** 前者写成脚本 (`mise run check` 已经在做), 后者靠上面这个顺序和用户验收.
+好不好" 不是.** 前者写成脚本 (`mise run check-content` 已经在做), 后者靠上面这个顺序和用户验收.
 
 ---
 
@@ -356,9 +356,9 @@ E 组第一行能成立, 靠的是一条纪律: **通用代码的注释和 docst
 全部脚本和判据在 [`ref/verification-cn.md`](ref/verification-cn.md). 这里只列该跑什么:
 
 ```bash
-mise run check      # 建表顺序 / 提示词表名 / 内容文件 / 渲染配额
+mise run check-content      # 建表顺序 / 提示词表名 / 内容文件 / 渲染配额
 mise run test       # check + Python + Node
-npx next build      # site.toml 的缺 key 和图标名, 只有这里查得到
+mise run build-web      # site.toml 的缺 key 和图标名, 只有这里查得到
 ```
 
 **三条都要跑, 它们查的东西不重叠.** 只跑前两条的话, 一个拼错的图标名会安静地渲染成兜底
@@ -449,7 +449,7 @@ mise run dev
 - **改图表配色时加载 `dataviz` skill**, 跑它自带的调色板 validator, 别靠眼睛判断
 - **加了新图标要同步注册进 `lib/icons.ts`**, 否则 `next build` 直接失败
 
-改完再跑一次 `npx next build` / `mise run check` / `mise run test` —— 改图标名或删组件都可能
+改完再跑一次 `mise run build-web` / `mise run check-content` / `mise run test` —— 改图标名或删组件都可能
 把编译打断.
 
 然后**亲眼看两个页面**, 按 `ref/frontend-redesign-cn.md` 那张验收清单走一遍, 再交给用户.
@@ -463,7 +463,7 @@ mise run dev
 **一, 旧领域词汇扫描.** 词表是一次性参数, 不提交进仓库:
 
 ```bash
-mise run check -- --retired "旧数据集最有辨识度的几个名词"
+mise run check-content -- --retired "旧数据集最有辨识度的几个名词"
 ```
 
 挑词要挑准 —— 拿 `node` 这种通用词去扫会报出一堆正常用词, 你会学会忽略这个检查.
@@ -477,9 +477,9 @@ mise run check -- --retired "旧数据集最有辨识度的几个名词"
 **三, 最后跑一次全套:**
 
 ```bash
-mise run check
+mise run check-content
 mise run test
-npx next build
+mise run build-web
 git status --short
 ```
 

@@ -38,9 +38,18 @@ description = "💾 Export Python dependencies to requirements.txt (not used by 
 # committed, because a second dependency list is a second thing to drift.
 run = "uv export --format requirements-txt --no-dev --no-emit-project --no-hashes --no-annotate --no-emit-package pywin32 --no-emit-package colorama --no-emit-package tzdata | sed 's/ ; platform_machine ==.*or.*//' > requirements.txt"
 
-[tasks.check]
-description = "🔍 Check the repo agrees with its config and its seed (run after a dataset swap)"
-run = ".venv/bin/python scripts/test_00_check_project_config.py"
+# The two halves of "did the swap land": this one reads the prose in `data/`,
+# `build-web` reads the same file through the frontend loader. Neither catches
+# what the other does, so a swap runs both.
+#
+# Named for what it touches rather than `check`, because a task called `check`
+# tells nobody which of the repo's several checks it is. It calls the console
+# script from pyproject.toml rather than a path under `scripts/`: those scripts
+# are course material and will move, and a task pointing into them breaks the
+# day they do.
+[tasks.check-content]
+description = "🔍 Check data/ still agrees with the prompt and the seed (run after a dataset swap)"
+run = ".venv/bin/agent-app check-content"
 
 [tasks.test-python]
 description = "🧪 Run Python tests with pytest"
@@ -50,9 +59,24 @@ run = ".venv/bin/pytest tests_python"
 description = "🧪 Run Node.js tests"
 run = "node --test tests_node/*.test.js"
 
+# The only thing that reads `data/site.toml` through the frontend's own loader,
+# so it is the only thing that catches a missing required key or an `icon` that
+# `lib/icons.ts` does not export. Left unchecked, a misspelled icon renders as
+# the fallback glyph: the card looks fine, it is just the wrong picture, and
+# nothing says a word. It also type-checks the TypeScript and statically renders
+# both routes, which is what puts `business-context.md` through the real
+# Markdown pipeline.
+#
+# A build task rather than a check task because it really does produce `.next/`.
+# It just happens to be the cheapest way to verify the frontend without opening
+# a browser.
+[tasks.build-web]
+description = "🏗️ Build the Next.js frontend (also the only check for site.toml keys and icon names)"
+run = "pnpm exec next build"
+
 [tasks.test]
-description = "🧪 Run all checks and tests (config consistency + Python + Node.js)"
-depends = ["check", "test-python", "test-node"]
+description = "🧪 Run all checks and tests (content consistency + Python + Node.js)"
+depends = ["check-content", "test-python", "test-node"]
 
 [tasks.cov-python]
 description = "🧪 Run Python code coverage tests with pytest"

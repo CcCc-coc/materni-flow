@@ -100,8 +100,8 @@ data/
 | `lib/site/load.ts` | 解析 TOML, 查必填 key, 查图标名, 两者都 throw |
 
 **两个检查都在 `next build` 时真的会拦住构建** —— 少一个 key 会报出 key 名, 图标名拼错会
-报出坏名字和全部合法名字. 所以换完数据集必须跑一次 `npx next build`, 光跑
-`mise run check` 查不到这两样.
+报出坏名字和全部合法名字. 所以换完数据集必须跑一次 `mise run build-web`, 光跑
+`mise run check-content` 查不到这两样.
 
 `load.ts` 是 **server only** (读文件系统), 所以 `site` 是在 server component 里加载, 然后
 **当 props 传进 client component** 的. 这不是麻烦, 是边界: client 组件不许自己去读配置,
@@ -157,7 +157,7 @@ const BLOCK_RENDERERS: Record<string, ComponentType<BlockProps>> = {
 跳过第三步的结果是渲染器一行代码都跑不到, 而前端测试全绿.
 
 同一份契约还有第三半: `site.toml` 里那 12 条 kickstart 问题, 每条带一个 `render` 字段和
-一句触发短语. `mise run check` 双向校验它们. 细节见 [06-rendering-contract.md](06-rendering-contract.md).
+一句触发短语. `mise run check-content` 双向校验它们. 细节见 [06-rendering-contract.md](06-rendering-contract.md).
 
 ---
 
@@ -216,9 +216,9 @@ Python 包叫 `agent_app`, 不叫 `smb_lending_anything`. 这个名字是故意�
 模块化设计不会自己维持, 它要么被机械检查守住, 要么慢慢烂掉. 现在守着的是三条命令:
 
 ```bash
-mise run check     # 建表顺序 / 提示词表名 / 内容文件 / kickstart 渲染配额
+mise run check-content     # 建表顺序 / 提示词表名 / 内容文件 / kickstart 渲染配额
 mise run test      # Python 单元测试
-npx next build     # site.toml 的必填 key 和图标名, 只有这里查得到
+mise run build-web     # site.toml 的必填 key 和图标名, 只有这里查得到
 ```
 
 每一项具体拦住什么, 机械检查盖不住的部分怎么人工验, 以及"什么该自动检查什么不该"的判据,

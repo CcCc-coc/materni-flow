@@ -23,7 +23,7 @@ docstring 里在讲"什么是 mixin", 目录里躺着 `TICKET.md` 和验收清�
 
 **分层的分法**: 教学的东西整块住在自己的目录里. 擦除的动作是 `rm -rf` 几个路径, 剩下的
 仍然是一个能跑的 app. 这件事**不改一行代码**, 所以零风险, 而且可验证 —— 删完跑一遍测试和
-`mise run check` 就知道.
+`mise run check-content` 就知道.
 
 这个仓库选第二种, 而这个选择反过来对代码提了一堆约束. 下面就是那些约束.
 
@@ -42,9 +42,17 @@ docstring 里在讲"什么是 mixin", 目录里躺着 `TICKET.md` 和验收清�
 删掉它们之后剩下的是: `agent_app/` (除 `dataset.py`), `api/`, `app/`, `components/`,
 `lib/`, `data/`, 以及 `.env.defaults` —— 一个连着 PostgreSQL 的 agent 应用.
 
-**唯一要动一行配置的地方**: `mise.toml` 里的 `check` 任务依赖 `scripts/test_00_...`, 而那个脚本
-`import agent_app.dataset`; 删掉教学层就要一起删掉这个任务. 这不是遗漏, 是**这个检查本身
-就是教学工具** —— 它守的是"换数据集别改坏", 而换数据集是课程内容.
+**`mise.toml` 一行都不用动.** 每个任务要么跑的是应用本身, 要么跑的是
+`agent_app/` 里的东西, 没有一个指向 `scripts/`.
+
+`check-content` 值得单独说一句, 因为它看起来最像会被牵连的那个: 它检查的四项里有两项要读
+SQLite 种子, 而种子属于教学层. 所以 `agent_app/content_check.py` 的 `seed_tables()` 把那个
+import **放在函数体里**并接住 `ImportError`, 两项降级成 SKIP, 其余两项照常跑.
+
+**这不是为了少改一行配置**, 是因为剩下那两项 (内容文件在不在, 12 条 kickstart 的渲染配额对
+不对) 在一个交付出去的仓库里**仍然有意义**: 它们守的是 `data/` 和前端之间的契约, 和课程无关.
+一个模块级的 import 会让整条命令在教学层消失的那一刻带着 traceback 死掉, 于是连那两项一起
+陪葬.
 
 ## 支撑这条边界的四条约束
 

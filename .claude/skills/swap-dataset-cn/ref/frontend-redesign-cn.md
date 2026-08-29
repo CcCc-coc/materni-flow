@@ -72,7 +72,7 @@ SVG 放进 `components/chat/icons/`. 后者适合行业特有的形状.
    重写一遍就是重写一遍流式 bug
 2. **`components/chat/blocks/` 和 `markdown.tsx`** —— 它们是一份跨前后端契约的一半, 另一半
    是 `data/system-prompt.md` 的 Rendering Triggers 表, `data/site.toml` 的 `render` 配额,
-   和 Python 侧的 `normalize_render_blocks`. 自己写一套围栏分发, 会让 `mise run check` 一路
+   和 Python 侧的 `normalize_render_blocks`. 自己写一套围栏分发, 会让 `mise run check-content` 一路
    全绿地校验一个已经不成立的承诺
 3. **`ConceptTooltip` 和 `BusinessContextModal`** —— hover / focus / tap / Escape,
    `aria-describedby`, 焦点转移, 滚动锁. 重写一遍通常是重写坏一遍, 而且看不出来
@@ -101,8 +101,8 @@ SVG 放进 `components/chat/icons/`. 后者适合行业特有的形状.
 ## 验收
 
 ```bash
-npx next build
-mise run check
+mise run build-web
+mise run check-content
 mise run test
 ```
 

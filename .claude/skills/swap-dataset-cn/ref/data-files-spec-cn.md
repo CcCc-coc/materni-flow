@@ -47,35 +47,47 @@
 `Rendering Triggers` 那张表和 kickstart 的措辞是**同一份契约的两半**: 表里写的短语, 就是
 `[[chat.suggestedActions]]` 的 `action` 里要原样出现的短语. 两边对不上, 触发就不稳定.
 
-### SQL 一律写 PostgreSQL 方言
+### SQL 写 PostgreSQL
 
-agent 在**任何环境下**读的都是 PostgreSQL, 本地也一样. 一段 SQLite 方言的例子在本地永远绿,
-在线上永远错, 而且**不报错, 只是答案变差** —— agent 的 SQL 工具把数据库报错转成字符串还给
-模型, 没有任何监控会响.
+**数据库是 PostgreSQL, 在每一个环境里都是**, 本地也一样. 提示词里的 SQL 例子是给模型照抄
+的模板, 所以它们必须在 PostgreSQL 上真的跑得通.
 
-| 别写 (SQLite) | 写成 (PostgreSQL) |
+写错了不会崩, 这是它难发现的原因: agent 的 SQL 工具把数据库报错转成字符串还给模型, 模型
+换个写法再试或者干脆绕过去. 症状不是异常, 是**答案悄悄变差**, 没有任何监控会响. 所以推导链
+第 1 步末尾那一遍"对着真库跑一遍"是唯一能发现它的地方.
+
+**表名一律写裸名**: `FROM loan`, 不写 `FROM some_schema.loan`. 连接已经把 `search_path`
+钉在本项目的 schema 上了.
+
+模型的训练语料里混着各家方言, 下面这几处是最容易写歪的:
+
+| 要做什么 | 写法 |
 | :--- | :--- |
-| `strftime('%Y-%m', d)` | `TO_CHAR(d, 'YYYY-MM')` |
-| 用 `strftime('%m', ...)` 算季度 | `EXTRACT(QUARTER FROM d)` |
-| `DATE(d, '-90 days')` | `d - INTERVAL '90 days'` |
-| `JULIANDAY(a) - JULIANDAY(b)` | `a - b` (日期相减直接得整数天) |
-| `WHERE is_flag = 1` | `WHERE is_flag` (布尔就是布尔) |
-| `SUM(is_flag)` | `SUM(CASE WHEN is_flag THEN 1 ELSE 0 END)` |
-| 浮点列上的 `ROUND(x, 2)` | `ROUND(x::numeric, 2)` |
+| 按月分桶 | `TO_CHAR(d, 'YYYY-MM')` |
+| 取季度 / 月份 | `EXTRACT(QUARTER FROM d)` / `EXTRACT(MONTH FROM d)` |
+| 日期偏移 | `d - INTERVAL '90 days'` |
+| 日期相减成天数 | `a - b` 直接得整数天; 带时分秒用 `EXTRACT(EPOCH FROM a - b) / 86400.0` |
+| 布尔列 | `WHERE is_flag` / `WHERE NOT is_flag`, 不要 `= 1` |
+| 布尔列求和 | `SUM(CASE WHEN is_flag THEN 1 ELSE 0 END)` |
+| 四舍五入 | `ROUND(x::numeric, 2)` |
+| 算比率 | `ROUND(100.0 * a / b, 2)` |
 
-最后一条最阴: `ROUND(numeric, int)` 存在而 `ROUND(double precision, int)` 不存在. 所以
-`ROUND(100.0 * a / b, 2)` 没问题 (`100.0` 这个字面量把整个表达式变成 numeric), 而表达式里
-一旦混进浮点列就炸. **表达式里有浮点列就加 `::numeric`.**
+**`ROUND` 那条最阴.** `ROUND(numeric, int)` 存在而 `ROUND(double precision, int)` 不存在.
+所以 `ROUND(100.0 * a / b, 2)` 没问题 —— `100.0` 这个字面量把整个表达式变成 numeric ——
+而表达式里一旦混进浮点列就炸. **表达式里有浮点列就加 `::numeric`.**
 
-另外 PostgreSQL 比 SQLite 严的三处, 写的时候就绕开: `GROUP BY` 要列全 SELECT 里所有非聚合
-列; `HAVING` 不认 SELECT 里的别名, 把表达式重写一遍; `window` 之类的保留字不能当别名.
+**比率那条也不只是格式问题.** 两个整数相除是整数除法, 结果直接是 0. 前面那个 `100.0` 同时
+解决了这件事, 所以比率一律写成 `100.0 * a / b` 的形状.
+
+**三处严格的地方**, 写的时候就绕开: `GROUP BY` 要列全 SELECT 里所有非聚合列; `HAVING` 不认
+SELECT 里的别名, 把表达式重写一遍; `window` / `order` 这类保留字不能当别名.
 
 `## SQL Dialect` 那一节是给模型看的同一份规则, 换数据集时**保留结构只换例子**, 和渲染层
 五节一样待遇.
 
 ### 一个和检查脚本打架的坑
 
-`mise run check` 会扫提示词里 ` ```sql ` 围栏块内部的 `FROM x` / `JOIN x`, 确认表真的存在.
+`mise run check-content` 会扫提示词里 ` ```sql ` 围栏块内部的 `FROM x` / `JOIN x`, 确认表真的存在.
 它只扫围栏块内部, 所以散文里写 `EXTRACT(QUARTER FROM d)` 不会误报.
 
 用了 CTE 的话, 检查脚本认得 `WITH name AS (` 这种自定义名字, 不会把它当成缺失的表.
@@ -104,8 +116,8 @@ agent 在**任何环境下**读的都是 PostgreSQL, 本地也一样. 一段 SQL
 ### 四条硬约束
 
 **一, 必填 key 少一个 build 就挂.** `lib/site/schema.ts` 的 `REQUIRED_SITE_KEYS` 列了每个
-必须存在的 key, `lib/site/load.ts` 解析时逐个查. 只在 `npx next build` 时才拦得住,
-`mise run check` 查不到.
+必须存在的 key, `lib/site/load.ts` 解析时逐个查. 只在 `mise run build-web` 时才拦得住,
+`mise run check-content` 查不到.
 
 **二, 图标名必须在 `lib/icons.ts` 里.** `assertIconsExist` 会报出坏名字和全部合法名字, 同样
 只在 `next build` 时抛. 不查的话拼错的图标会静默渲染成兜底图标 —— 卡片看着好好的, 就是配错
@@ -150,7 +162,7 @@ mermaid 渲染器, chart 渲染器, SQL 高亮全都没人看得见. 所以配�
 据它在按钮上画一个表格 / 流程 / 柱状的小图标, 读者不点开就知道会画出什么, `free` 故意什么
 都不画 (每个按钮都有徽章等于没有徽章). 而真正让块出现的是 `action` 里那句短语.
 
-只查短语, 图标会撒谎; 只查 `render`, 一个标着图表的问题会回一段散文. `mise run check` 的
+只查短语, 图标会撒谎; 只查 `render`, 一个标着图表的问题会回一段散文. `mise run check-content` 的
 `render quota` **两个方向都验**.
 
 第 1 条固定是 Introduction / "What can you do?", `render = "free"`.

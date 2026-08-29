@@ -8,11 +8,11 @@
 | 边界 | 出处 | 谁在守 |
 | :--- | :--- | :--- |
 | 生产路径不 import 教学层 | [02](02-teaching-and-production.md) | `TestNotOnTheProductionPath` (AST 扫 import) |
-| 种子的外键要有插入顺序, 而且不能一张表都没有 | [03](03-the-dataset.md) | `mise run check` |
-| 提示词里的 SQL 例子不能查不存在的表 | [07](07-config-and-content.md) | `mise run check` |
-| `data/` 下该有的内容文件不能缺 | [07](07-config-and-content.md) | `mise run check` |
-| kickstart 的 `render` 和它自己的措辞要对上 | [06](06-rendering-contract.md) | `mise run check` (双向) |
-| `site.toml` 必填 key 不能少, 图标名必须存在 | [07](07-config-and-content.md) | `npx next build` |
+| 种子的外键要有插入顺序, 而且不能一张表都没有 | [03](03-the-dataset.md) | `mise run check-content` |
+| 提示词里的 SQL 例子不能查不存在的表 | [07](07-config-and-content.md) | `mise run check-content` |
+| `data/` 下该有的内容文件不能缺 | [07](07-config-and-content.md) | `mise run check-content` |
+| kickstart 的 `render` 和它自己的措辞要对上 | [06](06-rendering-contract.md) | `mise run check-content` (双向) |
+| `site.toml` 必填 key 不能少, 图标名必须存在 | [07](07-config-and-content.md) | `mise run build-web` |
 | 后端各模块的行为 | [04](04-modular-design.md) | `mise run test` |
 | **`agent_app/` 换数据集一行不改** | [04](04-modular-design.md) | **没有检查** —— 靠 review diff 的落点 |
 | **模型真的照着提示词产出渲染块** | [06](06-rendering-contract.md) | **没有检查** —— 只能手点 |
@@ -26,15 +26,15 @@
 ## 能自动查的: 三条命令, 都要跑
 
 ```bash
-mise run check     # 建表顺序 / 提示词表名 / 内容文件 / kickstart 渲染配额
+mise run check-content     # 建表顺序 / 提示词表名 / 内容文件 / kickstart 渲染配额
 mise run test      # Python 单元测试, 含教学层边界那条 AST 检查
-npx next build     # site.toml 的必填 key 和图标名, 只有这里查得到
+mise run build-web     # site.toml 的必填 key 和图标名, 只有这里查得到
 ```
 
 **最常见的漏是只跑前两条.** 于是一个拼错的图标名安静地渲染成兜底图标 —— 卡片看着好好的,
 就是配错了图, 而且没有任何东西会说一句.
 
-`mise run check` 的四项:
+`mise run check-content` 的四项:
 
 | 检查 | 拦住什么 |
 | :--- | :--- |
@@ -43,7 +43,7 @@ npx next build     # site.toml 的必填 key 和图标名, 只有这里查得到
 | 内容文件 | `data/` 下该有的文件缺失或者只是个残桩 |
 | 渲染配额 | 12 条 kickstart 的 `render` 和它自己的措辞对不上, 或者四类不是各 3 条 |
 
-`npx next build` 的两项都在 `lib/site/load.ts` 里, 都会 throw:
+`mise run build-web` 的两项都在 `lib/site/load.ts` 里, 都会 throw:
 
 | 检查 | 拦住什么 |
 | :--- | :--- |
@@ -75,11 +75,15 @@ npx next build     # site.toml 的必填 key 和图标名, 只有这里查得到
 换完数据集跑一次, 词表是命令行参数, **不提交**:
 
 ```bash
-mise run check -- --retired "loan,lending,borrower,default_event,risk_grade"
+mise run check-content -- --retired "loan,lending,borrower,default_event,risk_grade"
 ```
 
 填**上一个数据集最有辨识度的名词**. 挑词要挑准: 拿 `node` 这种通用词去扫, 报出来的全是
 mermaid 文档里的正常用词, 你会学会忽略这个检查的输出.
+
+它按后缀过滤要读哪些文件, 而 **`.toml` 必须在那张后缀表里**: `data/site.toml` 装着界面上的
+每一句话, 是全仓库旧领域词汇最密集的一个文件, 也就是这个扫描最需要读的那一个. 漏掉这个后缀,
+扫描会安静地报"全清干净了", 而首页文案原封不动.
 
 数据库那边的残留是另一回事: 上一个数据集的表不会被新的同步碰到 (同步只管本 schema 里的表),
 会一直占着 Neon 的配额. 见 [05](05-why-postgres-everywhere.md) 的体积预算一节.
@@ -130,11 +134,20 @@ SQLite 种子而不是线上库 (同步是逐行复制, 种子干净则线上干
 
 先过一遍上面那条判据 —— 机械可判吗? 能不能改用顺序防住?
 
-确定要加, 那么它属于 `mise run check` 还是 `mise run test`, 判据是**它查的是内容还是代码**:
-查 `data/` 和 `dataset/` 里人写的东西, 进 `scripts/test_00_check_project_config.py`; 查
-`agent_app/` 的行为, 进 `tests_python/`.
+确定要加, 那么它属于 `mise run check-content` 还是 `mise run test`, 判据是**它查的是内容还是
+代码**: 查 `data/` 和 `dataset/` 里人写的东西, 加进 `agent_app/content_check.py` 并在
+`run()` 里挂上; 查 `agent_app/` 的行为, 进 `tests_python/`.
+
+**新增的检查和它的测试一起写.** `content_check.py` 住在 `agent_app/` 里, 所以它和别的模块
+一样被覆盖率量着, 镜像的测试文件是 `tests_python/test_content_check.py`. 那些测试的 fixture
+一律用虚构领域 (`acme` / `widget` / `part`), 理由和 [backend/10](../backend/10-testing.md) 里
+那条一样.
+
+**要读种子的检查另有一条规矩**: 把 `from agent_app.dataset import ...` 放在函数体里并接住
+`ImportError`, 拿不到就降级成 SKIP. 教学层是可以被整块删掉的, 而一个模块级的 import 会让
+整条命令在那一刻带着 traceback 死掉, 连那些不需要种子的检查一起陪葬.
 
 还有一条容易忘的: 上面每一项检查都**硬编码了路径** (`data/` 下的文件名, `lib/site/` 的
-位置, 提示词里的节标题). 重构挪文件时, **检查脚本和这几篇文档要在同一个 commit 里跟着改**.
+位置, 提示词里的节标题). 重构挪文件时, **检查代码和这几篇文档要在同一个 commit 里跟着改**.
 
 一份描述着三个月前目录结构的规范, 比没有规范更糟: 它会让下一个人自信地改错地方.

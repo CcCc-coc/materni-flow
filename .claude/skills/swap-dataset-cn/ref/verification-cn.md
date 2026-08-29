@@ -8,15 +8,15 @@
 ## 三条命令, 都要跑, 查的东西不重叠
 
 ```bash
-mise run check      # 建表顺序 / 提示词表名 / 内容文件 / kickstart 渲染配额
-mise run test       # check + Python 测试 + Node 测试
-npx next build      # site.toml 的必填 key 和图标名, 只有这里查得到
+mise run check-content   # 建表顺序 / 提示词表名 / 内容文件 / kickstart 渲染配额
+mise run test            # check-content + Python 测试 + Node 测试
+mise run build-web       # site.toml 的必填 key 和图标名, 只有这里查得到
 ```
 
 **最常见的漏是只跑前两条.** 于是一个拼错的图标名安静地渲染成兜底图标, 卡片看着好好的, 就是
 配错了图, 而且没有任何东西会说一句.
 
-`mise run check` 的四项:
+`mise run check-content` 的四项:
 
 | 检查 | 拦住什么 |
 | :--- | :--- |
@@ -25,7 +25,7 @@ npx next build      # site.toml 的必填 key 和图标名, 只有这里查得�
 | 内容文件 | `data/` 下三个文件缺失或者只是个残桩 (少于 500 字符) |
 | 渲染配额 | 12 条 kickstart 的 `render` 和它自己的措辞对不上, 或者四类不是各 3 条 |
 
-`npx next build` 的两项都在 `lib/site/load.ts` 里, 都会 throw:
+`mise run build-web` 的两项都在 `lib/site/load.ts` 里, 都会 throw:
 
 | 检查 | 拦住什么 |
 | :--- | :--- |
@@ -179,7 +179,7 @@ EOF
 换完之后跑一次. 词表是命令行参数, **不提交进仓库**:
 
 ```bash
-mise run check -- --retired "loan,lending,borrower,default_event,risk_grade"
+mise run check-content -- --retired "loan,lending,borrower,default_event,risk_grade"
 ```
 
 填**上一个数据集最有辨识度的名词**. 挑词要挑准: 拿 `node` 这种通用词去扫, 报出来的全是
@@ -240,8 +240,8 @@ print('dropped')"
 
 ## 一个环境坑
 
-`dataset/<name>.sqlite` 不进 git, 切分支不会跟着变, 新 clone 里根本不存在. 如果 `mise run
-check` 报"数据库一张表都没有", 先造数据再说, 别急着改代码:
+`dataset/<name>.sqlite` 不进 git, 切分支不会跟着变, 新 clone 里根本不存在. 如果
+`mise run check-content` 报"还没造过数据库", 先造数据再说, 别急着改代码:
 
 ```bash
 .venv/bin/python .claude/skills/about-bi-agent-app-scaffold-cn/scripts/teaching_cli.py gen-data

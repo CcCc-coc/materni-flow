@@ -19,6 +19,10 @@ agent_app/db_schema/encoder.py  ->  tests_python/db_schema/test_db_schema_encode
 一个源文件对一个测试文件, 目录结构一致. 这样"这个模块有没有测试"是一个看目录就能回答的
 问题, 而不是一个要 grep 的问题.
 
+**开发工具也算在内.** `content_check.py` 和 `cli.py` 是给人跑的命令, 不在请求路径上, 但它们
+住在 `agent_app/` 里就一样被覆盖率量着, 一样各有一个镜像测试文件. 判据不是"它上不上生产",
+是"它在不在这个包里" —— 和 `dataset.py` 特意不被 `.coveragerc` omit 掉是同一条.
+
 **纯声明式的模块没有自己的测试文件**: `paths.py`, `constants.py`, `db_schema/model.py`,
 `db_schema/api.py`. 它们里面没有分支, 断言"这个枚举有这几个成员"只是把代码抄一遍, 抄错了
 两边一起错. 它们的覆盖率来自读它们的那些测试 —— 当前 `agent_app/` 是 100%.

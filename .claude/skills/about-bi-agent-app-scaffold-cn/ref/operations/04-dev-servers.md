@@ -14,10 +14,19 @@
 mise run inst              装依赖 (Python + Node)
 mise run dev               起两个开发服务器 (会先 kill)
 mise run kill              停掉本 checkout 的服务器
-mise run check             配置一致性检查 (换数据集之后跑)
-mise run test              check + Python 测试 + Node 测试
+mise run check-content     data/ 的内容一致性 (换数据集之后跑)
+mise run build-web         构建前端; 唯一查 site.toml 必填 key 和图标名的地方
+mise run test              check-content + Python 测试 + Node 测试
 mise run cov               覆盖率报告, 写到 htmlcov/
 ```
+
+**任务名点的是它碰什么, 不是它属于哪一类.** 一个叫 `check` 的任务说不清它是这个仓库好几种
+检查里的哪一种, 而 `check-content` 和 `build-web` 摆在一起就看得出它们分管两边: 前者读
+`data/` 里的散文, 后者把同一批文件送进前端的加载器. 两者查的东西不重叠, 换完数据集两条都跑.
+
+`check-content` 跑的是 `pyproject.toml` 里那个 console script (`.venv/bin/agent-app`), 不是
+`scripts/` 下的某个路径. **`mise.toml` 里没有任何任务指向 `scripts/`**, 因为那些编号脚本是
+课程素材, 会被搬走.
 
 细分的任务 (`inst-python-deps` / `inst-node-deps` / `test-python` / `test-node` /
 `next-dev` / `fastapi-dev`) 平时不用直接敲, 它们是上面这几条的组成部分.
