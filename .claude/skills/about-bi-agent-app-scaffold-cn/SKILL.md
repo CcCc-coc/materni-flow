@@ -6,7 +6,9 @@ description: 这个仓库的事实标准, 分四块: architecture (边界与设�
 # BI Agent App 脚手架: 事实标准
 
 这个 skill 是这个仓库的**总纲**. 它回答"这是什么, 为什么长成这样", 不回答"代码在哪"
-(那个看 `CLAUDE.md`), 也不回答"怎么一步步换数据集" (那个看 `swap-dataset-cn`).
+(那个看 `CLAUDE.md`), 也不回答"怎么一步步换数据集" —— 那件事分两条命令走,
+`/run-swap-dataset-phase-1-cn` 换内容, `/run-swap-dataset-phase-2-cn` 换视觉, 它们共用的
+知识库是 `swap-dataset-cn` skill.
 
 **用法: 在下面那张表里找到你要做的事, 只读那一篇.** 不要全读.
 
