@@ -32,19 +32,29 @@ swap-dataset-cn
 
 ## 第二步: 读这四份文档
 
+下面的 `${SKILLS_DIR}` 指**这个仓库放 skill 的那个目录**, 按工具不同:
+
+| 工具 | `${SKILLS_DIR}` |
+| :--- | :--- |
+| Claude Code | `.claude/skills` |
+| Codex / Antigravity | `.agents/skills` |
+
+**它不是一个会被自动替换的变量, 是要你自己解析的占位符.** 拿不准就先
+`ls .claude/skills .agents/skills 2>/dev/null` 看哪个存在.
+
 用 Read 工具读, 一份都不能跳:
 
 | 顺序 | 文档 | 什么时候用得上 |
 | :--- | :--- | :--- |
-| 1 | `.claude/skills/swap-dataset-cn/ref/phase-1-cn.md` | **完整剧本**, 十步. 现在就整个读完 |
-| 2 | `.claude/skills/swap-dataset-cn/ref/data-files-spec-cn.md` | 第 5 步写 `data/` 三个文件时 |
-| 3 | `.claude/skills/swap-dataset-cn/ref/writing-style-cn.md` | 第 5 步写文案时 |
-| 4 | `.claude/skills/swap-dataset-cn/ref/verification-cn.md` | 第 4 步和第 7 步验证时 |
+| 1 | `${SKILLS_DIR}/swap-dataset-cn/ref/phase-1-cn.md` | **完整剧本**, 十步. 现在就整个读完 |
+| 2 | `${SKILLS_DIR}/swap-dataset-cn/ref/data-files-spec-cn.md` | 第 5 步写 `data/` 三个文件时 |
+| 3 | `${SKILLS_DIR}/swap-dataset-cn/ref/writing-style-cn.md` | 第 5 步写文案时 |
+| 4 | `${SKILLS_DIR}/swap-dataset-cn/ref/verification-cn.md` | 第 4 步和第 7 步验证时 |
 
 第 1 份**现在必须整个读完**, 它是接下来一切动作的依据. 后三份可以等走到对应步骤再读, 但
 **别等到写完了才回头对规范** —— 那时候改的成本已经产生了.
 
-还有第五份 `.claude/skills/swap-dataset-cn/ref/system-prompt-render-blocks.md`, 它是要**逐字
+还有第五份 `${SKILLS_DIR}/swap-dataset-cn/ref/system-prompt-render-blocks.md`, 它是要**逐字
 抄进提示词**的原文, 不是读来理解的. 走到第 5 步推导链的第 1 小步时再打开, 整段复制过去只换
 里面的例子.
 

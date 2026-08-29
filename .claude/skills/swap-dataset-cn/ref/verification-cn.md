@@ -244,5 +244,7 @@ print('dropped')"
 `mise run check-content` 报"还没造过数据库", 先造数据再说, 别急着改代码:
 
 ```bash
-.venv/bin/python .claude/skills/about-bi-agent-app-scaffold-cn/scripts/teaching_cli.py gen-data
+# skill 根: Claude Code 是 .claude/skills, Codex / Antigravity 是 .agents/skills
+CLI=$(ls {.claude,.agents}/skills/about-bi-agent-app-scaffold-cn/scripts/teaching_cli.py 2>/dev/null | head -1)
+.venv/bin/python $CLI gen-data
 ```

@@ -89,9 +89,15 @@ until grep -q "Ready in" <task-output-file> \
 有没有 `frontend-design:frontend-design`. 没有的话**现在**就告诉用户, 让他从官方
 marketplace 装上, 而不是等到阶段二才发现:
 
+**判断方式看工具.** 最可靠的一条是**看你自己的可用 skill 列表里有没有它**, 这在三家都成立.
+Claude Code 下还可以直接查缓存目录:
+
 ```bash
 ls ~/.claude/plugins/cache/*/frontend-design 2>/dev/null || echo "NOT INSTALLED"
 ```
+
+Codex 的插件目录是 `.codex-plugin/`, 而 **Antigravity 根本没有 marketplace**, 插件只能是一个
+本地目录. 所以在那两家不要靠猜路径, 就看 skill 列表.
 
 **没装不阻塞阶段一**, 只要在第 9 步交接的时候再提醒一次.
 
@@ -163,12 +169,17 @@ grep -n "displayName\|tagline" data/site.toml
 
 **这一步必须在写任何内容之前完成**, 因为后面每一步的验证都拿它当基准. 顺序错了当场就报.
 
+教学 CLI 是**另一个 skill 自带的脚本**, 所以路径里有 skill 根目录. 自己解析出来, 别写死:
+
 ```bash
-CLI=.claude/skills/about-bi-agent-app-scaffold-cn/scripts/teaching_cli.py
+# skill 根: Claude Code 是 .claude/skills, Codex / Antigravity 是 .agents/skills
+CLI=$(ls {.claude,.agents}/skills/about-bi-agent-app-scaffold-cn/scripts/teaching_cli.py 2>/dev/null | head -1)
 
 .venv/bin/python $CLI gen-data --force      # 装 dataset/requirements.txt, 跑生成器
 ls -lh dataset/*.sqlite                     # 大小对得上 er_document 声称的量级吗
 ```
+
+`$CLI` 是空的就说明那个 skill 不在, 停下来问用户, 不要自己去猜路径.
 
 `--force` 会**先删光 `dataset/` 下所有 `.sqlite`** 再造. 换数据集必须用它: 上一个数据集留下
 的文件会让 discovery 拒绝在两个文件之间选, 于是一次刚刚成功的重建看起来是坏的.

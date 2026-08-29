@@ -53,10 +53,20 @@ swap-dataset-cn
 
 ## 第三步: 读这两份文档
 
+下面的 `${SKILLS_DIR}` 指**这个仓库放 skill 的那个目录**, 按工具不同:
+
+| 工具 | `${SKILLS_DIR}` |
+| :--- | :--- |
+| Claude Code | `.claude/skills` |
+| Codex / Antigravity | `.agents/skills` |
+
+**它不是一个会被自动替换的变量, 是要你自己解析的占位符.** 拿不准就先
+`ls .claude/skills .agents/skills 2>/dev/null` 看哪个存在.
+
 | 顺序 | 文档 | 什么时候用得上 |
 | :--- | :--- | :--- |
-| 1 | `.claude/skills/swap-dataset-cn/ref/phase-2-cn.md` | **完整剧本**. 现在就整个读完 |
-| 2 | `.claude/skills/swap-dataset-cn/ref/verification-cn.md` | 第 7 节收尾时 (旧词汇扫描, 清理旧 schema) |
+| 1 | `${SKILLS_DIR}/swap-dataset-cn/ref/phase-2-cn.md` | **完整剧本**. 现在就整个读完 |
+| 2 | `${SKILLS_DIR}/swap-dataset-cn/ref/verification-cn.md` | 第 7 节收尾时 (旧词汇扫描, 清理旧 schema) |
 
 剧本里有: 力度边界, 定调性的四个维度, 逐层的文件清单, 三样不许重写的东西, 验收清单, 收尾
 交付.

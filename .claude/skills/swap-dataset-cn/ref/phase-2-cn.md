@@ -192,6 +192,6 @@ git status --short
 - 旧 schema 删了没有
 
 顺便提一句: 要把这个仓库作为作品集交付出去的话, **教学层是可以整块删掉的** (`README.md`,
-`TICKET.md`, `docs/`, `.claude/skills/`, `dataset/`, `agent_app/dataset.py`,
+`TICKET.md`, `docs/`, 整个 skill 目录, `dataset/`, `agent_app/dataset.py`,
 `tests_python/test_dataset.py`, `scripts/`), 删完仍然是一个能跑的 app, 一行代码都不用改 ——
 `mise.toml` 也一行不用动. **这件事要单独问用户, 不要顺手做掉.**
