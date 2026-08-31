@@ -312,7 +312,7 @@ agent 页复杂一点, 因为它有两副面孔: 你还没开始对话时是一�
 
 **怎么做:**
 
-1. 确认你在自己的 branch 上, 工作区干净
+1. 开一个叫 `08-app-router-and-shells` 的 branch, 确认工作区干净
 2. 加载 `/about-bi-agent-app-scaffold-cn`
 3. 问它这个问题, 明确要求它先不要动手:
 

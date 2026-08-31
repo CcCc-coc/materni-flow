@@ -36,7 +36,8 @@ description: "你能说清那个 skill 为什么是一张索引而不是一本�
 4. 回到那个 skill 的 `SKILL.md`, 找到开头那张按任务查的表, 确认它本身是路由而不是内容,
    并在表里挑一行, 顺着它指的路径打开那一篇.
 5. 打开 `.claude/settings.json`, 读 deny 名单, 数清它拒绝了哪几个文件的哪几种操作.
-6. 确认自己在一个属于自己的 branch 上且工作区干净, 然后加载 `/about-bi-agent-app-scaffold-cn`.
+6. 开一个叫 `07-work-with-ai` 的 branch, 确认工作区干净, 然后加载
+   `/about-bi-agent-app-scaffold-cn`.
 7. 派一个改一句界面文案的小任务, 明确要求它**先出计划再停下来**, 不要直接动手.
 8. 读它给的计划, 确认它只打算改一个文件; 如果它提出要改组件, 把它指回那份 skill.
 9. 让它动手, 然后跑 `git diff --stat` 看落点, 再起开发服务器确认那句话真的变了.

@@ -25,22 +25,24 @@ description: "本地开发服务器起来了, 浏览器里能打开首页和 age
 
 ## 2. 要做的事情
 
-1. 装好 mise, 然后跑 `mise run inst` 装齐 Python 和 Node 两套依赖.
-2. 复制 `.env.example` 成 `.env`, 填上四个 `DB_` 开头的值, 其余保持注释.
-3. 在 OpenAI, Anthropic, Google 三家里选一家, 去它的开发者控制台拿一把 API key. 注意订阅
+1. 从这门课那个基线 branch 开一个叫 `04-get-it-running` 的 branch, 后面凡是要改仓库里的
+   文件都在它上面做.
+2. 装好 mise, 然后跑 `mise run inst` 装齐 Python 和 Node 两套依赖.
+3. 复制 `.env.example` 成 `.env`, 填上四个 `DB_` 开头的值, 其余保持注释.
+4. 在 OpenAI, Anthropic, Google 三家里选一家, 去它的开发者控制台拿一把 API key. 注意订阅
    和 API 额度是两回事, 有 ChatGPT Plus 不等于有 key.
-4. 在那家控制台里给账号设一个 5 到 10 美元的消费上限, 然后把 key 存进密码管理器, 再填进
+5. 在那家控制台里给账号设一个 5 到 10 美元的消费上限, 然后把 key 存进密码管理器, 再填进
    `.env` 里对应的那个变量.
-5. 打开 `.env.defaults`, 把 `LLM_PROVIDER` 改成你选的那一家, 或者在 `.env` 里写一行同名的
+6. 打开 `.env.defaults`, 把 `LLM_PROVIDER` 改成你选的那一家, 或者在 `.env` 里写一行同名的
    盖掉它.
-6. 跑 `gen-data` 造出本地 SQLite 种子, 命令在教学层的 `teaching_cli.py` 里, 不在 mise 任务中.
-7. 跑 `sync-db` 把种子发布进 PostgreSQL, 再跑 `verify-db` 逐表核对行数.
-8. 跑 `mise run dev`, 等两个服务器都打出就绪日志.
-9. 打开浏览器访问本地 3000 端口, 在 agent 页点一个 kickstart 按钮, 确认拿到的是带数字的
-   真实回答.
-10. 在 `.env` 里临时把 `SCHEMA_NAME` 改成一个不存在的名字, 重启后再问一次, 读那条错误信息,
+7. 跑 `gen-data` 造出本地 SQLite 种子, 命令在教学层的 `teaching_cli.py` 里, 不在 mise 任务中.
+8. 跑 `sync-db` 把种子发布进 PostgreSQL, 再跑 `verify-db` 逐表核对行数.
+9. 跑 `mise run dev`, 等两个服务器都打出就绪日志.
+10. 打开浏览器访问本地 3000 端口, 在 agent 页点一个 kickstart 按钮, 确认拿到的是带数字的
+    真实回答.
+11. 在 `.env` 里临时把 `SCHEMA_NAME` 改成一个不存在的名字, 重启后再问一次, 读那条错误信息,
     然后把这一行删掉恢复.
-11. 至少一次, 敲 `/showcase-learn-cn` 或 `/about-bi-agent-app-scaffold-cn` 把助教叫起来:
+12. 至少一次, 敲 `/showcase-learn-cn` 或 `/about-bi-agent-app-scaffold-cn` 把助教叫起来:
     要么把这一篇里你没看懂的那段原样复制给它追问到懂, 要么要求它一步一步带你走上面某一段,
     并且不许它一次性做完.
 
@@ -50,13 +52,13 @@ description: "本地开发服务器起来了, 浏览器里能打开首页和 age
 
 ## 3. 检查清单
 
+- [ ] **branch 开好了**: 你从基线开了一个以这一篇命名的 branch, 后面的改动都在它上面.
 - [ ] **依赖装齐**: `mise run inst` 跑完没有报错, `.venv` 和 `node_modules` 都在.
 - [ ] **配置分对了家**: 你能说出自己往 `.env` 里填了哪几个值, 并解释为什么 `SCHEMA_NAME`
       不在那里面.
 - [ ] **API key 就位且有上限**: 三家里选了一家拿到 key, 在控制台里设了 5 到 10 美元的消费
-      上限, key 存进了密码管理器, 而且没有出现在任何聊天记录或 Git 提交里.
-- [ ] **订阅不等于额度**: 你能说清月费订阅和 API key 分别买的是什么, 为什么有前者不代表有
-      后者.
+      上限, key 存进了密码管理器, 没有出现在任何聊天记录或 Git 提交里; 你也能说清月费订阅和
+      API key 分别买的是什么.
 - [ ] **数据到位**: `verify-db` 输出的逐表行数全部一致, 没有 exit 1.
 - [ ] **服务器起来了**: 浏览器能打开首页和 agent 页, 两个页面都正常渲染, agent 回答里有来自
       数据库的真实数字.
