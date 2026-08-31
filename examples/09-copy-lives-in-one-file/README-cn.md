@@ -170,9 +170,7 @@ mise run build-web
 
 ## 8. 组件里不许拼句子
 
-文案文件里每一条都是**一句完整的话**, 组件原样打印它:
-
-这一条是一句完整的话, 横幅原样打印它:
+文案文件里每一条都是**一句完整的话**, 组件原样打印它. 比如横幅那句:
 
 ```toml
 welcomeMessage = "I'm here to help you with SMB lending analytics."
