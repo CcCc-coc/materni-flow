@@ -133,9 +133,8 @@ class DbMixin:
                 f"PostgreSQL schema {self.config.schema_name!r} has no tables. "
                 f"An absent schema and an empty one look identical to the "
                 f"reflector, so this is almost certainly a database that was "
-                f"never synced. Run "
-                f"`.venv/bin/python scripts/test_06_sync_data_to_remote_db.py` "
-                f"to publish the SQLite seed into it."
+                f"never synced. Publish the SQLite seed into it with the "
+                f"teaching CLI's `sync-db`."
             )
         return encode_database_info(database_info=database_info)
 

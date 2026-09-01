@@ -89,9 +89,8 @@ PostgreSQL schema <SCHEMA_NAME>           agent 唯一读的地方
 ## 手动跑 SQL
 
 ```bash
-.venv/bin/python scripts/test_03_run_sql_locally_cli.py --sql "SELECT count(*) FROM loan"
-.venv/bin/python scripts/test_04_print_database_schema.py    # agent 看到的那份库结构
-.venv/bin/python scripts/test_05_connect_remote_database.py  # 只验连通性
+mise run cli-print-db-schema   # agent 看到的那份库结构
+mise run cli-test-db-conn      # 只验连通性 (SELECT 1, 不碰任何表)
 ```
 
 `scripts/` 下的脚本是**按第一次搭建的顺序编号**的, 编号是流程位置不是优先级. 05-07 需要

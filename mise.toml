@@ -72,6 +72,13 @@ run = ".venv/bin/agent-app check-content"
 description = "🔌 Check this machine can reach the cloud PostgreSQL (SELECT 1)"
 run = ".venv/bin/agent-app test-db-conn"
 
+[tasks.cli-print-db-schema]
+# The agent's entire picture of the database, in the compact encoding it is
+# actually shown. Worth looking at whenever an answer is wrong in a way that
+# suggests the model misread the tables: this is the input it misread.
+description = "🗺️ Print the database schema exactly as the agent is shown it"
+run = ".venv/bin/agent-app print-db-schema"
+
 # === end cli
 
 [tasks.test-python]

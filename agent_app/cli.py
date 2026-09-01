@@ -27,6 +27,7 @@ step with it.
     agent-app check-content
     agent-app check-content --retired "patient,bed,ward"
     agent-app test-db-conn
+    agent-app print-db-schema
 """
 
 import typing as T
@@ -103,6 +104,22 @@ class Cli:
             "schema holds any rows is a separate question -- publish the seed "
             "with the teaching CLI's sync-db, then verify-db."
         )
+        raise SystemExit(0)
+
+    def print_db_schema(self) -> None:
+        """
+        Print the database schema exactly as the agent is shown it.
+
+        Not a dump of the database: it is the compact encoding the agent reads
+        as its entire picture of the tables, so this is the one way to see what
+        the model actually knows before it writes a line of SQL. Reads this
+        project's schema only, and needs a synced one -- an empty schema raises
+        rather than printing nothing, because nothing is what an unsynced
+        database and a broken encoder both look like.
+        """
+        from agent_app.api import one
+
+        print(one.database_schema_str)
         raise SystemExit(0)
 
 

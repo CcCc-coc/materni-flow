@@ -3,7 +3,7 @@
 """
 Verify that the remote PostgreSQL (NeonDB) database really holds the synced data.
 
-This is the confirmation step after ``test_06_sync_data_to_remote_db.py``. That
+This is the confirmation step after ``01_sync_data_to_remote_db.py``. That
 script reports what it *believes* it wrote; this one goes back to the remote
 database and checks what is actually there.
 
@@ -22,8 +22,8 @@ Checking against local counts is the point. A bare "is there data?" check passes
 happily on a half-finished sync, which is the failure you actually care about --
 the remote database is not empty, so nothing looks broken, but rows are missing.
 
-Usage:
-    .venv/bin/python scripts/test_07_verify_remote_data.py
+Run it through the teaching CLI sitting next to this file:
+    .venv/bin/python <this skill>/scripts/teaching_cli.py verify-db
 
 Exit code is 0 when every table matches, 1 otherwise, so it can be used as a
 gate in a deploy script.
@@ -120,7 +120,7 @@ def main() -> int:
         for problem in problems:
             print(f"  - {problem}")
         print("\nRe-run the sync with:")
-        print("    .venv/bin/python scripts/test_06_sync_data_to_remote_db.py")
+        print("    .venv/bin/python <this skill>/scripts/teaching_cli.py sync-db")
         print("=" * 76)
         return 1
 

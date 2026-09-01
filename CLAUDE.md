@@ -238,7 +238,7 @@ Three steps in one direction — reflect, model, encode — and nothing flows ba
 |------|--------------|----------------|
 | `extractor.py` | SQLAlchemy metadata -> the models. Owns `SQLALCHEMY_TYPE_MAPPING`, the compression from SQL types to the LLM vocabulary | When a reflected type comes out as a raw dialect spelling instead of a compact one. |
 | `model.py` | The intermediate representation | **Only together with the encoder line that emits the new field.** Every field here has a reader; extracting one nobody encodes reads as a promise the output does not keep. |
-| `encoder.py` | The models -> the compact string the agent is shown. Pure formatting, no database access | When changing how the schema is presented to the LLM. Re-run `scripts/test_04_print_database_schema.py` and eyeball the diff — this string is the agent's entire picture of the database. |
+| `encoder.py` | The models -> the compact string the agent is shown. Pure formatting, no database access | When changing how the schema is presented to the LLM. Re-run `mise run cli-print-db-schema` and eyeball the diff — this string is the agent's entire picture of the database. |
 | `api.py` | Public re-exports | When adding a function the rest of the app calls. |
 
 Scoped to what this app runs on. `DbTypeEnum` lists the two engines with code
@@ -562,54 +562,47 @@ it wrong. `mise run cli-check-content` now verifies the thing derivation *cannot
 the foreign keys admit an order at all, i.e. contain no cycle.
 
 **Schema Reference:**
-- Run `.venv/bin/python scripts/test_04_print_database_schema.py` to print the schema.
+- Run `mise run cli-print-db-schema` to print the schema.
   There is deliberately no checked-in copy: a snapshot of a generated artifact can
   only ever be right by coincidence, and this one had no reader.
 
-**Run SQL Locally:**
-```bash
-.venv/bin/python scripts/test_03_run_sql_locally_cli.py --sql "SELECT * FROM table_name LIMIT 5"
-```
-
 **Print LLM-Optimized Schema:**
 ```bash
-.venv/bin/python scripts/test_04_print_database_schema.py
+mise run cli-print-db-schema
 ```
+
+**Run SQL Locally:** open the seed in a SQL client (DBeaver locally, the Neon SQL
+editor in a codespace). The repo ships no script for it — a client does it better.
 
 ---
 
 ## Scripts
 
-Scripts in `scripts/` are numbered in the order you would run them when setting a
-project up from scratch. The number is the workflow position, not a priority — run
-them in sequence the first time, then individually as needed.
+`scripts/` is nearly gone. It used to hold a numbered setup sequence; every step of
+it now lives where it belongs, which is the point:
 
-| # | Script | What it does |
-|---|--------|--------------|
-| 00 | `test_00_check_project_config.py` | Numbered door onto `agent-app check-content`. The checks live in `agent_app/content_check.py`; this file only forwards to them |
-| 02 | `test_02_run_sql_locally.py` | Run the SQL in `test_02_run_sql_locally.sql` against local SQLite |
-| 03 | `test_03_run_sql_locally_cli.py` | Same, but takes `--sql "..."` on the command line |
-| 04 | `test_04_print_database_schema.py` | Print the LLM-optimized schema string |
-| 05 | `test_05_connect_remote_database.py` | Smoke-test the NeonDB Postgres connection (`SELECT 1`) |
-| 06 | `test_06_sync_data_to_remote_db.py` | Drop, recreate, and repopulate the remote DB from local SQLite |
-| 07 | `test_07_verify_remote_data.py` | Confirm the remote DB really matches local, table by table (exit 1 on mismatch) |
-| 11 | `test_11_ai_aws_bedrock.py` | Raw Bedrock `converse` call — proves AWS credentials work |
-| 12 | `test_12_ai_aws_bedrock_with_cached_prompt.py` | Bedrock prompt caching demo (not a connectivity check) |
-| 13 | `test_13_ai_anthropic_claude.py` | Raw Anthropic `messages.create` — proves `ANTHROPIC_API_KEY` works |
-| 14 | `test_14_ai_openai.py` | Raw OpenAI `chat.completions.create` — proves `OPENAI_API_KEY` works |
-| 15 | `test_15_ai_google_gemini.py` | Raw Gemini `generate_content` — proves `GOOGLE_API_KEY` works |
+| What it used to be | Where it went |
+|---|---|
+| `test_00` config preflight | `mise run cli-check-content` |
+| `test_02` / `test_03` run SQL locally | Nothing. Use a SQL client — DBeaver locally, the Neon SQL editor in a codespace |
+| `test_04` print the LLM schema | `mise run cli-print-db-schema` |
+| `test_05` database connectivity | `mise run cli-test-db-conn` |
+| `test_06` / `test_07` sync and verify | The teaching layer's own `scripts/01_*.py` and `02_*.py`, next to `teaching_cli.py` |
+| `test_11`–`test_15` per-provider probes | The course, under `examples/15-call-the-model-directly/` |
 
-Steps 01-04 are local only. Steps 05-07 need the `DB_*` variables set (see `.env.example`).
+Only `test_21_agent.py` is left, and it is on its way into the course too.
 
-Scripts 11-15 hit each supported LLM provider through that vendor's **lowest-level
-SDK call** — no `strands`, no agent, no project config. They exist so a student can
-see the raw API shape and confirm a key or IAM permission is actually valid before
-debugging anything higher up. 11 and 12 are the two Bedrock scripts (basic call, then
-prompt caching); 13-15 are one per API-key provider and each needs its extra installed
-(`uv sync --extra anthropic|openai|gemini`). Bedrock needs no extra, since boto3 is a
-core dependency.
+Moving `test_06` / `test_07` was not tidying. The teaching layer's CLI used to reach
+*back* into the repo's top-level `scripts/` to find them, which meant the layer that
+is supposed to be deleted as whole directories had a piece of itself lying outside
+those directories. Publishing would have removed the CLI and left the two scripts,
+or removed the scripts and broken the CLI.
 
-**When adding a script:** give it the next number for its stage, or insert it at the
-right position and renumber the ones after it — keep the sequence meaningful rather
-than append-only. Unnumbered scripts (`test_agent.py`, `test_ai_*.py`, …) are
-standalone experiments outside this setup workflow.
+**Do not add anything to `scripts/`.** A new command belongs in one of three places,
+and the test is the same one the rest of the repo uses:
+
+| Is it… | Then it goes |
+|---|---|
+| part of the application | `agent_app/cli.py`, plus a one-line `cli-` task in `mise.toml` |
+| part of building or publishing the dataset | the teaching layer's own CLI, which gets deleted wholesale |
+| a demonstration for one lesson | that lesson's own directory, `examples/NN-*/` |

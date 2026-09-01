@@ -15,11 +15,15 @@ This script is DESTRUCTIVE and idempotent - each run will:
 
 Tables belonging to other projects are never touched.
 
-Usage:
-    .venv/bin/python scripts/test_06_sync_data_to_remote_db.py
+Run it through the teaching CLI sitting next to this file:
+    .venv/bin/python <this skill>/scripts/teaching_cli.py sync-db
 
 Verify the result afterwards with:
-    .venv/bin/python scripts/test_07_verify_remote_data.py
+    .venv/bin/python <this skill>/scripts/teaching_cli.py verify-db
+
+It lives in the teaching layer rather than the repo's top-level ``scripts/``
+because publishing deletes this directory, and a step that builds the dataset
+has no business surviving that.
 """
 
 from agent_app.api import one
@@ -41,7 +45,7 @@ def main():
         print(f"  {table_name}: {row_count:,} rows")
     print(f"  total: {sum(result['tables'].values()):,} rows")
     print("=" * 68)
-    print("Now verify with: scripts/test_07_verify_remote_data.py")
+    print("Now verify with: teaching_cli.py verify-db")
 
 
 if __name__ == "__main__":

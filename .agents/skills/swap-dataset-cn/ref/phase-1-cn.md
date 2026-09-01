@@ -59,7 +59,7 @@ mise run kill               # dev 端口是干净的
 只能靠探活脚本间接确认:
 
 ```bash
-.venv/bin/python scripts/test_05_connect_remote_database.py     # DB_* 通不通
+mise run cli-test-db-conn                                       # DB_* 通不通
 grep -n "^LLM_PROVIDER" .env.defaults                           # 默认走哪家
 ```
 
@@ -68,10 +68,10 @@ grep -n "^LLM_PROVIDER" .env.defaults                           # 默认走哪�
 
 | provider | 脚本 |
 | :--- | :--- |
-| `bedrock` | `scripts/test_11_ai_aws_bedrock.py` |
-| `anthropic` | `scripts/test_13_ai_anthropic_claude.py` |
-| `openai` | `scripts/test_14_ai_openai.py` |
-| `google` | `scripts/test_15_ai_google_gemini.py` |
+| `anthropic` | `examples/15-call-the-model-directly/02_anthropic.py` |
+| `openai` | `examples/15-call-the-model-directly/01_openai.py` |
+| `google` | `examples/15-call-the-model-directly/03_gemini.py` |
+| `bedrock` | 没有现成脚本. 它不走 API key, 用 `~/.aws/credentials` 或者 IAM 角色 |
 
 **最后确认开发服务器能起来.** `mise run dev` 永远不会自己退出, 所以后台起, 另开一个会自己
 退出的循环去等两个就绪标记 (Next.js 打 `Ready in`, uvicorn 打 `Application startup
@@ -304,7 +304,6 @@ mise run cli-check-content                      # 空表 / 外键成环, 当场�
 | 文件 | 里面是什么 |
 | :--- | :--- |
 | `scripts/test_21_agent.py` | 10 个 `request_NN` 变量, 全是上一个领域的业务问题, 全部重写 |
-| `scripts/test_02_run_sql_locally.sql` | 一条示例 SQL, 引用了旧表名 |
 | `tests_python/one/test_one_one_04_agent.py` | 断言里写死了旧表名 (`FROM loan`, `DROP TABLE loan`), 换成新库里真实存在的表 |
 
 **E. 明确不用改的**
@@ -313,7 +312,7 @@ mise run cli-check-content                      # 空表 / 外键成环, 当场�
 - **`components/chat/blocks/` 渲染层.** Mermaid 和 chart 与数据集无关
 - **`README.md`, `TICKET.md`, `README-cn.md`, `docs/`.** 那是教学材料 (第 3 步已经问过用户)
 - **schema 参考文件.** 没有需要维护的文件, 要看就跑
-  `.venv/bin/python scripts/test_04_print_database_schema.py`, 它直接读库, 永远是真的
+  `mise run cli-print-db-schema`, 它直接读库, 永远是真的
 
 E 组第一行能成立, 靠的是一条纪律: **通用代码的注释和 docstring 里不许用本数据集的表名举
 例.** 写 `# e.g. the "loan" table` 等于把当前数据集焊进了通用代码 —— 换数据集之后它不报错,

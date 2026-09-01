@@ -20,7 +20,9 @@ parsing. ``agent_app`` is installed into the venv, so this runs from anywhere:
 """
 
 import sys
+import pathlib
 import argparse
+import importlib
 
 
 def cmd_gen_data(args: argparse.Namespace) -> int:
@@ -30,27 +32,36 @@ def cmd_gen_data(args: argparse.Namespace) -> int:
     return 0
 
 
-def _numbered_script(module: str):
+def _sibling(module: str):
     """
-    Import one of the numbered ``scripts/`` by name.
+    Import one of the numbered scripts sitting next to this file.
 
     They already print what a reader wants to see and return a shell exit code,
     so the CLI reuses them whole. Two doors to one behaviour is fine; two
     implementations of it is not.
-    """
-    from agent_app.paths import path_enum
 
-    sys.path.insert(0, str(path_enum.dir_project_root / "scripts"))
-    return __import__(module).main
+    They live here rather than in the repo's top-level ``scripts/`` because they
+    are teaching material: publishing deletes this directory, and a step that
+    builds and publishes the dataset has no business surviving that. Numbered
+    from 01 because this is their own sequence now, not a continuation of one
+    that lives somewhere else.
+
+    ``sys.path`` is touched explicitly rather than relying on the running
+    script's directory, so importing this module from elsewhere works too.
+    """
+    here = str(pathlib.Path(__file__).absolute().parent)
+    if here not in sys.path:
+        sys.path.insert(0, here)
+    return importlib.import_module(module).main
 
 
 def cmd_sync_db(args: argparse.Namespace) -> int:
-    _numbered_script("test_06_sync_data_to_remote_db")()
+    _sibling("01_sync_data_to_remote_db")()
     return 0
 
 
 def cmd_verify_db(args: argparse.Namespace) -> int:
-    return _numbered_script("test_07_verify_remote_data")()
+    return _sibling("02_verify_remote_data")()
 
 
 def build_parser() -> argparse.ArgumentParser:

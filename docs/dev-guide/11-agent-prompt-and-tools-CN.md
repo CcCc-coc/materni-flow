@@ -304,7 +304,7 @@ The database contains 11 tables for managing an OB/GYN ward:
 | `agent_app/one/one_04_agent.py` | Tool 定义和 Agent 创建 |
 | `data/system-prompt.md` | System Prompt |
 | `agent_app/write_operations.py` | 写操作纯函数 |
-| `scripts/test_04_print_database_schema.py` | 打印数据库结构 (直接读库, 无快照文件) |
+| `mise run cli-print-db-schema` | 打印数据库结构 (直接读库, 无快照文件) |
 
 ---
 

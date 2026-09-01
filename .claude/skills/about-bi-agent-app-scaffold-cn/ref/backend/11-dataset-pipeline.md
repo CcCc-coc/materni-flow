@@ -3,7 +3,7 @@
 > **这个模块是要被删掉的.** 它把数据集的生成器跑出来的 SQLite 种子发布进 PostgreSQL,
 > 属于教学层, 生产路径一行都不 import 它 —— 所以它排在最后.
 
-**对应代码**: `agent_app/dataset.py`, `scripts/test_06_*.py`, `scripts/test_07_*.py`
+**对应代码**: `agent_app/dataset.py`, 以及教学层自己的 `scripts/01_sync_data_to_remote_db.py` 与 `scripts/02_verify_remote_data.py`
 
 **依赖**: `paths` ([01](01-leaves.md)), `sql_utils` ([03](03-sql-execution.md)),
 `one.api` ([08](08-the-one-object.md)) —— 依赖最多的一个, 而且方向是单向的: 没有任何
@@ -132,5 +132,5 @@ require_dialect(remote_engine, "postgresql", "remote")
 
 ## 验证
 
-`scripts/test_07_verify_remote_data.py` 逐表比对远程和本地的行数, 不一致就 exit 1.
+教学层的 `02_verify_remote_data.py` (也就是 `teaching_cli.py verify-db`) 逐表比对远程和本地的行数, 不一致就 exit 1.
 同步"成功"和数据真的到齐是两件事.

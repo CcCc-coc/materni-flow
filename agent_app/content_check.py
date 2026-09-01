@@ -60,7 +60,6 @@ SCAN_EXEMPT = {
     "agent_app/content_check.py",
     # Its --retired help text spells out an example word list.
     "agent_app/cli.py",
-    "scripts/test_00_check_project_config.py",
 }
 
 #: Identifiers that can follow FROM/JOIN in the system prompt without naming a
