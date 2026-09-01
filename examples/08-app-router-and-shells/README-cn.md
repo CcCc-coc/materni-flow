@@ -62,8 +62,8 @@ description: "这一篇不教前端, 也不教框架. 它教一个面对陌生�
 
 ## 3. 前置知识
 
-- 完成第 4 篇 ([把它跑起来](../04-get-it-running/README-cn.md)), 界面已经能在本地打开
-- 完成第 5 篇 ([读一遍这个仓库](../05-read-the-codebase/README-cn.md)), 知道 [`app/`](../../app) 和 [`components/`](../../components) 大致归谁管
+- 完成第 5 篇 ([把它跑起来](../05-get-it-running/README-cn.md)), 界面已经能在本地打开
+- 完成第 6 篇 ([读一遍这个仓库](../06-read-the-codebase/README-cn.md)), 知道 [`app/`](../../app) 和 [`components/`](../../components) 大致归谁管
 - 会用编辑器的全局搜索. 这一篇一半的动作是搜索
 
 **不需要** 会 React, 不需要用过 Next.js, 不需要看懂 JSX.
@@ -312,7 +312,7 @@ agent 页复杂一点, 因为它有两副面孔: 你还没开始对话时是一�
 
 **怎么做:**
 
-1. 开一个叫 `08-app-router-and-shells` 的 branch, 确认工作区干净
+1. 这个练习不改任何代码, 也不用开 branch. 先确认工作区干净
 2. 加载 `/about-bi-agent-app-scaffold-cn`
 3. 问它这个问题, 明确要求它先不要动手:
 

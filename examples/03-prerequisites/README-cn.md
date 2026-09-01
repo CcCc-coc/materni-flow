@@ -24,9 +24,10 @@ Vercel 的 Preview 和 Production 有什么区别这些内容塞进来, 这门�
 
 跳过这一篇的代价是延迟发作的, 而且发作的时候看起来不像是缺前置知识.
 
-举个真实的例子: 第 4 篇要你把 `DB_HOST` 填进 `.env`. 如果你没有一个云端 Postgres, 你会
-卡在这个值到底从哪儿来. 这时候大多数人的反应是回头去读这门课的文档, 而这门课的文档里根本
-不会有怎么注册一个 Neon 项目这一段, 因为那是另一门课的内容. 于是你会怀疑是教程写漏了.
+举个真实的例子: 第 13 篇 ([接上真数据和真模型](../13-light-it-up/README-cn.md)) 要你把
+`DB_HOST` 填进 `.env`. 如果你没有一个云端 Postgres, 你会卡在这个值到底从哪儿来.
+这时候大多数人的反应是回头去读这门课的文档, 而这门课的文档里根本不会有怎么注册一个 Neon
+项目这一段, 因为那是另一门课的内容. 于是你会怀疑是教程写漏了.
 
 同样的事会在后面反复发生: 数据灌进去之后想打开看看, 没有 DBeaver 就只能靠命令行一行行
 `SELECT`; 部署到 Vercel 之后线上报错, 不知道 Build Log 和 Runtime Log 分别在哪, 就只能靠猜.
@@ -58,7 +59,7 @@ Vercel 的 Preview 和 Production 有什么区别这些内容塞进来, 这门�
 | :--- | :--- | :--- |
 | learn_dev_tools_basic_v1 | mise, Terminal, VS Code, GitHub Desktop, coding agent | 全程 |
 | learn_sqlite_basic | 关系数据库, Python DB API, DBeaver, 多表 schema | 数据那一组 |
-| learn_psql_in_neon_db_basic | 注册云端 Postgres, 拿连接信息, SQLAlchemy Core | 从第 4 篇开始一直到最后 |
+| learn_psql_in_neon_db_basic | 注册云端 Postgres, 拿连接信息, SQLAlchemy Core | 从第 13 篇开始一直到最后 |
 | learn_vercel_basic_v1 | 部署, Preview 与 Production, 看日志 | 部署那一篇 |
 
 四门课彼此独立, 顺序上只有一条约束: **先学 dev tools 那门**, 因为另外三门都要用到它装出来
@@ -80,7 +81,7 @@ Vercel 的 Preview 和 Production 有什么区别这些内容塞进来, 这门�
 
 **这门课为什么最要紧**: 这个仓库所有命令都从 `mise run` 走. [`mise.toml`](../../mise.toml) 同时钉住工具版本
 和定义任务, 所以你不需要分别去装 Python 3.12 和 Node 24, 也不需要记住 uv 和 pnpm 各自的
-写法. 一个没装 mise 的人在第 4 篇的第一条命令上就走不动.
+写法. 一个没装 mise 的人在第 5 篇的第一条命令上就走不动.
 
 至于 coding agent, 它在这门课里不是一个可选的加速器. 后面有整整一篇讲怎么和 AI 一起改这个
 仓库, 而那一篇默认你已经知道怎么让它读一个文件, 改一个文件, 跑一条命令.
@@ -126,11 +127,12 @@ Vercel 的 Preview 和 Production 有什么区别这些内容塞进来, 这门�
 
 **这门课是四门里最硬的前置**, 因为这个仓库有一条不常见的设计:
 **它在任何环境下都读同一个云端 PostgreSQL, 本地开发也一样**, 没有本地 SQLite 兜底.
-理由第 20 篇会讲透, 一句话是查这个库的不是人而是模型, 而模型的 SQL 来自一份只能对着一种
+理由第 15 篇会讲透, 一句话是查这个库的不是人而是模型, 而模型的 SQL 来自一份只能对着一种
 方言写的提示词.
 
-后果是: **没有一个 Neon 实例, 这门课从第 4 篇起就走不下去.** 那一篇要你把 `DB_HOST`,
+后果是: **没有一个 Neon 实例, 这门课从第 13 篇起就走不下去.** 那一篇要你把 `DB_HOST`,
 `DB_USER`, `DB_PASS`, `DB_NAME` 填进 `.env`, 这四个值只能从你自己的 Neon 项目里拿.
+在那之前的九篇一个账号都不需要, 所以你有充足的时间去补这门课.
 
 免费额度完全够用. 前置课里那个实例可以直接接着用, 这个项目只占它的一个 schema, 和你之前
 建的表互不干扰.
@@ -165,13 +167,13 @@ Vercel 的 Preview 和 Production 有什么区别这些内容塞进来, 这门�
 
 | 从哪一篇开始要用 | 用到什么 | 出自 |
 | :--- | :--- | :--- |
-| 第 4 篇 把它跑起来 | mise, 命令行, VS Code | dev tools |
-| 第 4 篇 把它跑起来 | 一个能连的 Neon Postgres, 以及它的连接信息 | Neon Postgres |
-| 第 7 篇 和 AI 一起改仓库 | coding agent 的基本操作 | dev tools |
-| 数据那一组 | SQLite 是什么, 怎么用 DBeaver 打开它看 | SQLite |
-| 数据那一组 | 幂等脚本, transaction 和 commit | SQLite |
-| 第 20 篇 种子到 PostgreSQL | Postgres 和 SQLite 的差别, schema 是什么 | Neon Postgres |
-| 第 34 篇 部署到 Vercel | 部署, Preview 与 Production, 两种日志 | Vercel |
+| 第 4 篇 和 AI 一起改仓库 | coding agent 的基本操作 | dev tools |
+| 第 5 篇 把它跑起来 | mise, 命令行, VS Code | dev tools |
+| 第 13 篇 接上真数据和真模型 | 一个能连的 Neon Postgres, 以及它的连接信息 | Neon Postgres |
+| 第 14 篇 起的数据那几篇 | SQLite 是什么, 怎么用 DBeaver 打开它看 | SQLite |
+| 第 14 篇 起的数据那几篇 | 幂等脚本, transaction 和 commit | SQLite |
+| 第 15 篇 种子到 PostgreSQL | Postgres 和 SQLite 的差别, schema 是什么 | Neon Postgres |
+| 第 35 篇 部署到 Vercel | 部署, Preview 与 Production, 两种日志 | Vercel |
 
 看得出来 dev tools 和 Neon Postgres 这两门最早被用到, 缺哪门就先补哪门.
 
@@ -241,7 +243,9 @@ Vercel 的 Preview 和 Production 有什么区别这些内容塞进来, 这门�
 
 **下一步:**
 
-四块都齐了就往下走. 第 4 篇 ([把它跑起来](../04-get-it-running/README-cn.md)) 你会真的把这个项目在自己机器上跑起来.
+四块都齐了就往下走. 第 4 篇 ([和 AI 一起改这个仓库](../04-work-with-ai/README-cn.md)) 先把
+这门课全程都要用的那把工具交到你手上, 然后第 5 篇
+([把它跑起来](../05-get-it-running/README-cn.md)) 才真的在你机器上把项目跑起来.
 
 ---
 
@@ -264,4 +268,5 @@ Vercel 的 Preview 和 Production 有什么区别这些内容塞进来, 这门�
 
 **最低限度:**
 
-要开始第 4 篇, 你至少需要装好 mise, 加上一个能连的 Neon Postgres 实例.
+要开始第 4 篇和第 5 篇, 你只需要装好 mise 和一个能用的 coding agent.
+Neon 实例要到第 13 篇才用得上, 所以你有充足的时间去补那一门.
