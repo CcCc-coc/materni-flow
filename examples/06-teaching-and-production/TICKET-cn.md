@@ -20,8 +20,8 @@ description: "你从 01-showcase 开出了一个以这一篇命名的 branch 并
 仓库灌完数据就是完整能跑的, 那个能跑的状态就是你的退路. 后面每一篇都默认你在一个自己的
 branch 上折腾, 而不是直接在基线上改.
 
-所以这一篇的两个练习都要真的动手, 尤其第一个: ** 不亲手把那条测试弄红一次, 你不会相信它真的
-在拦.**
+所以这一篇的两个练习都要真的动手, 尤其第二个:
+**不亲手把那条测试弄红一次, 你不会相信它真的在拦.**
 
 ---
 
@@ -31,17 +31,17 @@ branch 上折腾, 而不是直接在基线上改.
 2. 从这门课住的那个 branch 开一个叫 `06-teaching-and-production` 的 branch, 这一篇所有动手
    都在它上面做.
 3. 跑一次 `git diff` 对比自己的 branch 和基线, 确认现在没有差异.
-4. 打开 `tests_python/test_dataset.py`, 翻到最后那个 `TestNotOnTheProductionPath`, 读一遍它
-   是怎么用 `ast` 扫 import 的.
-5. 跑一次那条测试, 确认现在是绿的.
-6. 在 `agent_app/one/one_02_db.py` 的 import 区加一行, 让它 import 教学层那个模块.
-7. 再跑一次那条测试, 读失败信息, 确认它报出的正是你刚改的那个文件.
-8. 把那一行删掉, 再跑一次确认恢复绿.
-9. 在 `agent_app/` 和 `api/` 里搜索提到 `.claude/skills` 的地方, 找出两处, 逐一判断擦除之后
+4. 在 `agent_app/` 和 `api/` 里搜索提到 `.claude/skills` 的地方, 找出两处, 逐一判断擦除之后
    它会不会变成死链.
-10. 打开 `mise.toml` 扫一遍全部 `run =`, 确认没有一条指向 `scripts/`.
-11. 打开 `dataset/requirements.txt` 和 `pyproject.toml` 对比一下, 确认生成器那几个依赖只
-    出现在前者里.
+5. 打开 `mise.toml` 扫一遍全部 `run =`, 确认没有一条指向 `scripts/`.
+6. 打开 `dataset/requirements.txt` 和 `pyproject.toml` 对比一下, 确认生成器那几个依赖只
+   出现在前者里.
+7. 打开 `tests_python/test_dataset.py`, 翻到最后那个 `TestNotOnTheProductionPath`, 读一遍它
+   是怎么用 `ast` 扫 import 的.
+8. 跑一次那条测试, 确认现在是绿的.
+9. 在 `agent_app/one/one_02_db.py` 的 import 区加一行, 让它 import 教学层那个模块.
+10. 再跑一次那条测试, 读失败信息, 确认它报出的正是你刚改的那个文件.
+11. 把那一行删掉, 再跑一次确认恢复绿.
 
 **预计用时:** 60 到 85 分钟
 
