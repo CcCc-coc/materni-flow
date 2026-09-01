@@ -9,7 +9,7 @@ description: "学完你能说清这个仓库为什么把教学材料整块关进
 
 ## 1. 概览
 
-第 5 篇 (读一遍这个仓库) 那张地图把顶层目录分成了两半: 一半属于应用, 一半属于教学. 当时
+第 5 篇 ([读一遍这个仓库](../05-read-the-codebase/README-cn.md)) 那张地图把顶层目录分成了两半: 一半属于应用, 一半属于教学. 当时
 只说了这条线存在, 这一篇讲它为什么必须存在, 以及靠什么撑着.
 
 起点是一个具体的时刻: 你学完这门课, 把这个仓库换成自己那个行业的样子, 部署上线, 放进简历,
@@ -19,7 +19,7 @@ description: "学完你能说清这个仓库为什么把教学材料整块关进
 
 **这个终点从第一天就该在你脑子里.** 你现在做的每一个决定, 都是在决定那一刻他会看到什么.
 
-如果他读到的是一份带练习题的课件, 目录里躺着 `TICKET.md` 和验收清单, docstring 里在讲什么
+如果他读到的是一份带练习题的课件, 目录里躺着 [`TICKET.md`](../../TICKET.md) 和验收清单, docstring 里在讲什么
 是 mixin, 测试文件里写着这一课的 TDD 练习, 那这个项目立刻从我做的产品降级成我上过的课.
 
 所以这个仓库有一个动作叫**擦掉教学痕迹**. 这一篇讲的就是怎么让那个动作变得又快又安全.
@@ -50,7 +50,7 @@ description: "学完你能说清这个仓库为什么把教学材料整块关进
 
 ## 3. 前置知识
 
-- 完成第 5 篇 (读一遍这个仓库), 手上有那张目录地图
+- 完成第 5 篇 ([读一遍这个仓库](../05-read-the-codebase/README-cn.md)), 手上有那张目录地图
 - 知道 Python 的 import 是什么, 以及一个模块 import 另一个模块意味着什么
 
 ---
@@ -74,8 +74,8 @@ description: "学完你能说清这个仓库为什么把教学材料整块关进
 **你 clone 下来的这个仓库, 灌完数据之后就是一个完整能跑的 app.** 不是半成品, 不是缺了几块
 等你补的骨架. 首页能看, agent 能答, 部署上去就有一个公开网址. 你一行代码都不用改.
 
-而擦掉教学痕迹这件事, 到最后那一步是一条命令的事. 换句话说: ** 这个仓库现在就已经处在一个
-可以交付的状态**, 只是身上还穿着课程这层外衣.
+而擦掉教学痕迹这件事, 到最后那一步是一条命令的事. 换句话说:
+**这个仓库现在就已经处在一个可以交付的状态**, 只是身上还穿着课程这层外衣.
 
 这件事有两个推论, 第二个比第一个重要得多.
 
@@ -85,7 +85,7 @@ description: "学完你能说清这个仓库为什么把教学材料整块关进
 
 ### 动手之前先开一个 branch, 名字就用这一篇的名字
 
-第 4 篇 (把它跑起来) 已经给过这条纪律, 这里补上它背后的理由.
+第 4 篇 ([把它跑起来](../04-get-it-running/README-cn.md)) 已经给过这条纪律, 这里补上它背后的理由.
 
 ```bash
 git switch -c 06-teaching-and-production 01-showcase
@@ -119,7 +119,7 @@ git switch -c 06-teaching-and-production 01-showcase
 
 | | 混在一起 | 分层 |
 | :--- | :--- | :--- |
-| 教学内容在哪 | 散在 docstring 和注释里, 教学脚本混在 `mise.toml` 里, 教学依赖混在 `pyproject.toml` 里 | 整块住在自己的目录里 |
+| 教学内容在哪 | 散在 docstring 和注释里, 教学脚本混在 [`mise.toml`](../../mise.toml) 里, 教学依赖混在 [`pyproject.toml`](../../pyproject.toml) 里 | 整块住在自己的目录里 |
 | 擦除的动作 | 打开每个文件逐行看哪句话是教学的然后删掉 | `rm -rf` 几个路径 |
 | 会不会改代码 | **会**, 所以有风险 | **不会**, 所以零风险 |
 | 能不能验证擦干净了 | 不能. 没人能证明自己删漏没删漏 | 能. 删完跑一遍测试和内容检查 |
@@ -133,17 +133,17 @@ git switch -c 06-teaching-and-production 01-showcase
 
 | 路径 | 是什么 | 说明 |
 | :--- | :--- | :--- |
-| `README.md` `README-cn.md` `TICKET.md` | 这一课教什么, 任务和验收清单 | 仓库根目录那几份课程文档. 一个交付出去的产品仓库不会有验收清单 |
-| `docs/` | 教学正文和开发者走读 | 分章节的教程和面向开发者的代码走读, 都是写给学生的, 不是写给产品用户的 |
-| `examples/` | 你正在读的这些 Task | 每个编号目录一课, 一份教学正文加一份验收清单 |
+| [`README.md`](../../README.md) [`README-cn.md`](../../README-cn.md) [`TICKET.md`](../../TICKET.md) | 这一课教什么, 任务和验收清单 | 仓库根目录那几份课程文档. 一个交付出去的产品仓库不会有验收清单 |
+| [`docs/`](../../docs) | 教学正文和开发者走读 | 分章节的教程和面向开发者的代码走读, 都是写给学生的, 不是写给产品用户的 |
+| [`examples/`](../../examples) | 你正在读的这些 Task | 每个编号目录一课, 一份教学正文加一份验收清单 |
 | `.claude/skills/` | 给 AI 和维护者看的规范 | 讲这个仓库为什么长成这样, 哪条边界不能破. 它是内部记录, 露出去只显得项目还在建设中 |
-| `dataset/` | 数据集的源材料和生成器 | 四份领域文档加一个造假数据的脚本. 成品仓库连的是一个已经灌好的数据库, 不需要带着造数据的工具 |
-| `agent_app/dataset.py` | 造数据加同步 PostgreSQL 的代码 | 唯一一个住在生产代码包里的教学文件. 它是那条边界最容易被破坏的地方, 所以专门有测试守着 |
-| `tests_python/test_dataset.py` | 上面那个模块的测试 | 跟着它一起删 |
-| `scripts/` | 编号的安装与连通性验证脚本 | 配置自检, 跑 SQL, 同步, 逐个 LLM 供应商探活. 都是搭环境时用的一次性工具 |
+| [`dataset/`](../../dataset) | 数据集的源材料和生成器 | 四份领域文档加一个造假数据的脚本. 成品仓库连的是一个已经灌好的数据库, 不需要带着造数据的工具 |
+| [`agent_app/dataset.py`](../../agent_app/dataset.py) | 造数据加同步 PostgreSQL 的代码 | 唯一一个住在生产代码包里的教学文件. 它是那条边界最容易被破坏的地方, 所以专门有测试守着 |
+| [`tests_python/test_dataset.py`](../../tests_python/test_dataset.py) | 上面那个模块的测试 | 跟着它一起删 |
+| [`scripts/`](../../scripts) | 编号的安装与连通性验证脚本 | 配置自检, 跑 SQL, 同步, 逐个 LLM 供应商探活. 都是搭环境时用的一次性工具 |
 
-**删掉它们之后剩下的是**: `agent_app/` (除 `dataset.py`), `api/`, `app/`, `components/`,
-`lib/`, `data/`, 加上 `.env.defaults`. 那正好是一个连着 PostgreSQL 的 agent 应用, 而且
+**删掉它们之后剩下的是**: [`agent_app/`](../../agent_app) (除 `dataset.py`), [`api/`](../../api), [`app/`](../../app), [`components/`](../../components),
+[`lib/`](../../lib), [`data/`](../../data), 加上 `.env.defaults`. 那正好是一个连着 PostgreSQL 的 agent 应用, 而且
 **一行代码都不用改**.
 
 ### 一个值得单独说的细节
@@ -155,7 +155,7 @@ git switch -c 06-teaching-and-production 01-showcase
 其余两项照常跑.
 
 这不是为了少改一行配置. 是因为剩下那两项 (内容文件在不在, 12 条 kickstart 的渲染配额对不
-对) 在一个交付出去的仓库里**仍然有意义**, 它们守的是 `data/` 和前端之间的契约, 和课程无关.
+对) 在一个交付出去的仓库里**仍然有意义**, 它们守的是 [`data/`](../../data) 和前端之间的契约, 和课程无关.
 一个模块级的 import 会让整条命令在教学层消失的那一刻带着报错死掉, 于是连那两项一起陪葬.
 
 ---
@@ -173,18 +173,18 @@ agent 通过数据库连接读 PostgreSQL, **数据怎么进去的不是它的�
 import 就把整个应用钉死在了教学层上: 删教学材料会把 app 一起删坏. 所以它有测试守着, 下一节
 讲.
 
-### 二, 教学自动化不进 `mise.toml`
+### 二, 教学自动化不进 [`mise.toml`](../../mise.toml)
 
 造数据集, 同步到 PostgreSQL, 逐表核对, 这三条命令在教学层自己的 `teaching_cli.py` 里, 不在
-`mise.toml` 里.
+[`mise.toml`](../../mise.toml) 里.
 
-理由就是上面那条: `mise.toml` 跑的是**应用** (装依赖, 起服务, 跑测试). 教学层要能靠删目录
+理由就是上面那条: [`mise.toml`](../../mise.toml) 跑的是**应用** (装依赖, 起服务, 跑测试). 教学层要能靠删目录
 擦掉, 不该在一个共用配置文件里留下需要一行行挑出来删的残渣.
 
-### 三, 教学依赖不进 `pyproject.toml`
+### 三, 教学依赖不进 [`pyproject.toml`](../../pyproject.toml)
 
-生成器要 Faker, polars, pandas, pyarrow 这几个包, 它们写在 `dataset/requirements.txt`, 装
-进同一个虚拟环境, 但**不出现在 `pyproject.toml` 里**.
+生成器要 Faker, polars, pandas, pyarrow 这几个包, 它们写在 [`dataset/requirements.txt`](../../dataset/requirements.txt), 装
+进同一个虚拟环境, 但**不出现在 [`pyproject.toml`](../../pyproject.toml) 里**.
 
 同一个理由: 一个文件删掉, 而不是从依赖列表里挑几行出来. 副作用是好的, 生产部署不会去装一个
 造假数据的库.
@@ -211,14 +211,14 @@ import 就把整个应用钉死在了教学层上: 删教学材料会把 app 一
 
 ## 9. 有一条测试在守着这条边界
 
-第一条约束不能靠自觉, 所以它被写成了一个测试. 在 `tests_python/test_dataset.py` 的最后:
+第一条约束不能靠自觉, 所以它被写成了一个测试. 在 [`tests_python/test_dataset.py`](../../tests_python/test_dataset.py) 的最后:
 
 ```python
 class TestNotOnTheProductionPath:
     def test_the_app_does_not_import_the_authoring_layer(self):
 ```
 
-它做的事很直接: 用 Python 自带的 `ast` 模块把 `agent_app/one/` 下每个文件和
+它做的事很直接: 用 Python 自带的 `ast` 模块把 [`agent_app/one/`](../../agent_app/one) 下每个文件和
 `ai_sdk_adapter.py` 解析成语法树, 遍历所有 import 语句, 只要有一句 import 了名字以
 `dataset` 结尾的模块, 就把那个文件记进违规名单, 最后断言名单是空的.
 
@@ -255,7 +255,7 @@ class TestNotOnTheProductionPath:
 **怎么做:**
 
 1. 先跑一次确认它是绿的: `.venv/bin/pytest tests_python/test_dataset.py -k ProductionPath`
-2. 打开 `agent_app/one/one_02_db.py`, 在 import 区加一行 `from agent_app import dataset`
+2. 打开 [`agent_app/one/one_02_db.py`](../../agent_app/one/one_02_db.py), 在 import 区加一行 `from agent_app import dataset`
 3. 再跑一次那条测试
 4. 读失败信息, 看它报的是哪个文件
 5. 把那一行删掉, 再跑一次确认恢复绿
@@ -282,12 +282,12 @@ grep -rn "\.claude/skills" agent_app/ api/ --include='*.py'
 
 2. 你会找到两处. 逐一判断: 擦掉 `.claude/skills/` 之后, 这句话会变成死链吗
 3. 对照第 7 节第四条那个例外的定义: 它是不是功能性的命令提示, 它住不住在教学模块自己里
-4. 再看一眼 `mise.toml`, 确认没有任何一个 `run =` 指向 `scripts/`
+4. 再看一眼 [`mise.toml`](../../mise.toml), 确认没有任何一个 `run =` 指向 [`scripts/`](../../scripts)
 
 **你会观察到:**
 
-两处的性质不一样. 一处在 `agent_app/dataset.py` 里, 是错误信息里那条重建数据库的命令, 而且
-那个文件本身就要被删掉, 属于规范说的例外. 另一处在 `agent_app/cli.py` 的模块文档里, 而
+两处的性质不一样. 一处在 [`agent_app/dataset.py`](../../agent_app/dataset.py) 里, 是错误信息里那条重建数据库的命令, 而且
+那个文件本身就要被删掉, 属于规范说的例外. 另一处在 [`agent_app/cli.py`](../../agent_app/cli.py) 的模块文档里, 而
 `cli.py` 是应用自己的命令行, **它会跟着成品一起交付出去**.
 
 > **关键洞见:** 规矩和现实之间有出入是常态, 这一处出入本身就是这条约束为什么难守的证据:
@@ -302,9 +302,9 @@ grep -rn "\.claude/skills" agent_app/ api/ --include='*.py'
 | 你手上这个仓库 | 灌完数据就是完整能跑的 app, 擦掉教学层就能交付. 起点是成品不是白纸 |
 | 分支纪律 | 动手前从 `01-showcase` 开一个 branch, 名字用这一篇的目录名. 搞砸了有三条退路, 中间那条是把基线和 diff 交给 AI |
 | 为什么要分层 | 擦除的质量取决于两层分得多开. 分得开是删目录, 分不开是逐行改代码 |
-| 教学层有哪些 | 课程文档, `docs/`, `examples/`, `.claude/skills/`, `dataset/`, `scripts/`, 加 `dataset.py` 和它的测试 |
+| 教学层有哪些 | 课程文档, [`docs/`](../../docs), [`examples/`](../../examples), `.claude/skills/`, [`dataset/`](../../dataset), [`scripts/`](../../scripts), 加 `dataset.py` 和它的测试 |
 | 约束一 | 生产路径不 import 教学层, 否则删教学材料会把 app 一起删坏 |
-| 约束二和三 | 教学的命令不进 `mise.toml`, 教学的依赖不进 `pyproject.toml`. 都是为了一起删干净 |
+| 约束二和三 | 教学的命令不进 [`mise.toml`](../../mise.toml), 教学的依赖不进 [`pyproject.toml`](../../pyproject.toml). 都是为了一起删干净 |
 | 约束四 | 代码不引用教学文档. 这种指针擦除后不报错, 只变成一句死链 |
 | 守边界的那条测试 | 用 AST 扫 import 而不是搜字符串, 因为会误报的检查比没有检查更糟 |
 | 判据 | 它是 app 的一部分, 还是教怎么造 app 的一部分 |
@@ -368,9 +368,9 @@ grep -rn "\.claude/skills" agent_app/ api/ --include='*.py'
 
 **教学层路径清单:**
 
-- `README*.md`, `TICKET*.md`, `docs/`, `examples/`, `.claude/skills/`
-- `dataset/`, `scripts/`
-- `agent_app/dataset.py` 和 `tests_python/test_dataset.py`
+- `README*.md`, `TICKET*.md`, [`docs/`](../../docs), [`examples/`](../../examples), `.claude/skills/`
+- [`dataset/`](../../dataset), [`scripts/`](../../scripts)
+- [`agent_app/dataset.py`](../../agent_app/dataset.py) 和 [`tests_python/test_dataset.py`](../../tests_python/test_dataset.py)
 
 **两条正交的判据:**
 

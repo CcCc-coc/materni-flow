@@ -62,8 +62,8 @@ description: "这一篇不教前端, 也不教框架. 它教一个面对陌生�
 
 ## 3. 前置知识
 
-- 完成第 4 篇 (把它跑起来), 界面已经能在本地打开
-- 完成第 5 篇 (读一遍这个仓库), 知道 `app/` 和 `components/` 大致归谁管
+- 完成第 4 篇 ([把它跑起来](../04-get-it-running/README-cn.md)), 界面已经能在本地打开
+- 完成第 5 篇 ([读一遍这个仓库](../05-read-the-codebase/README-cn.md)), 知道 [`app/`](../../app) 和 [`components/`](../../components) 大致归谁管
 - 会用编辑器的全局搜索. 这一篇一半的动作是搜索
 
 **不需要** 会 React, 不需要用过 Next.js, 不需要看懂 JSX.
@@ -106,11 +106,11 @@ description: "这一篇不教前端, 也不教框架. 它教一个面对陌生�
 
 | 你搜到的文件在 | 说明它是 |
 | :--- | :--- |
-| `data/` | **一句文案**. 界面上说的话住在这里, 不在代码里 |
-| `app/` | **页面或者壳**. 决定一个网址渲染什么, 或者一组页面外面套什么 |
-| `components/` | **一块界面积木**. 可以在多个地方复用的那种 |
-| `lib/` | **后勤**. 不直接画界面, 但界面需要的东西, 比如读配置和图标表 |
-| `tailwind.config.ts` 或 `app/globals.css` | **样式**. 配色, 圆角这类跨全站的视觉设定 |
+| [`data/`](../../data) | **一句文案**. 界面上说的话住在这里, 不在代码里 |
+| [`app/`](../../app) | **页面或者壳**. 决定一个网址渲染什么, 或者一组页面外面套什么 |
+| [`components/`](../../components) | **一块界面积木**. 可以在多个地方复用的那种 |
+| [`lib/`](../../lib) | **后勤**. 不直接画界面, 但界面需要的东西, 比如读配置和图标表 |
+| [`tailwind.config.ts`](../../tailwind.config.ts) 或 [`app/globals.css`](../../app/globals.css) | **样式**. 配色, 圆角这类跨全站的视觉设定 |
 
 三步做完, 你不但知道了这一块在哪, 还知道了**和它同类的东西都在哪**.
 
@@ -124,20 +124,20 @@ description: "这一篇不教前端, 也不教框架. 它教一个面对陌生�
 
 | 屏幕上这一块 | 文字来自 | 谁画的 | 说明 |
 | :--- | :--- | :--- | :--- |
-| 顶上那条导航栏, 左边两截不同颜色的名字 | `data/site.toml` 的 `[brand]` | `app/_components/layouts/Navigation.tsx` | 两个页面共用同一条导航栏. 名字被拆成两截, 是为了给后半截上一个不同的颜色 |
+| 顶上那条导航栏, 左边两截不同颜色的名字 | [`data/site.toml`](../../data/site.toml) 的 `[brand]` | [`app/_components/layouts/Navigation.tsx`](../../app/_components/layouts/Navigation.tsx) | 两个页面共用同一条导航栏. 名字被拆成两截, 是为了给后半截上一个不同的颜色 |
 | 中间那个大标题 | `[home.headline]` | `Hero.tsx` | 同样拆成两截着色. 这是首页最先被读到的一行 |
 | 大标题底下那句副标题和那段介绍 | `[home] tagline` 与 `description` | `Hero.tsx` | 三层递进: 名字, 一句话, 一段话 |
-| 那个打开长说明的按钮 | `[home.businessContext] triggerLabel` | `Hero.tsx` | 按钮上的字在文案里, 按下之后弹出的那一整篇正文在 `data/business-context.md` |
-| 四张能力卡 | `[[capabilities]]` 那四条 | `components/CapabilityCard.tsx` | **同一份数据在 agent 页还会再渲染一次**, 用的是同一个组件 |
-| 鼠标停在卡片上弹出的解释气泡 | 上面那四条里的 `tooltip` 字段 | `components/ConceptTooltip.tsx` | 卡片标题对内行精确, 对外行等于没写, 所以配了一段白话解释 |
+| 那个打开长说明的按钮 | `[home.businessContext] triggerLabel` | `Hero.tsx` | 按钮上的字在文案里, 按下之后弹出的那一整篇正文在 [`data/business-context.md`](../../data/business-context.md) |
+| 四张能力卡 | `[[capabilities]]` 那四条 | [`components/CapabilityCard.tsx`](../../components/CapabilityCard.tsx) | **同一份数据在 agent 页还会再渲染一次**, 用的是同一个组件 |
+| 鼠标停在卡片上弹出的解释气泡 | 上面那四条里的 `tooltip` 字段 | [`components/ConceptTooltip.tsx`](../../components/ConceptTooltip.tsx) | 卡片标题对内行精确, 对外行等于没写, 所以配了一段白话解释 |
 | 底下那排技术栈标签 | `[home] techStack` | `Hero.tsx` | 一个字符串列表 |
 | 最下面那个大的行动召唤 | `[home.cta]` | `Hero.tsx` | 点它就去 agent 页 |
 | 页脚那行版权 | `[brand] footerName` | `HomePageContent.tsx` | |
 
 看完这张表, 有两件事应该跳出来.
 
-**第一, 文字和画它的代码是分开的.** 每一行左边都是 `data/site.toml` 里的某个位置, 右边才是
-组件. 这不是巧合, 是这个项目的一条硬规矩, 第 9 篇 (文案住在一个文件里) 专门讲它.
+**第一, 文字和画它的代码是分开的.** 每一行左边都是 [`data/site.toml`](../../data/site.toml) 里的某个位置, 右边才是
+组件. 这不是巧合, 是这个项目的一条硬规矩, 第 9 篇 ([文案住在一个文件里](../09-copy-lives-in-one-file/README-cn.md)) 专门讲它.
 
 **第二, 首页的内容几乎全挤在一个叫 `Hero.tsx` 的文件里.** 所以你要改首页的布局, 打开那一个
 文件就够了.
@@ -150,14 +150,14 @@ agent 页复杂一点, 因为它有两副面孔: 你还没开始对话时是一�
 
 | 屏幕上这一块 | 什么时候看得见 | 谁画的 | 说明 |
 | :--- | :--- | :--- | :--- |
-| 中间那张欢迎卡, 里面又是四张能力卡 | 只在还没对话时 | `components/chat/overview.tsx` | 四张卡和首页**是同一份数据同一个组件**, 只是换了个紧凑的样子 |
-| 输入框上方那 12 个可以直接点的问题 | 只在还没对话时 | `components/chat/multimodal-input.tsx` | 文字来自 `[[chat.suggestedActions]]` 那 12 条 |
-| 每个按钮上那个小图标 | 同上 | `components/chat/RenderBadge.tsx` | 它在告诉你按下去会画出表格, 流程图还是柱状图 |
+| 中间那张欢迎卡, 里面又是四张能力卡 | 只在还没对话时 | [`components/chat/overview.tsx`](../../components/chat/overview.tsx) | 四张卡和首页**是同一份数据同一个组件**, 只是换了个紧凑的样子 |
+| 输入框上方那 12 个可以直接点的问题 | 只在还没对话时 | [`components/chat/multimodal-input.tsx`](../../components/chat/multimodal-input.tsx) | 文字来自 `[[chat.suggestedActions]]` 那 12 条 |
+| 每个按钮上那个小图标 | 同上 | [`components/chat/RenderBadge.tsx`](../../components/chat/RenderBadge.tsx) | 它在告诉你按下去会画出表格, 流程图还是柱状图 |
 | 底下那个输入框和右边的发送键 | 一直都在 | `multimodal-input.tsx` | 提示文字来自 `[chat] inputPlaceholder` |
-| 对话开始后顶上那条可关闭的横幅 | 只在对话开始后 | `components/chat/chat.tsx` | 和上面那张欢迎卡**永远不会同时出现** |
-| agent 回答上面那个可以展开的思考块 | 对话中 | `components/chat/message.tsx` | 默认折叠, 因为 agent 每调一次工具就产生一段思考 |
-| 回答正文里的表格, 流程图, 柱状图 | 对话中 | `components/chat/markdown.tsx` 和 `blocks/` | agent 交回来的只是一段纯文本, 这里把它翻译成屏幕上的东西 |
-| 左边那个方形头像 | 对话中 | `components/chat/AssistantAvatar.tsx` | 里面那两个字母是写死的, 不在文案文件里 |
+| 对话开始后顶上那条可关闭的横幅 | 只在对话开始后 | [`components/chat/chat.tsx`](../../components/chat/chat.tsx) | 和上面那张欢迎卡**永远不会同时出现** |
+| agent 回答上面那个可以展开的思考块 | 对话中 | [`components/chat/message.tsx`](../../components/chat/message.tsx) | 默认折叠, 因为 agent 每调一次工具就产生一段思考 |
+| 回答正文里的表格, 流程图, 柱状图 | 对话中 | [`components/chat/markdown.tsx`](../../components/chat/markdown.tsx) 和 `blocks/` | agent 交回来的只是一段纯文本, 这里把它翻译成屏幕上的东西 |
+| 左边那个方形头像 | 对话中 | [`components/chat/AssistantAvatar.tsx`](../../components/chat/AssistantAvatar.tsx) | 里面那两个字母是写死的, 不在文案文件里 |
 
 最后一行值得停一下. **为什么头像里那两个字母写死, 而 agent 的名字在文案文件里?** 因为那个
 方块很小, 而数据集可以给 agent 起一个很长的名字. 这类判断第 9 篇会给出统一的判据.
@@ -172,8 +172,8 @@ agent 页复杂一点, 因为它有两副面孔: 你还没开始对话时是一�
 
 | 层 | 文件 | 你在屏幕上看到的是 |
 | :--- | :--- | :--- |
-| 最外层 | `app/layout.tsx` | 看不见的东西: 整个网页的字体, 浏览器标签上的标题和小图标, 分享链接时的预览 |
-| 中间层 | `app/(marketing)/layout.tsx` 与 `app/chat/layout.tsx` | 顶上那条导航栏. 两个页面各有一份 |
+| 最外层 | [`app/layout.tsx`](../../app/layout.tsx) | 看不见的东西: 整个网页的字体, 浏览器标签上的标题和小图标, 分享链接时的预览 |
+| 中间层 | `app/(marketing)/layout.tsx` 与 [`app/chat/layout.tsx`](../../app/chat/layout.tsx) | 顶上那条导航栏. 两个页面各有一份 |
 | 最里层 | 两个 `page.tsx` | 页面自己的内容 |
 
 一个页面被画出来之前, 要先穿过外面两层. 所以你新建一个页面放进同一个分组, 它自动就带上了
@@ -181,7 +181,7 @@ agent 页复杂一点, 因为它有两副面孔: 你还没开始对话时是一�
 
 ### 有一行东西缺了不报错
 
-`app/chat/layout.tsx` 比另一个 layout 多挂了一样东西: 那种一闪而过的提示条的容器.
+[`app/chat/layout.tsx`](../../app/chat/layout.tsx) 比另一个 layout 多挂了一样东西: 那种一闪而过的提示条的容器.
 
 少了它, chat 界面里每一次弹提示的调用都会
 **静默地什么都不做**, 包括上一条还在跑的时候你又按了回车那条提示. 不报错, 只是提示永远
@@ -196,13 +196,13 @@ agent 页复杂一点, 因为它有两副面孔: 你还没开始对话时是一�
 
 这是这一层最后一个约定, 而且它是纯记忆性的, 记住就行.
 
-**`app/` 下面的目录层级就是网址的层级, 目录里那个 `page.tsx` 就是这个网址渲染的东西.**
+**[`app/`](../../app) 下面的目录层级就是网址的层级, 目录里那个 `page.tsx` 就是这个网址渲染的东西.**
 
 | 路径 | 对应网址 |
 | :--- | :--- |
-| `app/chat/page.tsx` | `/chat` |
+| [`app/chat/page.tsx`](../../app/chat/page.tsx) | `/chat` |
 | `app/(marketing)/page.tsx` | `/` |
-| `app/_components/` | 不是网址 |
+| [`app/_components/`](../../app/_components) | 不是网址 |
 
 两个特殊符号:
 
@@ -233,7 +233,7 @@ agent 页复杂一点, 因为它有两副面孔: 你还没开始对话时是一�
 翻译成人话: 需要读文件的代码放在外层的页面里, 因为它跑在服务器上, 碰得到文件; 需要记住
 东西或者响应点击的组件放在里层, 因为它要被送到浏览器里跑; 中间靠传参数连起来.
 
-`app/chat/page.tsx` 全文就三行, 干的就是这件事: 读一次文案, 传下去.
+[`app/chat/page.tsx`](../../app/chat/page.tsx) 全文就三行, 干的就是这件事: 读一次文案, 传下去.
 
 **你现在不需要能自己判断该放哪边.** 你需要的是知道这条线存在, 以及当 AI 告诉你某个改动
 要加或者去掉 `"use client"` 时, 你知道它在说什么.
@@ -300,11 +300,11 @@ agent 页复杂一点, 因为它有两副面孔: 你还没开始对话时是一�
 
 **你会观察到:**
 
-第 1 和第 3 样都能搜到 `data/site.toml`, 但第 2 样搜到的是一个组件文件, 文案文件里根本没有.
+第 1 和第 3 样都能搜到 [`data/site.toml`](../../data/site.toml), 但第 2 样搜到的是一个组件文件, 文案文件里根本没有.
 这个差别不是疏忽, 它是有理由的, 而理由第 9 篇会讲.
 
-> **关键洞见:** 搜索的结果落在哪个目录, 本身就是答案的一半. 落在 `data/` 说明它是文案,
-> 落在 `components/` 说明有人决定它不该被换掉.
+> **关键洞见:** 搜索的结果落在哪个目录, 本身就是答案的一半. 落在 [`data/`](../../data) 说明它是文案,
+> 落在 [`components/`](../../components) 说明有人决定它不该被换掉.
 
 ### 练习 2: 让 AI 拆一个改动, 然后自己验它
 
@@ -328,7 +328,7 @@ agent 页复杂一点, 因为它有两副面孔: 你还没开始对话时是一�
 
 **你会观察到:**
 
-它给的清单里应该有 `data/site.toml`. 至于要不要改组件, 答案取决于它有没有意识到那四张卡是
+它给的清单里应该有 [`data/site.toml`](../../data/site.toml). 至于要不要改组件, 答案取决于它有没有意识到那四张卡是
 **一份数据渲染两次** 的. 这正是你该自己去验的地方.
 
 > **关键洞见:** AI 给的答案是一个待验证的假设, 不是结论. 而三步法正好给了你一个几分钟就能
@@ -342,7 +342,7 @@ agent 页复杂一点, 因为它有两副面孔: 你还没开始对话时是一�
 | :--- | :--- |
 | 这一篇不教什么 | 不教前端, 不教框架, 不要求你看懂任何一行代码 |
 | 三步法 | 看见一块东西, 搜它身上的文字, 看搜到的文件属于哪一层 |
-| 搜索落点就是答案的一半 | 落在 `data/` 是文案, `app/` 是页面或壳, `components/` 是积木, `lib/` 是后勤 |
+| 搜索落点就是答案的一半 | 落在 [`data/`](../../data) 是文案, [`app/`](../../app) 是页面或壳, [`components/`](../../components) 是积木, [`lib/`](../../lib) 是后勤 |
 | 三层壳 | 最外层管字体和标签页, 中间层管导航栏, 最里层是页面自己的内容 |
 | 网址怎么来的 | 目录层级就是网址层级. 带括号的不进网址, 下划线开头的不当路由 |
 | 看不见的三样 | 代码跑在哪一侧, 页面是不是构建时生成的, 页面的标题和分享预览 |
@@ -373,8 +373,8 @@ agent 页复杂一点, 因为它有两副面孔: 你还没开始对话时是一�
 
 **下一步:**
 
-这一篇里反复出现一个现象: 屏幕上的文字几乎都来自 `data/site.toml`, 而不是代码.
-第 9 篇 (文案住在一个文件里) 讲这条规矩背后的设计, 以及它和把这个 app 换成另一个 app 这件
+这一篇里反复出现一个现象: 屏幕上的文字几乎都来自 [`data/site.toml`](../../data/site.toml), 而不是代码.
+第 9 篇 ([文案住在一个文件里](../09-copy-lives-in-one-file/README-cn.md)) 讲这条规矩背后的设计, 以及它和把这个 app 换成另一个 app 这件
 事的关系.
 
 ---
@@ -391,11 +391,11 @@ agent 页复杂一点, 因为它有两副面孔: 你还没开始对话时是一�
 
 **目录说明它是什么:**
 
-- `data/`: 文案, 界面上说的话
-- `app/`: 页面和壳, 决定网址渲染什么
-- `components/`: 界面积木, 可复用
-- `lib/`: 后勤, 读配置和图标表
-- `tailwind.config.ts` 与 `app/globals.css`: 样式
+- [`data/`](../../data): 文案, 界面上说的话
+- [`app/`](../../app): 页面和壳, 决定网址渲染什么
+- [`components/`](../../components): 界面积木, 可复用
+- [`lib/`](../../lib): 后勤, 读配置和图标表
+- [`tailwind.config.ts`](../../tailwind.config.ts) 与 [`app/globals.css`](../../app/globals.css): 样式
 
 **网址约定:**
 

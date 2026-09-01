@@ -11,7 +11,7 @@ description: "首页是面试官点开你的链接时看到的第一屏, 而他�
 
 先说这一篇为什么值得认真读.
 
-回到第 2 篇 (这个项目是什么) 那个场景: 你把这个仓库换成自己那个行业的样子, 部署上线, 把
+回到第 2 篇 ([这个项目是什么](../02-why-this-project/README-cn.md)) 那个场景: 你把这个仓库换成自己那个行业的样子, 部署上线, 把
 链接发给面试官. **他点开之后看到的第一屏, 就是首页.**
 
 而他有很大概率**不懂这个行业**. 他可能是个招聘的, 可能是个后端工程师, 可能只是随手点开
@@ -20,7 +20,7 @@ description: "首页是面试官点开你的链接时看到的第一屏, 而他�
 
 所以首页有一份很硬的活: **把一个外行带到能提出第一个问题的位置.**
 
-这一篇讲它是怎么做到的. 和第 8 篇 (从看得见的东西找到看不见的代码) 一样, 它不教你写 React,
+这一篇讲它是怎么做到的. 和第 8 篇 ([从看得见的东西找到看不见的代码](../08-app-router-and-shells/README-cn.md)) 一样, 它不教你写 React,
 教的是**这几块东西为什么长成这样**, 以及换领域时你要重写哪几段.
 
 ---
@@ -51,8 +51,8 @@ Signals, Customer Lifecycle Value.
 
 ## 3. 前置知识
 
-- 完成第 8 篇 (从看得见的东西找到看不见的代码), 会用三步法定位
-- 完成第 9 篇 (文案住在一个文件里), 知道界面上的字都在 `data/site.toml`
+- 完成第 8 篇 ([从看得见的东西找到看不见的代码](../08-app-router-and-shells/README-cn.md)), 会用三步法定位
+- 完成第 9 篇 ([文案住在一个文件里](../09-copy-lives-in-one-file/README-cn.md)), 知道界面上的字都在 [`data/site.toml`](../../data/site.toml)
 - 手边有第 2 篇那个练习的产物, 也就是你选定的目标岗位和行业
 
 **不需要** 会写 React. 这一篇讲的是设计决定, 不是实现.
@@ -160,7 +160,7 @@ Signals, Customer Lifecycle Value.
 而一个不懂这行的读者**没有办法判断 agent 的答案是干什么用的**. 他看到一张表格, 上面写着
 各个风险等级的实际违约率, 然后呢? 这个数字高了低了意味着什么, 谁会为它睡不着觉?
 
-那个覆盖层放的就是补上这个缺口的两三屏, 正文来自 `data/business-context.md`.
+那个覆盖层放的就是补上这个缺口的两三屏, 正文来自 [`data/business-context.md`](../../data/business-context.md).
 
 ### 三个值得注意的决定
 
@@ -172,7 +172,7 @@ Signals, Customer Lifecycle Value.
 
 **正文走的是 chat 页那同一个 Markdown 渲染器.** 所以在那份文档里写一个 mermaid 围栏, 覆盖层
 里就真的会画出一张图, 而这个覆盖层组件**完全不知道图这个概念存在**. 那个渲染器怎么工作,
-第 12 篇 (一段文本怎么变成表格和图) 会讲.
+第 12 篇 ([一段文本怎么变成表格和图](../12-render-text-into-blocks/README-cn.md)) 会讲.
 
 ---
 
@@ -200,7 +200,7 @@ Signals, Customer Lifecycle Value.
 
 ## 10. 换领域时首页要重写什么
 
-落回主线. 换一个业务领域, 首页要动的全部在 `data/site.toml` 里:
+落回主线. 换一个业务领域, 首页要动的全部在 [`data/site.toml`](../../data/site.toml) 里:
 
 | 段 | 屏幕上是什么 | 重写的难度 |
 | :--- | :--- | :--- |
@@ -231,7 +231,7 @@ Signals, Customer Lifecycle Value.
 
 1. 开一个属于这一篇的 branch: `git switch -c 10-the-home-page 01-showcase`
 2. 起开发服务器: `mise run dev`
-3. 打开 `data/site.toml`, 找到 `[[capabilities]]` 的第一条, 把它的 `title` 改成一个一眼能
+3. 打开 [`data/site.toml`](../../data/site.toml), 找到 `[[capabilities]]` 的第一条, 把它的 `title` 改成一个一眼能
    认出来的词, 比如 `AAA Test`
 4. **重启开发服务器** (见下面那一段), 打开首页, 找到那张卡, 确认它变了
 5. **不要改任何别的东西**, 直接进 agent 页, 看那张欢迎卡里的四张卡
@@ -240,7 +240,7 @@ Signals, Customer Lifecycle Value.
 
 ### 改完文案怎么让页面更新
 
-`data/site.toml` 是在**构建的时候** 被读进去的 (第 9 篇讲过), 所以改完它, 光刷新浏览器
+[`data/site.toml`](../../data/site.toml) 是在**构建的时候** 被读进去的 (第 9 篇讲过), 所以改完它, 光刷新浏览器
 经常看不到变化. 稳妥的做法是把开发服务器重启一次:
 
 ```bash
@@ -250,7 +250,7 @@ mise run dev
 
 `mise run dev` 会先杀掉本 checkout 的旧进程再起新的, 所以直接重跑就行, 不用先手动清理.
 
-**改组件代码不用重启**, 保存之后页面会自己热更新. 只有改 `data/` 下这几个文件才要重启,
+**改组件代码不用重启**, 保存之后页面会自己热更新. 只有改 [`data/`](../../data) 下这几个文件才要重启,
 因为它们不在热更新的监听范围里.
 
 **你会观察到:**
@@ -297,7 +297,7 @@ mise run dev
 | 气泡三种打开方式 | 只做悬停, 手机用户和键盘用户一个都用不了 |
 | 手机上的定位 | 外侧那列气泡贴着卡片外边缘挂, 否则跑出屏幕. 这类问题不真在手机上试就想不到 |
 | 一份数据两处渲染 | 防漂移. 两份配置描述同一件事, 迟早各走各的, 而且没有任何测试会失败 |
-| 换领域改什么 | 全在 `data/site.toml`, 组件一行不动. 四张能力卡是最难的一块 |
+| 换领域改什么 | 全在 [`data/site.toml`](../../data/site.toml), 组件一行不动. 四张能力卡是最难的一块 |
 
 ---
 
@@ -322,7 +322,7 @@ mise run dev
 
 **下一步:**
 
-首页把人带到了门口. 第 11 篇 (agent 页) 讲他推门进去之后看到什么: 一个空输入框会把人劝退,
+首页把人带到了门口. 第 11 篇 ([agent 页](../11-the-agent-page/README-cn.md)) 讲他推门进去之后看到什么: 一个空输入框会把人劝退,
 所以那一页的空状态里塞了不少东西.
 
 ---
@@ -348,18 +348,18 @@ tooltip = "两三句解释, 里面不许再有黑话"
 
 **关键文件:**
 
-- `data/site.toml` 的 `[home]` 与 `[[capabilities]]`: 首页说的每一句话
-- `data/business-context.md`: 覆盖层的正文
+- [`data/site.toml`](../../data/site.toml) 的 `[home]` 与 `[[capabilities]]`: 首页说的每一句话
+- [`data/business-context.md`](../../data/business-context.md): 覆盖层的正文
 - `app/(marketing)/_components/Hero.tsx`: 首页的全部内容
-- `components/CapabilityCard.tsx`: 四张卡, 两个页面共用
-- `components/ConceptTooltip.tsx`: 解释气泡
-- `components/BusinessContextModal.tsx`: 覆盖层
+- [`components/CapabilityCard.tsx`](../../components/CapabilityCard.tsx): 四张卡, 两个页面共用
+- [`components/ConceptTooltip.tsx`](../../components/ConceptTooltip.tsx): 解释气泡
+- [`components/BusinessContextModal.tsx`](../../components/BusinessContextModal.tsx): 覆盖层
 
 **换领域时首页动哪儿:**
 
-只动 `data/site.toml` 和 `data/business-context.md`. 组件一行不改.
+只动 [`data/site.toml`](../../data/site.toml) 和 [`data/business-context.md`](../../data/business-context.md). 组件一行不改.
 
-**改完 `data/` 下的文件要重启开发服务器:**
+**改完 [`data/`](../../data) 下的文件要重启开发服务器:**
 
 ```bash
 # 在跑着服务器的终端里 Ctrl+C, 然后

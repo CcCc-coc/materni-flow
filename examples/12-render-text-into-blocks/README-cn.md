@@ -12,7 +12,7 @@ description: "agent 交回来的只是一段纯文本, 屏幕上却出现了表�
 这是前端那一组的最后一篇, 也是这一组里唯一一篇讲**动态内容** 的.
 
 前面几篇里, 屏幕上的东西都能用第 8 篇那个三步法搜到源头: 你看到一句话, 搜一下, 找到
-`data/site.toml`. 但 agent 的回答搜不到, 因为它**不在任何文件里**, 它是每次现生成的.
+[`data/site.toml`](../../data/site.toml). 但 agent 的回答搜不到, 因为它**不在任何文件里**, 它是每次现生成的.
 
 那么问题来了: agent 交回来的是一段纯文本, 屏幕上却出现了带边框的表格, 画好的流程图, 带坐标
 轴的柱状图. **这个转换发生在哪儿?**
@@ -49,8 +49,8 @@ agent 的回答是**一个字一个字流过来的**. 所以在它写完之前, 
 
 ## 3. 前置知识
 
-- 完成第 11 篇 (agent 页), 知道消息气泡里那三种内容
-- 完成第 4 篇 (把它跑起来), agent 能真的回答, 因为练习要看流式过程
+- 完成第 11 篇 ([agent 页](../11-the-agent-page/README-cn.md)), 知道消息气泡里那三种内容
+- 完成第 4 篇 ([把它跑起来](../04-get-it-running/README-cn.md)), agent 能真的回答, 因为练习要看流式过程
 
 **不需要** 看懂任何一行 React. 这一篇讲的仍然是决定, 不是实现.
 
@@ -143,7 +143,7 @@ const BLOCK_RENDERERS: Record<string, ComponentType<BlockProps>> = {
 
 ### 这张表为什么不放进文案文件
 
-第 9 篇立了一条规矩: 会变的东西集中到 `data/`. 那为什么这张表不在那儿?
+第 9 篇立了一条规矩: 会变的东西集中到 [`data/`](../../data). 那为什么这张表不在那儿?
 
 因为它装的不是**这个数据集说什么**, 是**这个 app 能渲染什么**. 这两件事换的频率完全不同:
 换一个业务领域, 文案全部重写, 而这个 app 能画哪几种图一点没变.
@@ -191,8 +191,8 @@ const BLOCK_RENDERERS: Record<string, ComponentType<BlockProps>> = {
 
 ### 失败还必须是局部的
 
-模型迟早会吐出一张语法非法的图. 这时候整个渲染被包在一个捕获里, ** 一张坏图只损失它自己那
-一个块**, 不影响这条消息, 更不影响整个对话.
+模型迟早会吐出一张语法非法的图. 这时候整个渲染被包在一个捕获里,
+**一张坏图只损失它自己那一个块**, 不影响这条消息, 更不影响整个对话.
 
 用户永远看得到内容, 最差也是一段可读的代码文本, 不会白屏.
 
@@ -241,9 +241,9 @@ const BLOCK_RENDERERS: Record<string, ComponentType<BlockProps>> = {
 
 假设你想加一种时间线的块. 步骤是:
 
-1. 在 `components/chat/blocks/` 下写一个组件, 解析失败时退回那个兜底的代码块渲染器
+1. 在 [`components/chat/blocks/`](../../components/chat/blocks) 下写一个组件, 解析失败时退回那个兜底的代码块渲染器
 2. 在那张查找表里加一行
-3. **在 `data/system-prompt.md` 里告诉 agent 什么时候产出这种块**
+3. **在 [`data/system-prompt.md`](../../data/system-prompt.md) 里告诉 agent 什么时候产出这种块**
 
 **第三步是分界线, 也是最常被忘的一步.**
 
@@ -269,7 +269,7 @@ const BLOCK_RENDERERS: Record<string, ComponentType<BlockProps>> = {
 **怎么做:**
 
 1. 开一个叫 `12-render-text-into-blocks` 的 branch
-2. 打开 `data/business-context.md`, 在末尾加一个合法的图表围栏:
+2. 打开 [`data/business-context.md`](../../data/business-context.md), 在末尾加一个合法的图表围栏:
 
 ```json
 {
@@ -315,14 +315,15 @@ const BLOCK_RENDERERS: Record<string, ComponentType<BlockProps>> = {
 先不要动手.
 ```
 
-3. 读它给的清单, **重点看它有没有提到 `data/system-prompt.md`**
+3. 读它给的清单, **重点看它有没有提到 [`data/system-prompt.md`](../../data/system-prompt.md)**
 4. 如果它只说了前端那两步, 追问一句: 只改前端的话, 这个渲染器会被调用到吗
 5. 拿三步法去验证它说的每个文件路径真的存在
 
 **你会观察到:**
 
-这是一个很好的试金石. 只看前端代码的话, 加一种块看起来就是两步; ** 只有读过那份项目文档的
-才会提第三步**. 它提到了, 说明 skill 起了作用; 没提到, 说明它没读到那一篇.
+这是一个很好的试金石. 只看前端代码的话, 加一种块看起来就是两步;
+**只有读过那份项目文档的才会提第三步**. 它提到了, 说明 skill 起了作用; 没提到, 说明它
+没读到那一篇.
 
 > **关键洞见:** 一个功能横跨两侧而只有一侧有测试的时候, 唯一能救你的是有人把这件事写下来了.
 > 这就是那批项目文档存在的理由.
@@ -367,7 +368,7 @@ const BLOCK_RENDERERS: Record<string, ComponentType<BlockProps>> = {
 
 **下一步:**
 
-前端这一组到此结束. 从第 13 篇 (Next.js 和 FastAPI 怎么接上) 开始往后端走, 先看这两个服务器
+前端这一组到此结束. 从第 13 篇 ([Next.js 和 FastAPI 怎么接上](../13-wire-next-to-fastapi/README-cn.md)) 开始往后端走, 先看这两个服务器
 在本地是怎么被接在一起的, 以及那些端口为什么被钉死.
 
 ---
@@ -376,9 +377,9 @@ const BLOCK_RENDERERS: Record<string, ComponentType<BlockProps>> = {
 
 **这一层的三个文件:**
 
-- `components/chat/markdown.tsx`: 分发点, 那个管代码的自定义组件
-- `components/chat/blocks/index.ts`: 那张查找表
-- `components/chat/blocks/`: 三个渲染器, 流程图, 图表, 和兜底的代码块
+- [`components/chat/markdown.tsx`](../../components/chat/markdown.tsx): 分发点, 那个管代码的自定义组件
+- [`components/chat/blocks/index.ts`](../../components/chat/blocks/index.ts): 那张查找表
+- [`components/chat/blocks/`](../../components/chat/blocks): 三个渲染器, 流程图, 图表, 和兜底的代码块
 
 **查找表:**
 
@@ -408,4 +409,4 @@ const BLOCK_RENDERERS = {
 
 1. 写组件, 失败时退回兜底的代码块
 2. 在查找表里加一行
-3. **在 `data/system-prompt.md` 里告诉 agent 什么时候产出它**
+3. **在 [`data/system-prompt.md`](../../data/system-prompt.md) 里告诉 agent 什么时候产出它**

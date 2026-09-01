@@ -8,11 +8,11 @@ description: "学完你能说清这个仓库给 coding agent 准备了哪三套�
 
 ## 1. 概览
 
-第 4 篇 (把它跑起来) 教了怎么把助教叫起来, 第 6 篇 (教学层和生产层) 讲了那条边界的一个副
+第 4 篇 ([把它跑起来](../04-get-it-running/README-cn.md)) 教了怎么把助教叫起来, 第 6 篇 ([教学层和生产层](../06-teaching-and-production/README-cn.md)) 讲了那条边界的一个副
 作用: 层次分明的仓库, 派给 AI 的任务写得成一句话.
 
-这一篇把这件事讲完整. 它回答四个问题: ** 为什么不能让 AI 把代码读一遍, 它进门先读到什么,
-它被允许碰什么, 以及你该怎么派活.**
+这一篇把这件事讲完整. 它回答四个问题:
+**为什么不能让 AI 把代码读一遍, 它进门先读到什么, 它被允许碰什么, 以及你该怎么派活.**
 
 这不是一篇讲 prompt 技巧的文章. 讲的是**仓库这一侧要准备什么**, 因为一个 AI 干得准不准,
 大半取决于它面对的是一个什么样的代码库.
@@ -24,13 +24,13 @@ description: "学完你能说清这个仓库给 coding agent 准备了哪三套�
 先说一个对比, 它解释了这一篇为什么值得单独占一篇.
 
 **任务一**: 把界面上所有提到贷款的地方改成提到订单. 在这个仓库里, 这句话等于打开
-`data/site.toml` 改. 在一个文案散在二十个组件里的仓库里, 这句话等于全仓库搜一遍, 然后逐处
+[`data/site.toml`](../../data/site.toml) 改. 在一个文案散在二十个组件里的仓库里, 这句话等于全仓库搜一遍, 然后逐处
 判断哪些该改哪些不该, 而这件事**每次都会漏, 而且漏得不报错**.
 
 同一个模型, 同一句提示, 结果差得远, 差的不是模型是仓库.
 
 反过来在 review 的时候也一样. 一次换数据集的改动
-**应该只落在 `data/`, `dataset/` 和 `.env.defaults` 三个地方**.
+**应该只落在 [`data/`](../../data), [`dataset/`](../../dataset) 和 `.env.defaults` 三个地方**.
 落到别处就是信号, 你不用逐行读也知道有东西越界了. 边界清晰的仓库, 改动的形状本身就是一种
 检查.
 
@@ -46,8 +46,8 @@ description: "学完你能说清这个仓库给 coding agent 准备了哪三套�
 
 ## 3. 前置知识
 
-- 完成第 6 篇 (教学层和生产层), 知道那条边界在哪
-- 完成第 3 篇 (开工之前的四门前置课) 里 coding agent 那一块, 会基本操作
+- 完成第 6 篇 ([教学层和生产层](../06-teaching-and-production/README-cn.md)), 知道那条边界在哪
+- 完成第 3 篇 ([开工之前的四门前置课](../03-prerequisites/README-cn.md)) 里 coding agent 那一块, 会基本操作
 
 ---
 
@@ -92,7 +92,7 @@ description: "学完你能说清这个仓库给 coding agent 准备了哪三套�
 **会自己决定去打开哪几个文件**. 所以你要准备的不是一份大而全的说明书, 是一张让它知道去
 哪儿找的地图.
 
-**这条对你自己也成立.** 第 5 篇 (读一遍这个仓库) 教你先画地图再挑一条路径走, 用的是同一个
+**这条对你自己也成立.** 第 5 篇 ([读一遍这个仓库](../05-read-the-codebase/README-cn.md)) 教你先画地图再挑一条路径走, 用的是同一个
 道理: 不是把所有东西读完, 是知道该读哪几个.
 
 ---
@@ -104,8 +104,8 @@ description: "学完你能说清这个仓库给 coding agent 准备了哪三套�
 
 | 文件或目录 | 谁读 | 说明 |
 | :--- | :--- | :--- |
-| `CLAUDE.md` | Claude Code | 这个仓库的总纲, 进门自动读进去. 里面是目录结构, 两种配置的区别, 改什么就改哪个文件的对照表, 以及跑测试和起服务的命令 |
-| `AGENTS.md` | 多数别的 agent | 一份很短的开发环境说明. 它故意短, 因为长内容都在 skill 里, 不该塞进一份每次都全量读进上下文的文件 |
+| [`CLAUDE.md`](../../CLAUDE.md) | Claude Code | 这个仓库的总纲, 进门自动读进去. 里面是目录结构, 两种配置的区别, 改什么就改哪个文件的对照表, 以及跑测试和起服务的命令 |
+| [`AGENTS.md`](../../AGENTS.md) | 多数别的 agent | 一份很短的开发环境说明. 它故意短, 因为长内容都在 skill 里, 不该塞进一份每次都全量读进上下文的文件 |
 | `.agents/rules/`, `.codex/rules/` | 其它 agent 各自的规则文件 | 同一批约定换个格式再放一份. 顶上那行 `trigger: always_on` 是那个工具用来决定要不要每次都加载的标记 |
 
 这一层解决的是**它得知道这个仓库大概长什么样**. 但地图不等于说明书, 真正的深度在下一层.
@@ -124,7 +124,7 @@ description: "学完你能说清这个仓库给 coding agent 准备了哪三套�
 | 块 | 讲什么 | 大概有几篇 |
 | :--- | :--- | :--- |
 | `ref/architecture/` | 边界和设计决定. 这是什么项目, 教学层和生产层怎么分, 数据集是什么, 为什么本地也连远程库, 渲染契约, 配置和内容怎么切, 靠什么守边界, 注释和文档怎么写 | 九篇 |
-| `ref/backend/` | `agent_app/` 那些 Python 模块各自为什么这么写. 从零依赖的叶子一路到 HTTP 入口, 编号就是依赖顺序 | 十一篇 |
+| `ref/backend/` | [`agent_app/`](../../agent_app) 那些 Python 模块各自为什么这么写. 从零依赖的叶子一路到 HTTP 入口, 编号就是依赖顺序 | 十一篇 |
 | `ref/frontend/` | 界面必须做到什么, 每一块元素的内容从哪来, 内容管线, 路由和壳, 两个页面, 块渲染器, 设计 token | 八篇 |
 | `ref/operations/` | 怎么把它跑起来: 配置, 数据库, 开发服务器 | 四篇 |
 
@@ -182,8 +182,8 @@ description: "学完你能说清这个仓库给 coding agent 准备了哪三套�
 
 `.claude/settings.json` 是权限文件. 它有两个名单.
 
-**allow 名单** 列出不需要每次问你就可以做的事: 改 `data/` 下的内容, 改各种 Markdown 文档,
-改 `scripts/` 下的 Python, 跑 `mise` 命令, 跑 `.venv/bin/python scripts/**`, 联网搜索.
+**allow 名单** 列出不需要每次问你就可以做的事: 改 [`data/`](../../data) 下的内容, 改各种 Markdown 文档,
+改 [`scripts/`](../../scripts) 下的 Python, 跑 `mise` 命令, 跑 `.venv/bin/python scripts/**/*.py`, 联网搜索.
 
 **deny 名单只有很短的几条, 但它是这个文件里最重要的部分**:
 
@@ -228,8 +228,8 @@ description: "学完你能说清这个仓库给 coding agent 准备了哪三套�
 
 ### 二, 一步一步做
 
-这条第 4 篇已经讲过, 这里再钉一遍, 因为它在真正改代码的时候更要紧: ** 一次改一件事, 改完
-你自己跑一遍验证, 再走下一步.**
+这条第 4 篇已经讲过, 这里再钉一遍, 因为它在真正改代码的时候更要紧:
+**一次改一件事, 改完你自己跑一遍验证, 再走下一步.**
 
 一口气改十个文件的问题不是它会改错, 是**出错的时候你不知道是哪一步错的**. 拆开之后每一步
 都有一个明确的验收动作, 错了当场就知道.
@@ -240,10 +240,10 @@ description: "学完你能说清这个仓库给 coding agent 准备了哪三套�
 
 | 你派的活 | 改动应该只落在 |
 | :--- | :--- |
-| 改一句界面文案 | `data/site.toml` |
-| 换整个业务领域 | `data/`, `dataset/`, `.env.defaults` |
-| 给 agent 加一个工具 | `agent_app/one/one_04_agent.py`, `data/system-prompt.md` |
-| 改配色 | `tailwind.config.ts` |
+| 改一句界面文案 | [`data/site.toml`](../../data/site.toml) |
+| 换整个业务领域 | [`data/`](../../data), [`dataset/`](../../dataset), `.env.defaults` |
+| 给 agent 加一个工具 | [`agent_app/one/one_04_agent.py`](../../agent_app/one/one_04_agent.py), [`data/system-prompt.md`](../../data/system-prompt.md) |
+| 改配色 | [`tailwind.config.ts`](../../tailwind.config.ts) |
 
 落到别处就是越界的信号. 这个检查便宜到几乎免费, 而且它在你读一行代码之前就能给出结论.
 
@@ -273,8 +273,8 @@ description: "学完你能说清这个仓库给 coding agent 准备了哪三套�
 
 **你会观察到:**
 
-计划里应该只有 `data/site.toml` 一个文件. 如果它提出要改
-`components/chat/multimodal-input.tsx`, 那说明它没读到组件里不许有业务文案这条规矩, 这时候
+计划里应该只有 [`data/site.toml`](../../data/site.toml) 一个文件. 如果它提出要改
+[`components/chat/multimodal-input.tsx`](../../components/chat/multimodal-input.tsx), 那说明它没读到组件里不许有业务文案这条规矩, 这时候
 把它指回那份 skill.
 
 > **关键洞见:** 改动落点是一个在你读代码之前就能用的检查. 一个边界清晰的仓库, 越界这件事
@@ -341,7 +341,7 @@ description: "学完你能说清这个仓库给 coding agent 准备了哪三套�
 
 **下一步:**
 
-接下来五篇讲前端. 第 8 篇 (路由与三层壳) 从最外面开始: `app/` 目录怎么变成网址, 三层壳各
+接下来五篇讲前端. 第 8 篇 ([路由与三层壳](../08-app-router-and-shells/README-cn.md)) 从最外面开始: [`app/`](../../app) 目录怎么变成网址, 三层壳各
 管什么, 以及 server 和 client 那条线画在哪.
 
 ---
@@ -350,7 +350,7 @@ description: "学完你能说清这个仓库给 coding agent 准备了哪三套�
 
 **三套东西:**
 
-- 总纲: `CLAUDE.md` (Claude Code), `AGENTS.md` 与各家的 rules 文件 (其它 agent)
+- 总纲: [`CLAUDE.md`](../../CLAUDE.md) (Claude Code), [`AGENTS.md`](../../AGENTS.md) 与各家的 rules 文件 (其它 agent)
 - 深度文档: `.claude/skills/` 与 `.agents/skills/` 的 `ref/`, 按需加载
 - 权限: `.claude/settings.json` 的 allow 与 deny 名单
 
