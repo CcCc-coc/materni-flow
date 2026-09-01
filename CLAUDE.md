@@ -1,9 +1,5 @@
 ## Context Files
 
-- Role & Behavior: @.claude/MENTOR.md
-- Tutorial: @README.md
-- Task Card: @TICKET.md
-
 ## Code Architecture
 
 ### Entry Point
@@ -144,7 +140,7 @@ happens once per dataset while reviewing a swap happens every time.
 
 **Both directions of the kickstart contract are machine-checked.** Each of the
 12 questions in `site.toml` carries a `render` field, and its `action` carries
-the literal trigger phrase that makes the block appear. `mise run check-content` fails
+the literal trigger phrase that makes the block appear. `mise run cli-check-content` fails
 if the two disagree, in either direction: a wrong phrase means the block never
 appears, and a wrong `render` means the button draws an icon promising a chart
 over an answer that is prose.
@@ -180,17 +176,17 @@ in a component.
 
 The only entry not in `data/` is the last one, because a write tool is code.
 
-Run `mise run check-content` afterwards. It fails on a seed whose foreign keys form a
+Run `mise run cli-check-content` afterwards. It fails on a seed whose foreign keys form a
 cycle (or that has no tables at all), a prompt that queries a nonexistent table,
 missing content files, and a kickstart question whose `render` disagrees with
 its own wording. Right after a swap also run it with the outgoing domain's
 vocabulary, which is a one-off argument rather than committed state:
 
 ```bash
-mise run check-content -- --retired "patient,bed,ward,nurse"
+mise run cli-check-content -- --retired "patient,bed,ward,nurse"
 ```
 
-Icon names are checked by `mise run build-web`, not by `mise run check-content`:
+Icon names are checked by `mise run build-web`, not by `mise run cli-check-content`:
 `lib/site/load.ts` rejects any `icon` that `lib/icons.ts` does not export. Run
 the build too, since the check script never parses the TOML's icon fields.
 
@@ -424,8 +420,14 @@ lie the next time the dataset is swapped.
 - `mise run export` - Export Python requirements to requirements.txt
 - `mise run dev` - Start all development servers (Next.js + FastAPI, auto-kills this project's old instances first)
 - `mise run kill` - Kill this project's development servers
-- `mise run check-content` - Verify `data/` still agrees with the prompt and the seed (run after a dataset swap)
 - `mise run build-web` - Build the Next.js frontend; the only check for `site.toml` keys and icon names
+
+Tasks prefixed `cli-` are one-line wrappers over the `agent-app` console script, grouped
+under a `# cli` banner in `mise.toml`. A task without the prefix does its own work; one
+with it is a door onto a subcommand you can also run directly:
+
+- `mise run cli-check-content` - Verify `data/` still agrees with the prompt and the seed (run after a dataset swap)
+- `mise run cli-test-db-conn` - Check this machine can reach the cloud PostgreSQL (`SELECT 1`)
 
 `check-content` and `build-web` are the two halves of "did the swap land", and
 neither catches what the other does. Run both.
@@ -435,12 +437,27 @@ neither catches what the other does. Run both.
 ```bash
 .venv/bin/agent-app check-content
 .venv/bin/agent-app check-content --retired "patient,bed,ward"
+.venv/bin/agent-app test-db-conn
 ```
 
 Installed as a console script by `[project.scripts]` in `pyproject.toml`, backed
 by `agent_app/cli.py`. **`mise.toml` calls this name rather than a file path**, so
 where a command's implementation lives can change without every task and habit
 changing with it.
+
+**The interface is derived, not declared.** `agent_app/cli.py` hands a `Cli` class
+to `fire`: one public method is one subcommand, and that method's signature is the
+subcommand's options. Adding a command is adding a method — there is no parser to
+keep in step with it, which is what the previous hand-written `argparse` tree cost.
+`fire` accepts either spelling of a method name, so `test-db-conn` and `test_db_conn`
+both work; the hyphenated one is what the docs and tasks use.
+
+**Every command raises `SystemExit` rather than returning a code.** `fire` prints a
+returned value and then exits 0, so a check that returned 1 would print `1` and pass.
+
+`test-db-conn` names no schema and no table on purpose. When the agent is not working
+it separates *cannot reach the database* from *reached it, but the schema is empty* —
+two failures that otherwise look alike.
 
 **Only application commands belong here.** Building the dataset and publishing it
 to PostgreSQL stay in the teaching layer's own CLI (`teaching_cli.py`): that layer
@@ -541,7 +558,7 @@ no config change** — reflect it and the order updates itself.
 There used to be a hand-written `tableInsertOrder` list plus a check comparing
 it against the seed. Both are gone: a hand-copied topological sort is a value
 that can be wrong, and the only thing that check could catch was someone copying
-it wrong. `mise run check-content` now verifies the thing derivation *cannot* fix — that
+it wrong. `mise run cli-check-content` now verifies the thing derivation *cannot* fix — that
 the foreign keys admit an order at all, i.e. contain no cycle.
 
 **Schema Reference:**

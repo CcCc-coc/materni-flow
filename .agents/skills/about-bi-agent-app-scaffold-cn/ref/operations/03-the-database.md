@@ -77,7 +77,7 @@ PostgreSQL schema <SCHEMA_NAME>           agent 唯一读的地方
 2. 改 `.env.defaults` 的 `SCHEMA_NAME`
 3. `gen-data --force` -> `sync-db` -> `verify-db`
 4. 照着新的源文档重写 `data/` 下那三个文件
-5. `mise run check-content` 和 `mise run build-web`
+5. `mise run cli-check-content` 和 `mise run build-web`
 
 **记得清理上一个数据集留下的表.** 它们在别的 schema 里, 不会被新的同步碰到, 所以会一直
 占着 Neon 的配额而不发出任何声音 —— 而那个配额是和别的项目共用的.

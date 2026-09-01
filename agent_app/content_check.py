@@ -157,7 +157,7 @@ def check_retired_terms(report: Report, terms: list[str]) -> bool:
 
     Run it by hand right after a swap::
 
-        mise run check-content -- --retired "patient,bed,ward,nurse"
+        mise run cli-check-content -- --retired "patient,bed,ward,nurse"
 
     Matching is whole-word and case-insensitive, so ``bed`` flags a stray
     hospital reference without flagging ``bedrock``.
@@ -198,7 +198,7 @@ def seed_tables() -> tuple[set[str], str | None]:
     The import is inside the function on purpose. ``agent_app.dataset`` is the
     teaching layer, and the whole point of that layer is that it can be deleted
     in one go -- a module-level import would make this file, and therefore
-    ``mise run check-content``, die with a traceback the moment it is. A reason
+    ``mise run cli-check-content``, die with a traceback the moment it is. A reason
     string lets the caller say *which* of the two situations it is in, because
     they need opposite responses: build the database, or stop expecting one.
     """

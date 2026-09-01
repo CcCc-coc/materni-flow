@@ -38,18 +38,41 @@ description = "💾 Export Python dependencies to requirements.txt (not used by 
 # committed, because a second dependency list is a second thing to drift.
 run = "uv export --format requirements-txt --no-dev --no-emit-project --no-hashes --no-annotate --no-emit-package pywin32 --no-emit-package colorama --no-emit-package tzdata | sed 's/ ; platform_machine ==.*or.*//' > requirements.txt"
 
+# === cli
+#
+# Thin wrappers over `agent-app`, the console script `pyproject.toml` installs
+# from `agent_app/cli.py`. Everything below this banner is one line long and
+# does nothing of its own: the behaviour lives in the CLI, and these tasks exist
+# so that `mise run` stays the single entry point a person has to remember.
+#
+# They call the console script rather than a path under `scripts/`: those
+# scripts are course material and will move, and a task pointing into them
+# breaks the day they do.
+#
+# The `cli-` prefix is what says these are wrappers. A task without it does its
+# own work; a task with it is a door onto a subcommand you can also run
+# directly, which matters when you want to pass flags without `mise run --`.
+
+[tasks.cli-check-content]
 # The two halves of "did the swap land": this one reads the prose in `data/`,
 # `build-web` reads the same file through the frontend loader. Neither catches
 # what the other does, so a swap runs both.
 #
 # Named for what it touches rather than `check`, because a task called `check`
-# tells nobody which of the repo's several checks it is. It calls the console
-# script from pyproject.toml rather than a path under `scripts/`: those scripts
-# are course material and will move, and a task pointing into them breaks the
-# day they do.
-[tasks.check-content]
+# tells nobody which of the repo's several checks it is.
 description = "🔍 Check data/ still agrees with the prompt and the seed (run after a dataset swap)"
 run = ".venv/bin/agent-app check-content"
+
+[tasks.cli-test-db-conn]
+# The smallest possible round trip to the cloud database: connect, SELECT 1,
+# disconnect. It names no schema and no table on purpose, so that a failure here
+# means credentials or network and nothing else. When the agent is not working,
+# this is the first thing to run: it separates "cannot reach the database" from
+# "reached it, but the schema is empty", which otherwise look the same.
+description = "🔌 Check this machine can reach the cloud PostgreSQL (SELECT 1)"
+run = ".venv/bin/agent-app test-db-conn"
+
+# === end cli
 
 [tasks.test-python]
 description = "🧪 Run Python tests with pytest"
@@ -76,7 +99,7 @@ run = "pnpm exec next build"
 
 [tasks.test]
 description = "🧪 Run all checks and tests (content consistency + Python + Node.js)"
-depends = ["check-content", "test-python", "test-node"]
+depends = ["cli-check-content", "test-python", "test-node"]
 
 [tasks.cov-python]
 description = "🧪 Run Python code coverage tests with pytest"

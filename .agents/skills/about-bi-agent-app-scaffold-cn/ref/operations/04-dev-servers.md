@@ -14,7 +14,7 @@
 mise run inst              装依赖 (Python + Node)
 mise run dev               起两个开发服务器 (会先 kill)
 mise run kill              停掉本 checkout 的服务器
-mise run check-content     data/ 的内容一致性 (换数据集之后跑)
+mise run cli-check-content     data/ 的内容一致性 (换数据集之后跑)
 mise run build-web         构建前端; 唯一查 site.toml 必填 key 和图标名的地方
 mise run test              check-content + Python 测试 + Node 测试
 mise run cov               覆盖率报告, 写到 htmlcov/

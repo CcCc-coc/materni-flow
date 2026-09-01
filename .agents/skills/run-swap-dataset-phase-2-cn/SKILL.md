@@ -116,7 +116,7 @@ swap-dataset-cn
 2. **定调性, 用 AskUserQuestion 给两到三个方向让用户挑** —— 每个方向要连色值带**构图**一起
    说清楚, 只给形容词等于没给
 3. 动手, 按剧本第 3 节那张表逐层改, **别只改首页**
-4. `mise run build-web` / `mise run check-content` / `mise run test`, 三条都跑
+4. `mise run build-web` / `mise run cli-check-content` / `mise run test`, 三条都跑
 5. 亲眼看两个页面, 按剧本第 6 节那张清单验
 6. 交给用户看, 有意见继续改
 7. 用户满意之后走剧本第 7 节的收尾与交付

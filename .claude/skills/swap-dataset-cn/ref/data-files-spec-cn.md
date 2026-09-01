@@ -87,7 +87,7 @@ SELECT 里的别名, 把表达式重写一遍; `window` / `order` 这类保留�
 
 ### 一个和检查脚本打架的坑
 
-`mise run check-content` 会扫提示词里 ` ```sql ` 围栏块内部的 `FROM x` / `JOIN x`, 确认表真的存在.
+`mise run cli-check-content` 会扫提示词里 ` ```sql ` 围栏块内部的 `FROM x` / `JOIN x`, 确认表真的存在.
 它只扫围栏块内部, 所以散文里写 `EXTRACT(QUARTER FROM d)` 不会误报.
 
 用了 CTE 的话, 检查脚本认得 `WITH name AS (` 这种自定义名字, 不会把它当成缺失的表.
@@ -117,7 +117,7 @@ SELECT 里的别名, 把表达式重写一遍; `window` / `order` 这类保留�
 
 **一, 必填 key 少一个 build 就挂.** `lib/site/schema.ts` 的 `REQUIRED_SITE_KEYS` 列了每个
 必须存在的 key, `lib/site/load.ts` 解析时逐个查. 只在 `mise run build-web` 时才拦得住,
-`mise run check-content` 查不到.
+`mise run cli-check-content` 查不到.
 
 **二, 图标名必须在 `lib/icons.ts` 里.** `assertIconsExist` 会报出坏名字和全部合法名字, 同样
 只在 `next build` 时抛. 不查的话拼错的图标会静默渲染成兜底图标 —— 卡片看着好好的, 就是配错
@@ -162,7 +162,7 @@ mermaid 渲染器, chart 渲染器, SQL 高亮全都没人看得见. 所以配�
 据它在按钮上画一个表格 / 流程 / 柱状的小图标, 读者不点开就知道会画出什么, `free` 故意什么
 都不画 (每个按钮都有徽章等于没有徽章). 而真正让块出现的是 `action` 里那句短语.
 
-只查短语, 图标会撒谎; 只查 `render`, 一个标着图表的问题会回一段散文. `mise run check-content` 的
+只查短语, 图标会撒谎; 只查 `render`, 一个标着图表的问题会回一段散文. `mise run cli-check-content` 的
 `render quota` **两个方向都验**.
 
 第 1 条固定是 Introduction / "What can you do?", `render = "free"`.

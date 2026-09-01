@@ -190,7 +190,7 @@ ls -lh dataset/*.sqlite                     # 大小对得上 er_document 声称
 #    .env 装密钥, AI 不许读也不许改
 # 2. 估一次体积: sqlite 超过 120MB 先和用户确认要不要减行
 # 3. 先体检再同步 —— 脚本见 ref/verification-cn.md
-mise run check-content                      # 空表 / 外键成环, 当场就报
+mise run cli-check-content                      # 空表 / 外键成环, 当场就报
 
 .venv/bin/python $CLI sync-db               # 发布进 PostgreSQL 的 SCHEMA_NAME
 .venv/bin/python $CLI verify-db             # 逐表对行数, 不一致就 exit 1
@@ -271,7 +271,7 @@ mise run check-content                      # 空表 / 外键成环, 当场就�
 **一个会误报的检查比没有检查更糟, 因为它训练人忽略输出.**
 
 分界线在这里: **"这 12 条里有没有恰好 3 条写了 `as a flowchart`" 是机械问题, "这 12 条问得
-好不好" 不是.** 前者写成脚本 (`mise run check-content` 已经在做), 后者靠上面这个顺序和用户验收.
+好不好" 不是.** 前者写成脚本 (`mise run cli-check-content` 已经在做), 后者靠上面这个顺序和用户验收.
 
 ---
 
@@ -329,7 +329,7 @@ E 组第一行能成立, 靠的是一条纪律: **通用代码的注释和 docst
 全部脚本和判据在 [`verification-cn.md`](verification-cn.md). 这里只列该跑什么:
 
 ```bash
-mise run check-content      # 建表顺序 / 提示词表名 / 内容文件 / 渲染配额
+mise run cli-check-content      # 建表顺序 / 提示词表名 / 内容文件 / 渲染配额
 mise run test       # check + Python + Node
 mise run build-web      # site.toml 的缺 key 和图标名, 只有这里查得到
 ```

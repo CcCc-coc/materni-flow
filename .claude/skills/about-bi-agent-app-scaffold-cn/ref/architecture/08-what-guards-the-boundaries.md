@@ -8,10 +8,10 @@
 | 边界 | 出处 | 谁在守 |
 | :--- | :--- | :--- |
 | 生产路径不 import 教学层 | [02](02-teaching-and-production.md) | `TestNotOnTheProductionPath` (AST 扫 import) |
-| 种子的外键要有插入顺序, 而且不能一张表都没有 | [03](03-the-dataset.md) | `mise run check-content` |
-| 提示词里的 SQL 例子不能查不存在的表 | [07](07-config-and-content.md) | `mise run check-content` |
-| `data/` 下该有的内容文件不能缺 | [07](07-config-and-content.md) | `mise run check-content` |
-| kickstart 的 `render` 和它自己的措辞要对上 | [06](06-rendering-contract.md) | `mise run check-content` (双向) |
+| 种子的外键要有插入顺序, 而且不能一张表都没有 | [03](03-the-dataset.md) | `mise run cli-check-content` |
+| 提示词里的 SQL 例子不能查不存在的表 | [07](07-config-and-content.md) | `mise run cli-check-content` |
+| `data/` 下该有的内容文件不能缺 | [07](07-config-and-content.md) | `mise run cli-check-content` |
+| kickstart 的 `render` 和它自己的措辞要对上 | [06](06-rendering-contract.md) | `mise run cli-check-content` (双向) |
 | `site.toml` 必填 key 不能少, 图标名必须存在 | [07](07-config-and-content.md) | `mise run build-web` |
 | 后端各模块的行为 | [04](04-modular-design.md) | `mise run test` |
 | **`agent_app/` 换数据集一行不改** | [04](04-modular-design.md) | **没有检查** —— 靠 review diff 的落点 |
@@ -26,7 +26,7 @@
 ## 能自动查的: 三条命令, 都要跑
 
 ```bash
-mise run check-content     # 建表顺序 / 提示词表名 / 内容文件 / kickstart 渲染配额
+mise run cli-check-content     # 建表顺序 / 提示词表名 / 内容文件 / kickstart 渲染配额
 mise run test      # Python 单元测试, 含教学层边界那条 AST 检查
 mise run build-web     # site.toml 的必填 key 和图标名, 只有这里查得到
 ```
@@ -34,7 +34,7 @@ mise run build-web     # site.toml 的必填 key 和图标名, 只有这里查�
 **最常见的漏是只跑前两条.** 于是一个拼错的图标名安静地渲染成兜底图标 —— 卡片看着好好的,
 就是配错了图, 而且没有任何东西会说一句.
 
-`mise run check-content` 的四项:
+`mise run cli-check-content` 的四项:
 
 | 检查 | 拦住什么 |
 | :--- | :--- |
@@ -75,7 +75,7 @@ mise run build-web     # site.toml 的必填 key 和图标名, 只有这里查�
 换完数据集跑一次, 词表是命令行参数, **不提交**:
 
 ```bash
-mise run check-content -- --retired "loan,lending,borrower,default_event,risk_grade"
+mise run cli-check-content -- --retired "loan,lending,borrower,default_event,risk_grade"
 ```
 
 填**上一个数据集最有辨识度的名词**. 挑词要挑准: 拿 `node` 这种通用词去扫, 报出来的全是
@@ -134,7 +134,7 @@ SQLite 种子而不是线上库 (同步是逐行复制, 种子干净则线上干
 
 先过一遍上面那条判据 —— 机械可判吗? 能不能改用顺序防住?
 
-确定要加, 那么它属于 `mise run check-content` 还是 `mise run test`, 判据是**它查的是内容还是
+确定要加, 那么它属于 `mise run cli-check-content` 还是 `mise run test`, 判据是**它查的是内容还是
 代码**: 查 `data/` 和 `dataset/` 里人写的东西, 加进 `agent_app/content_check.py` 并在
 `run()` 里挂上; 查 `agent_app/` 的行为, 进 `tests_python/`.
 

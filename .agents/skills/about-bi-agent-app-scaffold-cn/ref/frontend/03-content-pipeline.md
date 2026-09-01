@@ -58,7 +58,7 @@ flowchart LR
 | `assertIconsExist` | `icon` 不在 `lib/icons.ts` 里 | 坏名字 + 全部合法名字 |
 
 不查的后果是静默的: 缺 key 的组件收到 `undefined` 然后在线上渲染成一个空标题; 拼错的图标名
-静默渲染成兜底图标 —— 卡片看着好好的, 就是配错了图, 没人会注意到. **`mise run check-content` 查不到
+静默渲染成兜底图标 —— 卡片看着好好的, 就是配错了图, 没人会注意到. **`mise run cli-check-content` 查不到
 这两样**, 换完数据集两条命令都要跑.
 
 **s3: Render Page** 由 server component 完成: 它读 `SiteConfig`, 当 props 传给

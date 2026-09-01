@@ -97,7 +97,7 @@
 2. **`components/chat/blocks/` 和 `markdown.tsx`** —— 它们是一份跨前后端契约的一半, 另一半
    是 `data/system-prompt.md` 的 Rendering Triggers 表, `data/site.toml` 的 `render` 配额,
    和 Python 侧的 `normalize_render_blocks`. 自己写一套围栏分发, 会让
-   `mise run check-content` 一路全绿地校验一个已经不成立的承诺
+   `mise run cli-check-content` 一路全绿地校验一个已经不成立的承诺
 3. **`ConceptTooltip` 和 `BusinessContextModal`** —— hover / focus / tap / Escape,
    `aria-describedby`, 焦点转移, 滚动锁. 重写一遍通常是重写坏一遍, 而且看不出来.
    外观随便改, 那几条交互路径要原样留着
@@ -131,7 +131,7 @@
 
 ```bash
 mise run build-web
-mise run check-content
+mise run cli-check-content
 mise run test
 ```
 
@@ -160,7 +160,7 @@ mise run test
 **一, 旧领域词汇扫描.** 词表是一次性参数, 不提交进仓库:
 
 ```bash
-mise run check-content -- --retired "旧数据集最有辨识度的几个名词"
+mise run cli-check-content -- --retired "旧数据集最有辨识度的几个名词"
 ```
 
 挑词要挑准 —— 拿 `node` 这种通用词去扫会报出一堆正常用词, 你会学会忽略这个检查.
@@ -174,7 +174,7 @@ mise run check-content -- --retired "旧数据集最有辨识度的几个名词"
 **三, 最后跑一次全套:**
 
 ```bash
-mise run check-content
+mise run cli-check-content
 mise run test
 mise run build-web
 git status --short

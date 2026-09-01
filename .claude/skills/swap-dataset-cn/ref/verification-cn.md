@@ -8,7 +8,7 @@
 ## 三条命令, 都要跑, 查的东西不重叠
 
 ```bash
-mise run check-content   # 建表顺序 / 提示词表名 / 内容文件 / kickstart 渲染配额
+mise run cli-check-content   # 建表顺序 / 提示词表名 / 内容文件 / kickstart 渲染配额
 mise run test            # check-content + Python 测试 + Node 测试
 mise run build-web       # site.toml 的必填 key 和图标名, 只有这里查得到
 ```
@@ -16,7 +16,7 @@ mise run build-web       # site.toml 的必填 key 和图标名, 只有这里查
 **最常见的漏是只跑前两条.** 于是一个拼错的图标名安静地渲染成兜底图标, 卡片看着好好的, 就是
 配错了图, 而且没有任何东西会说一句.
 
-`mise run check-content` 的四项:
+`mise run cli-check-content` 的四项:
 
 | 检查 | 拦住什么 |
 | :--- | :--- |
@@ -179,7 +179,7 @@ EOF
 换完之后跑一次. 词表是命令行参数, **不提交进仓库**:
 
 ```bash
-mise run check-content -- --retired "loan,lending,borrower,default_event,risk_grade"
+mise run cli-check-content -- --retired "loan,lending,borrower,default_event,risk_grade"
 ```
 
 填**上一个数据集最有辨识度的名词**. 挑词要挑准: 拿 `node` 这种通用词去扫, 报出来的全是
@@ -241,7 +241,7 @@ print('dropped')"
 ## 一个环境坑
 
 `dataset/<name>.sqlite` 不进 git, 切分支不会跟着变, 新 clone 里根本不存在. 如果
-`mise run check-content` 报"还没造过数据库", 先造数据再说, 别急着改代码:
+`mise run cli-check-content` 报"还没造过数据库", 先造数据再说, 别急着改代码:
 
 ```bash
 # skill 根: Claude Code 是 .claude/skills, Codex / Antigravity 是 .agents/skills
