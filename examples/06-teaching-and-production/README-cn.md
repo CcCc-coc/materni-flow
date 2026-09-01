@@ -148,7 +148,7 @@ git switch -c 06-teaching-and-production 01-showcase
 
 ### 一个值得单独说的细节
 
-`mise run check-content` 看起来最像会被牵连的那个: 它检查的四项里有两项要读 SQLite 种子,
+`mise run cli-check-content` 看起来最像会被牵连的那个: 它检查的四项里有两项要读 SQLite 种子,
 而种子属于教学层.
 
 处理办法是把那个 import **放在函数体里** 并接住 `ImportError`, 拿不到就把那两项降级成 SKIP,

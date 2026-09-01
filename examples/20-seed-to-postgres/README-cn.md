@@ -334,11 +334,11 @@ schema 干的是一样的事:
 **怎么做:**
 
 1. 开一个叫 `20-seed-to-postgres` 的 branch
-2. 先确认能连上: `.venv/bin/python scripts/test_05_connect_remote_database.py`
+2. 先确认能连上: `mise run cli-test-db-conn`
 3. 跑 `sync-db`, **看它一张表一张表报进度**, 把那个顺序抄下来
 4. 对照第 18 篇你画的那张主线图, 确认这个顺序真的是先父后子
 5. 跑 `verify-db`, 确认每张表行数都一致
-6. 跑 `.venv/bin/python scripts/test_04_print_database_schema.py`, 这次它应该打印出十张表
+6. 再跑一次 `verify-db`, 确认它是绿的 —— 这是你后面每次怀疑数据有问题时的第一条命令
 7. 重启开发服务器 (Ctrl+C 退出, 再 `mise run dev`), 打开 agent 页
 8. 点那个关于风险等级定价的 kickstart 按钮
 9. **把它给出的违约率, 和你第 19 篇跑 `01_pricing_gap.py` 得到的数字对一下**
@@ -445,10 +445,15 @@ CLI=.claude/skills/about-bi-agent-app-scaffold-cn/scripts/teaching_cli.py
 **排查顺序:**
 
 ```bash
-.venv/bin/python scripts/test_05_connect_remote_database.py   # 连得上吗
-.venv/bin/python scripts/test_04_print_database_schema.py     # agent 看得到表吗
-.venv/bin/python scripts/test_07_verify_remote_data.py        # 行数对得上吗
+mise run cli-test-db-conn   # 连得上吗 (只做一次 SELECT 1, 不碰任何表)
 ```
+
+```bash
+.venv/bin/python .claude/skills/about-bi-agent-app-scaffold-cn/scripts/teaching_cli.py verify-db
+```
+
+这两条的分工就是这一篇的两半: 第一条失败说明是凭据或者网络, 第二条失败说明连上了但数据不
+对. **它们分开是有意的** —— 这两种失败在 agent 页上长得一模一样.
 
 **三个决定:**
 

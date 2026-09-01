@@ -130,7 +130,7 @@ uv, pnpm, ruff. 所以 clone 下来之后你不需要自己去装 Python 和 Nod
 | `mise run dev` | 起两个开发服务器 (会先杀掉本 checkout 的旧进程) |
 | `mise run kill` | 停掉本 checkout 的服务器 |
 | `mise run test` | 内容检查加 Python 测试加 Node 测试 |
-| `mise run check-content` | 只查 [`data/`](../../data) 里的内容一致性 |
+| `mise run cli-check-content` | 只查 [`data/`](../../data) 里的内容一致性 |
 | `mise run build-web` | 构建前端, 也是唯一会查 `site.toml` 必填 key 和图标名的地方 |
 
 `mise run inst` 底下调的是两个包管理器: `uv sync --all-extras` 读 [`pyproject.toml`](../../pyproject.toml) 和
@@ -449,7 +449,7 @@ mise run dev
 **排查用的单条命令:**
 
 ```bash
-.venv/bin/python scripts/test_05_connect_remote_database.py   # 只验数据库连通性
+mise run cli-test-db-conn   # 只验数据库连通性: 连上, SELECT 1, 断开
 ```
 
 **关键文件:**

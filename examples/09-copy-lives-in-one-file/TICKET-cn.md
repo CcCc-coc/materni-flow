@@ -37,7 +37,7 @@ description: "你能说清这一篇是在为换掉整个业务领域做准备, �
 5. 改一句正常的文案: 把 agent 页输入框的提示语改成别的句子, 起开发服务器确认它真的变了.
 6. 把 `[brand]` 那节的 `footerName` 整行注释掉, 跑 `mise run build-web`, 读那条报错.
 7. 恢复那一行, 再把某张能力卡的 `icon` 改成一个不存在的名字, 再跑一次构建, 读那条报错.
-8. 全部恢复, 跑 `mise run check-content` 和 `mise run build-web` 两条, 确认都过.
+8. 全部恢复, 跑 `mise run cli-check-content` 和 `mise run build-web` 两条, 确认都过.
 9. 对 README 练习 2 里那六样东西各判断一次该进文案文件还是该写死在组件里, 然后去仓库里
    对答案.
 

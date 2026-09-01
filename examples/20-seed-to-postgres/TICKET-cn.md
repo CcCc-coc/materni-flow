@@ -27,11 +27,11 @@ description: "本地那份种子发布进云端 PostgreSQL 了, 逐表行数核�
 
 1. 读完 README, 重点是那三个决定, 尤其是 `search_path` 那三种写法.
 2. 开一个叫 `20-seed-to-postgres` 的 branch.
-3. 先确认连得上: `.venv/bin/python scripts/test_05_connect_remote_database.py`.
+3. 先确认连得上: `mise run cli-test-db-conn`. 它只做一次 `SELECT 1`, 不碰任何表.
 4. 跑 `sync-db`, 把它报出来的那个建表顺序抄下来.
 5. 对照第 18 篇你画的主线图, 确认那个顺序真的是先父后子, 查找表在最前, 流水表在最后.
 6. 跑 `verify-db`, 确认每张表行数都一致, 没有 exit 1.
-7. 跑 `.venv/bin/python scripts/test_04_print_database_schema.py`, 这次应该打印出十张表.
+7. 想清楚 `cli-test-db-conn` 和 `verify-db` 各自失败时, 分别说明了什么.
 8. 重启开发服务器 (Ctrl+C 退出再 `mise run dev`), 打开 agent 页.
 9. 点那个关于风险等级定价的 kickstart 按钮, 等它答完.
 10. **把它给出的违约率和你上一篇跑出来的数字对一下**, 确认对得上.

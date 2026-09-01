@@ -169,13 +169,13 @@ declare 的每一个 key, 从 `brand.displayName` 一直到 `chat.messages.waitF
 
 ### 两个都只有构建才查得到
 
-**`mise run check-content` 查不到这两样.** 那条命令读的是 [`data/`](../../data) 里的散文, 这两个检查读的
+**`mise run cli-check-content` 查不到这两样.** 那条命令读的是 [`data/`](../../data) 里的散文, 这两个检查读的
 是同一批文件经过前端加载器的样子. 两者查的东西不重叠.
 
 所以改完文案**两条命令都要跑**:
 
 ```bash
-mise run check-content
+mise run cli-check-content
 mise run build-web
 ```
 
@@ -286,7 +286,7 @@ mermaid 围栏, 覆盖层里就真的会画出一张图, 而这一层加载代�
    句子, 起开发服务器打开 agent 页确认它变了
 2. 把 `[brand]` 那节的 `footerName` 那一整行注释掉, 跑 `mise run build-web`, 读报错
 3. 恢复那一行, 把某张能力卡的 `icon` 改成一个不存在的名字比如 `Banana`, 再跑一次构建, 读报错
-4. 全部恢复, 跑 `mise run check-content` 和 `mise run build-web` 两条确认都绿
+4. 全部恢复, 跑 `mise run cli-check-content` 和 `mise run build-web` 两条确认都绿
 
 **你会观察到:**
 
@@ -376,7 +376,7 @@ mermaid 围栏, 覆盖层里就真的会画出一张图, 而这一层加载代�
 **改完文案跑这两条, 缺一不可:**
 
 ```bash
-mise run check-content
+mise run cli-check-content
 mise run build-web
 ```
 

@@ -297,15 +297,18 @@ loan_status 那张状态码表被两个东西共用: 申请用它, 贷款也用�
 4. 分完之后对照第 6 节, 看你分对了几张, 分错的那几张想清楚为什么
 5. 现在自己画一张主线图 (纸上, 或者一段文字都行), 只画主体表和流水表, 查找表不用画
 6. 用**一句话** 把这条线讲出来, 讲给一个完全不懂放贷的人听
-7. 最后跑一下 `.venv/bin/python scripts/test_04_print_database_schema.py`, 看看程序把这个库
-   压缩成什么样子交给模型
+7. 最后跑一下 [`01_pricing_gap.py`](../19-sql-by-business-question/01_pricing_gap.py) 前面
+   那个脚本的邻居 —— 也就是下一篇目录下的
+   [`02_run_any_sql.py`](../19-sql-by-business-question/02_run_any_sql.py), 用它对着本地种子
+   查一张你刚认出来的表, 确认你读的那张图和真实数据对得上
 
 **你会观察到:**
 
 第 6 步那句话如果说不顺, 通常是因为你还没搞清申请和贷款的区别. 这两个东西在日常语言里经常
 混着说, 但在这个库里它们是两张表, 而分开的理由正是**被拒的申请不会变成贷款**.
 
-第 7 步打印出来的东西信息密度极高, 现在看不懂没关系 —— 第 21 篇 (压缩库结构) 专门讲它.
+第 7 步是一次很朴素的对账: **图上写的和库里真有的, 是不是一回事.** 读文档读出来的理解,
+跑一次就能验.
 
 > **关键洞见:** 一个数据库的主线, 通常能用一句人话讲完. 如果讲不完, 要么是你还没读懂,
 > 要么是这个库确实设计得很乱 —— 而后者在真实工作里非常常见.
@@ -414,12 +417,14 @@ o|  零个或一个
 customer -> application -> loan -> (repayment_schedule / payment / default_event)
 ```
 
-**看这个库的两条命令:**
+**对着本地种子查一下:**
 
 ```bash
-.venv/bin/python scripts/test_04_print_database_schema.py                     # agent 看到的版本
-.venv/bin/python scripts/test_03_run_sql_locally_cli.py --sql "SELECT 1"      # 对着本地种子跑 SQL
+.venv/bin/python examples/19-sql-by-business-question/02_run_any_sql.py
 ```
+
+改那个文件里的 `QUERY` 就能跑自己的查询. agent 眼里的库结构长什么样是另一件事, 第 21 篇
+(压缩库结构) 专门讲.
 
 **两条判据:**
 

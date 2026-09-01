@@ -356,8 +356,4 @@ props 接收, 从不自己去读.
 - [`data/site.toml`](../../data/site.toml): 界面上任何一句话
 - [`data/system-prompt.md`](../../data/system-prompt.md): agent 的领域知识
 
-**打印那份地图的命令:**
-
-```bash
-.venv/bin/python scripts/test_04_print_database_schema.py
-```
+那份地图长什么样, 第 21 篇 (压缩库结构) 会打开来讲.

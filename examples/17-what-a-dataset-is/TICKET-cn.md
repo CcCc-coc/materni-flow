@@ -33,7 +33,7 @@ description: "你跑通了生成器并在本地拿到那个数据库文件, 也�
 5. 跑 `gen-data`, 等它跑完, 记下最后打印的文件名和大小.
 6. 再跑一次同样的命令, 看它这次说了什么, 想清楚为什么.
 7. 把生成出来的文件复制一份改个名, 制造出目录里有两个 `.sqlite` 的状态.
-8. 跑 `.venv/bin/python scripts/test_04_print_database_schema.py`, 读那条报错.
+8. 跑 `.venv/bin/python examples/17-what-a-dataset-is/01_find_the_seed.py`, 读那条报错.
 9. 删掉复制出来的那个, 再跑一次确认恢复正常.
 10. 打开生成器, 找到那个被钉死的参考日常量, 想清楚为什么不用系统时间.
 11. 拿出 `tmp/my-target-domain.md`, 逐个判断换成你那个行业时这五份要不要重写.

@@ -266,13 +266,21 @@ Git 擅长的是文本. 你改了一行代码, `git diff` 会告诉你改了哪�
 3. **再跑一次同样的命令**, 看它这次说了什么, 想清楚为什么
 4. 现在制造那个事故: 把生成出来的那个文件复制一份, 改个名字, 比如
    `cp dataset/*.sqlite dataset/leftover.sqlite`
-5. 跑 `.venv/bin/python scripts/test_04_print_database_schema.py`, 读那条报错
+5. 跑这一篇自带的那个脚本, 读那条报错:
+
+```bash
+.venv/bin/python examples/17-what-a-dataset-is/01_find_the_seed.py
+```
 6. 把复制出来的那个删掉 (`rm dataset/leftover.sqlite`), 再跑一次确认恢复正常
 
 **你会观察到:**
 
 第 3 步它一秒就退出了, 什么都没做. 第 5 步的报错会把两个文件名都列出来, 并直接告诉你一个
 仓库只服务一个数据集.
+
+[`01_find_the_seed.py`](01_find_the_seed.py) 干的事就是第 7 节讲的那个查找: 先列出目录里所有
+的 `.sqlite`, 再问项目到底在服务哪一个. 正常情况下它打印出文件名和大小; 有两个的时候, 问
+哪一个这句话本身就没有答案了.
 
 如果你这台机器上**本来就有一个上个数据集留下的 `.sqlite`**, 那你在第 2 步就会撞上这个报错,
 不用等到第 4 步 —— 那就更好, 你看到的是真实事故而不是模拟的.
@@ -355,6 +363,12 @@ Git 擅长的是文本. 你改了一行代码, `git diff` 会告诉你改了哪�
 CLI=.claude/skills/about-bi-agent-app-scaffold-cn/scripts/teaching_cli.py
 .venv/bin/python $CLI gen-data           # 已经有了就什么都不做
 .venv/bin/python $CLI gen-data --force   # 先删光所有 .sqlite 再重新造
+```
+
+**看项目在服务哪个文件:**
+
+```bash
+.venv/bin/python examples/17-what-a-dataset-is/01_find_the_seed.py
 ```
 
 **五个文件:**
