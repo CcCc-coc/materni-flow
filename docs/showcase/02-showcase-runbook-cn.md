@@ -1,4 +1,4 @@
-# 换行业的 AI 数据分析脚手架 跑起来
+# 核心作品脚手架 跑起来
 
 > 这门课怎么跑起来: 开始之前要做什么 setup, 推进过程中会遇到哪些环境, 命令与操作步骤. 跑不起来先看这里.
 
@@ -37,7 +37,7 @@ git switch -c NN-title 01-showcase
 
 - 到 **examples/05** 时: `.env` 是从 `.env.example` 复制的, **一个真值都不填**. 里面的占位符是 `"..."`, 代码把这个值当未设置, 所以从模板抄过来忘了注释掉的那一行不会变成一个已设置但没用的变量
 - 到 **examples/09 起**: 改完 `data/` 下的文件**必须重启开发服务器** (Ctrl+C 再 `mise run dev`). 那几个文件是构建时读进去的, 光刷新浏览器看不到变化. 改组件代码不用重启, 会热更新
-- 到 **examples/09 起**: 改完文案要跑**两条**命令, 查的东西不重叠 —— `mise run cli-check-content` 读 `data/` 里的散文, `mise run build-web` 走前端加载器查必填 key 和图标名. 只跑前一条是最常见的漏
+- 到 **examples/09 起**: 改完文案要跑**两条** 命令, 查的东西不重叠 —— `mise run cli-check-content` 读 `data/` 里的散文, `mise run build-web` 走前端加载器查必填 key 和图标名. 只跑前一条是最常见的漏
 - 到 **examples/13** 时 (**整门课唯一一次真正的门槛**), 有四件外部操作:
   1. 在 OpenAI / Anthropic / Google 里挑一家注册, 拿一把 API key, 并**在控制台里给这个账号设一个 5 到 10 美元的消费上限**. 注意月费订阅 (ChatGPT Plus, Claude Pro) **不带 API 额度**, 那是另一条计费路
   2. 注册 Neon, 开一个 Postgres 项目, 从连接信息里取四个值填进 `.env`. 主机名**要用带 `-pooler` 的那个**
@@ -48,9 +48,9 @@ git switch -c NN-title 01-showcase
      .venv/bin/python $CLI sync-db
      .venv/bin/python $CLI verify-db
      ```
-  4. 改完 `.env` **必须重启**才算数: `mise run kill && mise run dev`
+  4. 改完 `.env` **必须重启** 才算数: `mise run kill && mise run dev`
 - 到 **examples/20 与 21** 时: 那八个 `.py` 脚本直接 `.venv/bin/python examples/NN-title/0X_xxx.py` 跑, 你手上有哪家的 key 就跑哪个, 一个也够
-- 到 **examples/35** 时: 环境变量在云上分三层 —— `.env.defaults` 跟着 git 自动上去, **只有密钥要在 Vercel 网页上一条条手填**, 而 `~/.aws/credentials` 那种云上根本不存在. **填完再触发第一次部署**, 顺序反了要重来. 用 bedrock 的话本地**不要**设 `AWS_ACCESS_KEY_ID` 和 `AWS_SECRET_ACCESS_KEY`, boto3 读环境变量早于读家目录, 一个占位符就能遮蔽掉一个好好的本地 profile
+- 到 **examples/35** 时: 环境变量在云上分三层 —— `.env.defaults` 跟着 git 自动上去, **只有密钥要在 Vercel 网页上一条条手填**, 而 `~/.aws/credentials` 那种云上根本不存在. **填完再触发第一次部署**, 顺序反了要重来. 用 bedrock 的话本地**不要** 设 `AWS_ACCESS_KEY_ID` 和 `AWS_SECRET_ACCESS_KEY`, boto3 读环境变量早于读家目录, 一个占位符就能遮蔽掉一个好好的本地 profile
 - 到 **examples/36** 时: 这一篇**不教点哪个按钮**. 两个平台的界面半年一变, 正确的动作是把那一屏截图连同第 9 节那段提示词一起交给 AI, 让它一次带一步
 - 到 **examples/37 与 38** 时: 这两篇是同一件事的两半, **在同一个分支上做完**. 阶段二开始之前先 `/clear`. 阶段一跑完会停在一道人工闸门上, 那一步只能你自己点开网站看
 

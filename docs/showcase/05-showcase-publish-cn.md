@@ -1,4 +1,4 @@
-# 换行业的 AI 数据分析脚手架 发布清单
+# 核心作品脚手架 发布清单
 
 > showcase-publish-cn skill 靠这份文档把这个教学 repo 转成作品 repo. 机器友好: 路径和表格, 不写散文. 针对这一棵树生成, 里面的 glob 已经展开成真实路径.
 
@@ -13,7 +13,7 @@
 | 开发部署用 | 你自己的机器, **永久保留** | 全套. 教学材料, 换数据集那三个 skill, `dataset/` 源文档, 全在 |
 | demo 用 | 给别人看的那个 | 这份清单作用的对象, 清理过的成品 |
 
-**下面的删除是不可逆的**, 而且它会删掉换数据集那整套工具 —— 也就是第 39 篇说的那台"能反复长出作品的机器". 那台机器住在开发那个 repo 里.
+**下面的删除是不可逆的**, 而且它会删掉换数据集那整套工具 —— 也就是第 39 篇说的那台 "能反复长出作品的机器". 那台机器住在开发那个 repo 里.
 
 **所以第一件事是停下来确认: 开发那个 repo 还在, 而且你现在动的不是它.** 确认不了就不要往下走.
 
@@ -119,7 +119,7 @@
 
 作品 repo 只带一个语种. 这棵树的实际情况和 lesson-smith 的默认假设不同, 三条:
 
-- **`examples/` 下 86 个 `-cn` 文件, 零个无后缀版.** 所以那里**不存在**"留空的占位符"这个问题, 也不需要做删占位符再改名那套动作 —— 整个目录在第 1 节已经删掉了
+- **`examples/` 下 86 个 `-cn` 文件, 零个无后缀版.** 所以那里**不存在**"留空的占位符" 这个问题, 也不需要做删占位符再改名那套动作 —— 整个目录在第 1 节已经删掉了
 - **根目录那三份装的是上一门课的残留内容**, 三份都不是这门课的根文档:
   - `README.md` 是 `# SMB Lending Lens: The System Prompt`
   - `README-cn.md` 是 `# SMB Lending Lens: 系统提示词`
@@ -136,7 +136,7 @@
 
 ## 3. 待定项
 
-因为 `examples/` 整个删掉, lesson-smith 默认那条"保留下来的主线教学 Task 永远在待定项里"**在这个 repo 不适用**.
+因为 `examples/` 整个删掉, lesson-smith 默认那条 "保留下来的主线教学 Task 永远在待定项里"**在这个 repo 不适用**.
 
 - path: `src/math.js`
   reason: TDD 相关的东西, 创作者点名保留
@@ -211,7 +211,7 @@
 
 - 铁律删除物残留 (HIGH): glob `examples/`, `docs/`, `.claude/`, `.agents/`, `.codex/`, `CLAUDE.md`, `AGENTS.md`, `dataset/`, `dataset-for-swap/`, `scripts/`, `lm.json`, `README-ORIGINAL*`, `**/TICKET*.md`, `agent_app/dataset.py`. 报出确切路径
 - 还留着带语种后缀的文件 (HIGH): glob `**/*-cn.md`. 作品 repo 不该有语种体系
-- **README 缺席或带教学口吻 (HIGH)**: 先确认根 `README.md` 存在且不是那份 `SMB Lending Lens: The System Prompt` 的残留; 再 grep 它与根目录 `*.md`, 找 `本教程`, `本课`, `这门课`, `我们学过`, `我们在这门课里`, `作为学生`, `教程`, `Task`, `练习`. **这一条是创作者点名要加的检查, 以前完全漏掉过**
+- **README 缺席或带教学口吻 (HIGH)**: 先确认根 `README.md` 存在且不是那份 `SMB Lending Lens: The System Prompt` 的残留; 再 grep 它与根目录 `*.md`, 找 ` 本教程`, ` 本课`, ` 这门课`, ` 我们学过`, ` 我们在这门课里`, ` 作为学生`, ` 教程`, `Task`, ` 练习`. **这一条是创作者点名要加的检查, 以前完全漏掉过**
 - README 超长 (MEDIUM): 超过 1000 词就报出来
 - commit message 里的教学口吻 (MEDIUM): 同一套措辞过 `git log --all --format="%s%n%b"`
 - git ref 暴露课程来源 (MEDIUM): `git tag --list` 与 `git branch --all`, 找 `01-showcase`, `ready-for-swap`, `NN-title` 那种按 Task 命名的分支, `tutorial-base`, `from-course`, `original`

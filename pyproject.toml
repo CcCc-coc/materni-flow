@@ -1,5 +1,6 @@
 [project]
 name = "agent_app"
+description = "Build one portfolio scaffold that touches AI, data, backend, business, finance and UX at once, then retarget it to any company in four hours."
 version = "0.1.1"
 requires-python = ">=3.12,<4.0"
 

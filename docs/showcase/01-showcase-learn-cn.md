@@ -1,4 +1,4 @@
-# 换行业的 AI 数据分析脚手架 学习索引
+# 核心作品脚手架 学习索引
 
 > 这门课要学的东西有哪些, 分别在哪, 按什么顺序过. showcase-learn-cn skill 就是按这份索引带着你往前走的.
 
@@ -10,7 +10,7 @@
 
 - [agent_app/paths.py](../../agent_app/paths.py), [constants.py](../../agent_app/constants.py), [utils.py](../../agent_app/utils.py): 零依赖的叶子, 路径集中一处, 共用名词表, 两个小工具 (`debug` 走 stderr 不走 stdout, 理由见第 35 篇)
 - [agent_app/sql_utils.py](../../agent_app/sql_utils.py): 跑 SQL 的纯函数, 连接当第一个参数. 只读靠事务永远回滚, 不靠关键词黑名单 (第 24 篇)
-- [agent_app/agent_response.py](../../agent_app/agent_response.py): 从模型交回的一串消息里挖出思考和答案. 那句"去掉思考之后还剩东西才记成答案"的判断是全篇重点 (第 26 篇)
+- [agent_app/agent_response.py](../../agent_app/agent_response.py): 从模型交回的一串消息里挖出思考和答案. 那句 "去掉思考之后还剩东西才记成答案" 的判断是全篇重点 (第 26 篇)
 - [agent_app/config.py](../../agent_app/config.py), [runtime.py](../../agent_app/runtime.py): 三层优先级靠 `load_dotenv` 不覆盖已设变量这一个性质实现; 校验放在 `__post_init__` 而不是工厂里 (第 30 篇)
 - [agent_app/db_schema/](../../agent_app/db_schema): 反射, 建模, 编码三步单向. `encoder.py` 完全不碰数据库, 所以测它不需要数据库 (第 22 篇)
 - [agent_app/ai_sdk_adapter.py](../../agent_app/ai_sdk_adapter.py) 与 [vendor/vercel_ai_sdk.py](../../agent_app/vendor/vercel_ai_sdk.py): 唯一同时懂前端格式和模型格式的翻译官. 请求体模型故意宽松, 判据是对读的东西严格对不读的东西宽容 (第 17 篇)
@@ -42,7 +42,7 @@
 **配置:**
 
 - [mise.toml](../../mise.toml): 工具版本加全部任务. 怎么跑见 [02-showcase-runbook-cn.md](02-showcase-runbook-cn.md)
-- [.env.defaults](../../.env.defaults) 与 [.env.example](../../.env.example): 按**是不是密钥**切, 不按环境切 (第 5 篇, 第 30 篇)
+- [.env.defaults](../../.env.defaults) 与 [.env.example](../../.env.example): 按**是不是密钥** 切, 不按环境切 (第 5 篇, 第 30 篇)
 - [next.config.js](../../next.config.js): 那条把 `/api/*` 转发到 8000 的 rewrite, **只在开发环境生效** (第 16 篇)
 - [vercel.json](../../vercel.json), [tsconfig.json](../../tsconfig.json), [tailwind.config.ts](../../tailwind.config.ts), [postcss.config.mjs](../../postcss.config.mjs), [.coveragerc](../../.coveragerc)
 - [kill-dev-servers.py](../../kill-dev-servers.py): 只杀本 checkout 的进程, 靠三种证据证明归属 (第 16 篇)
