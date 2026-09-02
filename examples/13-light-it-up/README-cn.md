@@ -39,6 +39,36 @@ description: "学完你手上是一个完整活着的 app: 一把设过花费上
 这是第 4 篇 ([和 AI 一起改这个仓库](../04-work-with-ai/README-cn.md)) 那套方法的第一次真实
 应用. 后面第 36 篇绑域名的时候你还要再用一次.
 
+### 卡住了怎么办
+
+这一篇每一步都可能出错: 注册界面找不到那个按钮, 凭据填了还是连不上, 造数据中途失败, 或者 agent 还是不答.
+**这些都很正常** —— 你的机器, 你的账号, 你的网络, 和写这一篇时用的那一套不可能完全一样.
+
+**别自己硬猜, 也别只把报错扫一眼就跳过去.** 把下面三样东西一起给 AI, 一样都别少:
+
+| 给什么 | 怎么给 |
+| :--- | :--- |
+| **你在读哪一篇** | 原样给路径: `examples/13-light-it-up/README-cn.md` |
+| **你敲了哪条命令** | 原样复制那一行, 不要凭记忆转述 |
+| **终端打了什么** | **把终端里的文字整段复制粘贴给它**, 不要截图, 也不要只说了一句报错了 |
+
+第三样最重要, 也最常被省掉. 一句报错了对 AI 来说和没说一样; 而那几十行原始输出里, 通常有
+一行直接写着缺什么.
+
+一段可以照抄的开场白:
+
+```text
+我在读 examples/13-light-it-up/README-cn.md 这一篇.
+我敲的命令是:
+(把命令粘在这里)
+终端打出来的是:
+(把完整输出粘在这里)
+帮我判断是哪一步出了问题. 一步一步来, 每一步等我做完再往下.
+```
+
+**粘贴之前先打码.** 报错信息里有时会带上完整的数据库连接串, 或者一把 key 的片段. 那些东西
+不该出现在任何聊天窗口里, 包括跟 AI 的对话.
+
 ---
 
 ## 2. 学习目标
@@ -211,9 +241,14 @@ CLI=.claude/skills/about-bi-agent-app-scaffold-cn/scripts/teaching_cli.py
 
 ```bash
 CLI=.claude/skills/about-bi-agent-app-scaffold-cn/scripts/teaching_cli.py
-.venv/bin/python $CLI sync-db      # 把本地种子发布进云端那个 schema
-.venv/bin/python $CLI verify-db    # 逐表核对行数, 不一致就 exit 1
+.venv/bin/python $CLI sync-db
+.venv/bin/python $CLI verify-db
 ```
+
+第一条把本地种子发布进云端那个 schema, 第二条逐表核对行数, 不一致就以 exit 1 结束.
+
+(那行 `CLI=` 上一节定义过. 这里重复一遍, 是因为你很可能隔一天回来或者开了个新终端,
+那时候它是空的.)
 
 (那行 `CLI=` 上一节定义过. 这里重复一遍, 是因为你很可能隔一天回来或者开了个新终端,
 那时候它是空的.)
@@ -378,18 +413,26 @@ mise run dev
 
 **三样东西:**
 
-```bash
-# 1. 模型的 key -> .env, 并确认 .env.defaults 里的 LLM_PROVIDER 是同一家
-# 2. Neon 的四个值 -> .env
-mise run cli-test-db-conn
+**一, 模型的 key 填进 `.env`**, 并确认 `.env.defaults` 里的 `LLM_PROVIDER` 是同一家.
 
-# 3. 数据
+**二, Neon 的四个值填进 `.env`**, 然后验一下:
+
+```bash
+mise run cli-test-db-conn
+```
+
+**三, 造数据并发布:**
+
+```bash
 CLI=.claude/skills/about-bi-agent-app-scaffold-cn/scripts/teaching_cli.py
 .venv/bin/python $CLI gen-data
 .venv/bin/python $CLI sync-db
 .venv/bin/python $CLI verify-db
+```
 
-# 重启才算数
+**四, 重启才算数:**
+
+```bash
 mise run kill && mise run dev
 ```
 

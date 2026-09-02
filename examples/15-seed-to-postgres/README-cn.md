@@ -24,6 +24,36 @@ description: "把本地那份种子发布进云端 PostgreSQL, agent 从这一�
 
 三个决定有一个共同点, 而这一篇最想让你带走的就是它: **它们选错的时候, 全都不报错.**
 
+### 卡住了怎么办
+
+这一篇每一步都可能出错: 连不上库, 同步中途失败, 或者核对出来行数对不上.
+**这些都很正常** —— 你的机器, 你的账号, 你的网络, 和写这一篇时用的那一套不可能完全一样.
+
+**别自己硬猜, 也别只把报错扫一眼就跳过去.** 把下面三样东西一起给 AI, 一样都别少:
+
+| 给什么 | 怎么给 |
+| :--- | :--- |
+| **你在读哪一篇** | 原样给路径: `examples/15-seed-to-postgres/README-cn.md` |
+| **你敲了哪条命令** | 原样复制那一行, 不要凭记忆转述 |
+| **终端打了什么** | **把终端里的文字整段复制粘贴给它**, 不要截图, 也不要只说了一句报错了 |
+
+第三样最重要, 也最常被省掉. 一句报错了对 AI 来说和没说一样; 而那几十行原始输出里, 通常有
+一行直接写着缺什么.
+
+一段可以照抄的开场白:
+
+```text
+我在读 examples/15-seed-to-postgres/README-cn.md 这一篇.
+我敲的命令是:
+(把命令粘在这里)
+终端打出来的是:
+(把完整输出粘在这里)
+帮我判断是哪一步出了问题. 一步一步来, 每一步等我做完再往下.
+```
+
+**粘贴之前先打码.** 报错信息里有时会带上完整的数据库连接串, 或者一把 key 的片段. 那些东西
+不该出现在任何聊天窗口里, 包括跟 AI 的对话.
+
 ---
 
 ## 2. 学习目标
@@ -118,9 +148,11 @@ SQLite 没有消失, 它退回到它真正擅长的位置: **一个种子和一�
 
 ```bash
 CLI=.claude/skills/about-bi-agent-app-scaffold-cn/scripts/teaching_cli.py
-.venv/bin/python $CLI sync-db      # 把本地种子发布进云端那个 schema
-.venv/bin/python $CLI verify-db    # 逐表核对行数, 不一致就 exit 1
+.venv/bin/python $CLI sync-db
+.venv/bin/python $CLI verify-db
 ```
+
+第一条把本地种子发布进云端那个 schema, 第二条逐表核对行数, 不一致就以 exit 1 结束.
 
 当时让你抄下第一条报出来的那个建表顺序. 现在把它拿出来, 这一篇就从它讲起.
 
@@ -460,8 +492,10 @@ CLI=.claude/skills/about-bi-agent-app-scaffold-cn/scripts/teaching_cli.py
 **排查顺序:**
 
 ```bash
-mise run cli-test-db-conn   # 连得上吗 (只做一次 SELECT 1, 不碰任何表)
+mise run cli-test-db-conn
 ```
+
+它只做一次 `SELECT 1`, 不碰任何表, 所以它回答的就是一句话: 连不连得上.
 
 ```bash
 .venv/bin/python .claude/skills/about-bi-agent-app-scaffold-cn/scripts/teaching_cli.py verify-db
