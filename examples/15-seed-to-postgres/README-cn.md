@@ -147,7 +147,7 @@ SQLite 没有消失, 它退回到它真正擅长的位置: **一个种子和一�
 第 13 篇 ([接上真数据和真模型](../13-light-it-up/README-cn.md)) 你敲过这两条, 那时候只是照做:
 
 ```bash
-CLI=.claude/skills/about-bi-agent-app-scaffold-cn/scripts/teaching_cli.py
+CLI=.claude/skills/about-ba-agent-app-scaffold-cn/scripts/teaching_cli.py
 .venv/bin/python $CLI sync-db
 .venv/bin/python $CLI verify-db
 ```
@@ -480,7 +480,7 @@ loans 或者 defaults 的表, 写一条语法完全正确的 SQL, 然后基于�
 **两条命令:**
 
 ```bash
-CLI=.claude/skills/about-bi-agent-app-scaffold-cn/scripts/teaching_cli.py
+CLI=.claude/skills/about-ba-agent-app-scaffold-cn/scripts/teaching_cli.py
 .venv/bin/python $CLI sync-db
 .venv/bin/python $CLI verify-db
 ```
@@ -494,7 +494,7 @@ mise run cli-test-db-conn
 它只做一次 `SELECT 1`, 不碰任何表, 所以它回答的就是一句话: 连不连得上.
 
 ```bash
-.venv/bin/python .claude/skills/about-bi-agent-app-scaffold-cn/scripts/teaching_cli.py verify-db
+.venv/bin/python .claude/skills/about-ba-agent-app-scaffold-cn/scripts/teaching_cli.py verify-db
 ```
 
 这两条的分工就是这一篇的两半: 第一条失败说明是凭据或者网络, 第二条失败说明连上了但数据不

@@ -3,7 +3,7 @@
 > 三条命令: `gen-data` 造出本地 SQLite 种子, `sync-db` 把它发布进这个项目的 PostgreSQL
 > schema, `verify-db` 逐表对行数. **新 clone 必须跑一遍**, 因为数据库文件不进 Git.
 
-**对应代码**: `.claude/skills/about-bi-agent-app-scaffold-cn/scripts/teaching_cli.py`,
+**对应代码**: `.claude/skills/about-ba-agent-app-scaffold-cn/scripts/teaching_cli.py`,
 `agent_app/dataset.py`, `dataset/`
 
 **前置**: [02](02-configuration.md) 里的 `DB_*` 已经填好.
@@ -13,7 +13,7 @@
 ## 三条命令
 
 ```bash
-CLI=.claude/skills/about-bi-agent-app-scaffold-cn/scripts/teaching_cli.py
+CLI=.claude/skills/about-ba-agent-app-scaffold-cn/scripts/teaching_cli.py
 
 .venv/bin/python $CLI gen-data      # 装 dataset/requirements.txt, 跑生成器
 .venv/bin/python $CLI sync-db       # 发布进 PostgreSQL 的 SCHEMA_NAME

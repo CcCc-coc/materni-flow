@@ -118,7 +118,7 @@ description: "学完你能说清这个仓库给 coding agent 准备了哪三套�
 
 ## 7. 那个 skill 是一张索引, 不是一本书
 
-这门课最常用的那个 skill 叫 `about-bi-agent-app-scaffold-cn`. 先看看它里面到底是什么, 因为
+这门课最常用的那个 skill 叫 `about-ba-agent-app-scaffold-cn`. 先看看它里面到底是什么, 因为
 它的形状本身就是上一节那个结论的落地.
 
 ### 先有文档, 后有 skill
@@ -138,7 +138,7 @@ description: "学完你能说清这个仓库给 coding agent 准备了哪三套�
 
 ### `SKILL.md` 本身几乎没有内容
 
-打开 `.claude/skills/about-bi-agent-app-scaffold-cn/SKILL.md`, 你会发现主体是一张表, 长这样:
+打开 `.claude/skills/about-ba-agent-app-scaffold-cn/SKILL.md`, 你会发现主体是一张表, 长这样:
 
 | 我要做的事 | 读 |
 | :--- | :--- |
@@ -160,7 +160,7 @@ description: "学完你能说清这个仓库给 coding agent 准备了哪三套�
 
 | skill | 它服务的是 | 什么时候加载 |
 | :--- | :--- | :--- |
-| `/about-bi-agent-app-scaffold-cn` | **这个项目** | 你要动手改代码, 想知道某个东西该放哪儿, 或者某条边界破了会怎样 |
+| `/about-ba-agent-app-scaffold-cn` | **这个项目** | 你要动手改代码, 想知道某个东西该放哪儿, 或者某条边界破了会怎样 |
 | `/showcase-learn-cn` | **这门课** | 你在读教程, 某一段没看懂, 或者想知道自己该按什么顺序往下学 |
 
 **要干活加载前一个, 要学习加载后一个, 两个一起加载也完全可以.** 它们读的是两批不同的文件,
@@ -281,7 +281,7 @@ description: "学完你能说清这个仓库给 coding agent 准备了哪三套�
 **怎么做:**
 
 1. 确认工作区是干净的: `git status --short`
-2. 加载 skill: 敲 `/about-bi-agent-app-scaffold-cn`
+2. 加载 skill: 敲 `/about-ba-agent-app-scaffold-cn`
 3. 派这个任务, 并且明确要求先出计划:
 
 ```text
@@ -380,7 +380,7 @@ description: "学完你能说清这个仓库给 coding agent 准备了哪三套�
 **这门课平时用的两个:**
 
 ```text
-/about-bi-agent-app-scaffold-cn    要动手改代码
+/about-ba-agent-app-scaffold-cn    要动手改代码
 /showcase-learn-cn                 要学教程, 某段没看懂
 ```
 

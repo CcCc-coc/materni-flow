@@ -36,7 +36,7 @@ description: "你用三步法从屏幕上三样看得见的东西各倒推到了
 8. 跑一次 `mise run build-web`, 在输出的路由表里找到两个路由, 确认里面没有 marketing 这个词.
 9. 随便打开三个组件文件, 看它们顶部有没有 `"use client"`, 感受一下这条看不见的线.
 10. 开一个叫 `08-app-router-and-shells` 的 branch, 加载
-    `/about-bi-agent-app-scaffold-cn`, 问它把首页四张能力卡改成三张要动哪些文件, 明确要求
+    `/about-ba-agent-app-scaffold-cn`, 问它把首页四张能力卡改成三张要动哪些文件, 明确要求
     它先不要动手.
 11. **拿三步法逐个验证它说的每个文件**, 特别留意它有没有提到那四张卡在两个页面上都被渲染.
 

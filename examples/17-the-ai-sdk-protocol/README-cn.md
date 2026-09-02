@@ -436,7 +436,7 @@ Connection: keep-alive
    - 这个 app 现在有没有这个问题
    - 如果要实现它, 除了后端多发一个事件, 前端那边还要做什么
 4. 然后开一个叫 `17-the-ai-sdk-protocol` 的 branch, 加载
-   `/about-bi-agent-app-scaffold-cn`, 问它:
+   `/about-ba-agent-app-scaffold-cn`, 问它:
 
 ```text
 假设前端的 AI SDK 升级之后, 开始往后端送一种新的 message part, 类型叫 source,

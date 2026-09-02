@@ -13,7 +13,7 @@ shared config.
 Everything it does lives in ``agent_app/dataset.py``; this is only the argument
 parsing. ``agent_app`` is installed into the venv, so this runs from anywhere:
 
-    .venv/bin/python .claude/skills/about-bi-agent-app-scaffold-cn/scripts/teaching_cli.py gen-data
+    .venv/bin/python .claude/skills/about-ba-agent-app-scaffold-cn/scripts/teaching_cli.py gen-data
     ... gen-data --force        # rebuild even though a database is already there
     ... sync-db                 # publish it into this project's PostgreSQL schema
     ... verify-db               # confirm remote matches local, table by table

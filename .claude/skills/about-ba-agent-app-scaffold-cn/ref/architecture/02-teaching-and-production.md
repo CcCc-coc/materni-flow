@@ -33,7 +33,7 @@ docstring 里在讲"什么是 mixin", 目录里躺着 `TICKET.md` 和验收清�
 | :--- | :--- |
 | `README.md` / `README-cn.md` / `TICKET.md` | 这一课教什么, 任务和验收清单 |
 | `docs/` | 教学正文和开发者走读 |
-| `.agents/skills/` | 给 AI 和维护者看的规范 (就是你正在读的这些) |
+| `.claude/skills/` | 给 AI 和维护者看的规范 (就是你正在读的这些) |
 | `dataset/` | 数据集的源材料和生成器, 见 [03](03-the-dataset.md) |
 | `agent_app/dataset.py` | 造数据 + 同步到 PostgreSQL 的代码 |
 | `tests_python/test_dataset.py` | 上面那个模块的测试 |
@@ -69,7 +69,7 @@ import **放在函数体里**并接住 `ImportError`, 两项降级成 SKIP, 其�
 ### 2. 教学自动化不进 `mise.toml`
 
 造数据集, 同步到 PostgreSQL, 逐表核对 —— 这三条命令在
-`.agents/skills/about-bi-agent-app-scaffold-cn/scripts/teaching_cli.py`, 不在 `mise.toml`.
+`.claude/skills/about-ba-agent-app-scaffold-cn/scripts/teaching_cli.py`, 不在 `mise.toml`.
 
 理由就是上面那条: `mise.toml` 跑的是**应用** (装依赖, 起服务, 跑测试). 教学层要能靠删目录
 擦掉, 不该在一个共用配置文件里留下需要一行行挑出来删的残渣.
@@ -88,7 +88,7 @@ import **放在函数体里**并接住 `ImportError`, 两项降级成 SKIP, 其�
 
 ```python
 # 不要: 擦掉 skill 之后, 这句话指向一个不存在的文件
-"""...完整格式规范见 .agents/skills/xxx-cn/ref/backend/04-schema-encoding.md"""
+"""...完整格式规范见 .claude/skills/xxx-cn/ref/backend/04-schema-encoding.md"""
 ```
 
 这种指针擦除时既不报错也不失败, 只是变成一句死链躺在成品里 —— 而且它明明白白写着

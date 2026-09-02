@@ -32,7 +32,7 @@ if T.TYPE_CHECKING:  # pragma: no cover
 #: Identifies this scaffold in a quota table it may share with other codebases.
 #: A constant rather than config: it is a fact about *this repository*, not the
 #: dataset it serves, so a dataset swap must not touch it.
-SCAFFOLD_ID = "learn-bi-agent-app-scaffold"
+SCAFFOLD_ID = "learn-ba-agent-app-scaffold"
 
 #: The DynamoDB attribute names. Fixed on purpose -- see the module docstring.
 ATTR_INVOKE = "total_invoke"

@@ -32,7 +32,7 @@ description: "你在首页那份长说明里亲手塞过一个图表围栏, 先�
 3. 打开 `components/chat/blocks/index.ts`, 看那张查找表现在有几行.
 4. 想清楚那张表为什么不放进 `data/site.toml`, 判据用换个业务领域它要不要改.
 5. 对比一下第 11 篇那个按钮上的 `render` 字段和这张查找表, 说清哪一个才真正让块出现.
-6. 加载 `/about-bi-agent-app-scaffold-cn`, 问它加一种新的块渲染器要动哪些文件, 明确要求
+6. 加载 `/about-ba-agent-app-scaffold-cn`, 问它加一种新的块渲染器要动哪些文件, 明确要求
    先不要动手.
 7. **重点检查它有没有提到 `data/system-prompt.md`.** 没提就追问一句: 只改前端的话这个渲染器
    会被调用到吗.

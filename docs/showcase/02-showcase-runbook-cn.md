@@ -43,7 +43,7 @@ git switch -c NN-title 01-showcase
   2. 注册 Neon, 开一个 Postgres 项目, 从连接信息里取四个值填进 `.env`. 主机名**要用带 `-pooler` 的那个**
   3. 造数据和同步**不是 mise 任务**, 走教学层自己的 CLI:
      ```bash
-     CLI=.claude/skills/about-bi-agent-app-scaffold-cn/scripts/teaching_cli.py
+     CLI=.claude/skills/about-ba-agent-app-scaffold-cn/scripts/teaching_cli.py
      .venv/bin/python $CLI gen-data
      .venv/bin/python $CLI sync-db
      .venv/bin/python $CLI verify-db

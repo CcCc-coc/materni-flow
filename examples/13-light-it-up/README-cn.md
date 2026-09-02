@@ -216,7 +216,7 @@ mise run cli-test-db-conn
 数据库现在是空的. 这个项目的数据不在 Git 里, **它是用一个生成器现造的**.
 
 ```bash
-CLI=.claude/skills/about-bi-agent-app-scaffold-cn/scripts/teaching_cli.py
+CLI=.claude/skills/about-ba-agent-app-scaffold-cn/scripts/teaching_cli.py
 .venv/bin/python $CLI gen-data
 ```
 
@@ -240,7 +240,7 @@ CLI=.claude/skills/about-bi-agent-app-scaffold-cn/scripts/teaching_cli.py
 ## 8. 发布上去, 然后核对
 
 ```bash
-CLI=.claude/skills/about-bi-agent-app-scaffold-cn/scripts/teaching_cli.py
+CLI=.claude/skills/about-ba-agent-app-scaffold-cn/scripts/teaching_cli.py
 .venv/bin/python $CLI sync-db
 .venv/bin/python $CLI verify-db
 ```
@@ -421,7 +421,7 @@ mise run cli-test-db-conn
 **三, 造数据并发布:**
 
 ```bash
-CLI=.claude/skills/about-bi-agent-app-scaffold-cn/scripts/teaching_cli.py
+CLI=.claude/skills/about-ba-agent-app-scaffold-cn/scripts/teaching_cli.py
 .venv/bin/python $CLI gen-data
 .venv/bin/python $CLI sync-db
 .venv/bin/python $CLI verify-db

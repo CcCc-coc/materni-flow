@@ -46,7 +46,7 @@ DIR_DATASET = path_enum.dir_project_root / "dataset"
 #: CLI lives with the skill that documents it, not in ``mise.toml`` -- mise runs
 #: the app, and none of this is the app.
 GEN_HINT = (
-    ".venv/bin/python .claude/skills/about-bi-agent-app-scaffold-cn"
+    ".venv/bin/python .claude/skills/about-ba-agent-app-scaffold-cn"
     "/scripts/teaching_cli.py gen-data"
 )
 

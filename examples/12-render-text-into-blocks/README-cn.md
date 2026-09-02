@@ -267,7 +267,7 @@ const BLOCK_RENDERERS: Record<string, ComponentType<BlockProps>> = {
 
 **怎么做:**
 
-1. 这个练习不用改任何代码, 也不用开 branch. 直接加载 `/about-bi-agent-app-scaffold-cn`
+1. 这个练习不用改任何代码, 也不用开 branch. 直接加载 `/about-ba-agent-app-scaffold-cn`
 2. 问它:
 
 ```text

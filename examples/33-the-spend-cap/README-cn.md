@@ -228,7 +228,7 @@ if config.quota_enabled:
 计数器要按部署分开存, 所以需要一个标识符. 它长这样:
 
 ```text
-learn-bi-agent-app-scaffold : fintech_smb_lending_pipeline_medium : 2026-09
+learn-ba-agent-app-scaffold : fintech_smb_lending_pipeline_medium : 2026-09
 ```
 
 三段, 各有各的来源:

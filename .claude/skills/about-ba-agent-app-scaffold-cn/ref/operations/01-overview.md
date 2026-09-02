@@ -4,7 +4,7 @@
 > `frontend/`). 这篇是顺序: 装依赖, 配密钥, 灌数据, 起服务, 四步, 缺一步都跑不起来.
 
 **对应代码**: `mise.toml`, `.env.example`, `.env.defaults`, `pyproject.toml`,
-`package.json`, `.claude/skills/about-bi-agent-app-scaffold-cn/scripts/teaching_cli.py`
+`package.json`, `.claude/skills/about-ba-agent-app-scaffold-cn/scripts/teaching_cli.py`
 
 ---
 

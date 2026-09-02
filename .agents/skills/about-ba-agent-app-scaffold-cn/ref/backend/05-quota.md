@@ -30,7 +30,7 @@
 partition key 是三段, 用 `:` 分隔:
 
 ```
-learn-bi-agent-app-scaffold : fintech_smb_lending_pipeline_medium : 2026-08
+learn-ba-agent-app-scaffold : fintech_smb_lending_pipeline_medium : 2026-08
         脚手架                          数据集                        月份
 ```
 

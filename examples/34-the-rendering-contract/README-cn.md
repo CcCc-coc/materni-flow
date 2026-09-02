@@ -323,7 +323,7 @@ mise run cli-check-content
 
 **怎么做:**
 
-1. 加载 `/about-bi-agent-app-scaffold-cn`
+1. 加载 `/about-ba-agent-app-scaffold-cn`
 2. 派这个任务, 明确要求先出计划:
 
 ```text

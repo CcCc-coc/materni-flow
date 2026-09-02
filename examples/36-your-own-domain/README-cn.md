@@ -268,7 +268,7 @@ Cloudflare 代理之后, 两边各有一层证书和跳转, 很容易转出一�
 **先加载这个仓库的事实标准**, 让它知道这个项目是什么形态:
 
 ```text
-/about-bi-agent-app-scaffold-cn
+/about-ba-agent-app-scaffold-cn
 ```
 
 **然后把下面这段整个复制过去**, 把三个尖括号的地方换成你自己的:
@@ -362,7 +362,7 @@ Cloudflare 那两个价格是同一个数. 顺手拿一个候选去别家查一�
 
 **怎么做:**
 
-1. 加载 `/about-bi-agent-app-scaffold-cn`
+1. 加载 `/about-ba-agent-app-scaffold-cn`
 2. 把第 9 节那段提示词复制过去, 三个尖括号按练习 1 的答案和你的 Vercel 地址填
 3. **只走到它给出第一步为止**, 不用真的去点
 4. 对着第 8 节那四个环节, 判断它给的第一步落在哪一个环节上

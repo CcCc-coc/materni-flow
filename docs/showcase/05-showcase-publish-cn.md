@@ -77,7 +77,7 @@
 - path: `.claude/`, `.agents/`, `.codex/` (三个目录整删)
   reason: 给 AI 和维护者看的规范, 加四个生成的子 skill. 它是内部记录, 露出去只显得项目还在建设中
   detected_by: 目录存在性
-  注意: 这一删同时删掉 `showcase-learn-cn`, `showcase-quiz-cn`, `showcase-demo-cn`, `showcase-publish-cn` 四个子 skill, 以及 `about-bi-agent-app-scaffold-cn/scripts/teaching_cli.py` (造数据与同步), 以及换数据集那三个 skill. **这就是第 0 节说的那台机器**
+  注意: 这一删同时删掉 `showcase-learn-cn`, `showcase-quiz-cn`, `showcase-demo-cn`, `showcase-publish-cn` 四个子 skill, 以及 `about-ba-agent-app-scaffold-cn/scripts/teaching_cli.py` (造数据与同步), 以及换数据集那三个 skill. **这就是第 0 节说的那台机器**
 
 - path: `CLAUDE.md`, `AGENTS.md`
   reason: 给 coding agent 的总纲, 一眼看出这个仓库是照着让 AI 改的样子设计的教学仓库

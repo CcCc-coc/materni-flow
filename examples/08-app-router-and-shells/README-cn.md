@@ -343,7 +343,7 @@ agent 页复杂一点, 因为它有两副面孔: 你还没开始对话时是一�
 **怎么做:**
 
 1. 这个练习不改任何代码, 也不用开 branch. 先确认工作区干净
-2. 加载 `/about-bi-agent-app-scaffold-cn`
+2. 加载 `/about-ba-agent-app-scaffold-cn`
 3. 问它这个问题, 明确要求它先不要动手:
 
 ```text

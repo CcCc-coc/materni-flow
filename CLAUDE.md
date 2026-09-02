@@ -524,8 +524,8 @@ generator; running the generator produces `dataset/<name>.sqlite`, which
 has to build it:
 
 ```bash
-.venv/bin/python .claude/skills/about-bi-agent-app-scaffold-cn/scripts/teaching_cli.py gen-data
-.venv/bin/python .claude/skills/about-bi-agent-app-scaffold-cn/scripts/teaching_cli.py sync-db
+.venv/bin/python .claude/skills/about-ba-agent-app-scaffold-cn/scripts/teaching_cli.py gen-data
+.venv/bin/python .claude/skills/about-ba-agent-app-scaffold-cn/scripts/teaching_cli.py sync-db
 ```
 
 Those are **not** mise tasks on purpose: `mise.toml` runs the application, and

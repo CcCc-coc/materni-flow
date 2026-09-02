@@ -35,12 +35,12 @@ description: "你能说清那个 skill 为什么是一张索引而不是一本�
 1. 读完 README, 重点是为什么不能让 AI 把代码库读一遍那一节, 那个 skill 是一张索引那一节,
    和派活三步那一节.
 2. 打开 `CLAUDE.md` 扫一遍它的一级标题, 再打开 `AGENTS.md` 对比长度, 想清楚为什么后者这么短.
-3. 打开 `.claude/skills/about-bi-agent-app-scaffold-cn/ref/`, 数一数它下面分成哪四块, 每块
+3. 打开 `.claude/skills/about-ba-agent-app-scaffold-cn/ref/`, 数一数它下面分成哪四块, 每块
    大概有几篇, 随便挑一篇读开头, 确认它讲的是这个仓库为什么长成这样.
 4. 回到那个 skill 的 `SKILL.md`, 找到开头那张按任务查的表, 确认它本身是路由而不是内容,
    并在表里挑一行, 顺着它指的路径打开那一篇.
 5. 打开 `.claude/settings.json`, 读 deny 名单, 数清它拒绝了哪几个文件的哪几种操作.
-6. 确认工作区是干净的 (`git status --short`), 然后加载 `/about-bi-agent-app-scaffold-cn`.
+6. 确认工作区是干净的 (`git status --short`), 然后加载 `/about-ba-agent-app-scaffold-cn`.
    这一篇的改动改完立刻还原, 所以不用开 branch.
 7. 派一个改一句界面文案的小任务, 明确要求它**先出计划再停下来**, 不要直接动手.
 8. 读它给的计划, 确认它只打算改一个文件; 如果它提出要改组件, 把它指回那份 skill.

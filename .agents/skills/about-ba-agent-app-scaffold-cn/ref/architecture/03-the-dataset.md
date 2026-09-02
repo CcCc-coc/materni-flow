@@ -38,7 +38,7 @@ dataset/
 代价是新 clone 打不开就用, 得先造一份:
 
 ```bash
-.venv/bin/python .claude/skills/about-bi-agent-app-scaffold-cn/scripts/teaching_cli.py gen-data
+.venv/bin/python .agents/skills/about-ba-agent-app-scaffold-cn/scripts/teaching_cli.py gen-data
 ```
 
 这条命令做两件事: 把 `dataset/requirements.txt` 装进 `.venv`, 然后用 `.venv/bin/python`

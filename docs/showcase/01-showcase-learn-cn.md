@@ -49,7 +49,7 @@
 
 **给 AI 读的项目文档 (32 篇, 不是给终端用户的):**
 
-- [.claude/skills/about-bi-agent-app-scaffold-cn/ref/](../../.claude/skills/about-bi-agent-app-scaffold-cn/ref): `architecture/` 9 篇讲边界与设计决定, `backend/` 11 篇讲每个 Python 模块, `frontend/` 8 篇讲界面每一层, `operations/` 4 篇讲怎么跑起来
+- [.claude/skills/about-ba-agent-app-scaffold-cn/ref/](../../.claude/skills/about-ba-agent-app-scaffold-cn/ref): `architecture/` 9 篇讲边界与设计决定, `backend/` 11 篇讲每个 Python 模块, `frontend/` 8 篇讲界面每一层, `operations/` 4 篇讲怎么跑起来
 - 换数据集那三条: [swap-dataset-cn](../../.claude/skills/swap-dataset-cn) 是索引与路由, [run-swap-dataset-phase-1-cn](../../.claude/skills/run-swap-dataset-phase-1-cn) 换内容, [run-swap-dataset-phase-2-cn](../../.claude/skills/run-swap-dataset-phase-2-cn) 换视觉
 - [frontend-design](../../.claude/skills/frontend-design): 阶段二配色与排版靠它, 没加载会拿到一个长得像所有 AI 生成页面的东西
 

@@ -9,7 +9,7 @@ happens to live can change without every task, doc, and habit changing with it.
 
 **Only application commands belong here.** Building the dataset and publishing it
 to PostgreSQL live in the teaching layer's own CLI
-(``.claude/skills/about-bi-agent-app-scaffold-cn/scripts/teaching_cli.py``) and
+(``.claude/skills/about-ba-agent-app-scaffold-cn/scripts/teaching_cli.py``) and
 must stay there -- that layer is deleted as a set of directories, and a shared
 entry point would leave a broken subcommand behind. The test for a new command is
 the same one the rest of the repo uses: is it part of this app, or part of

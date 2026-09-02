@@ -1,5 +1,5 @@
 ---
-name: about-bi-agent-app-scaffold-cn
+name: about-ba-agent-app-scaffold-cn
 description: 这个仓库的事实标准, 分四块: architecture (边界与设计决定), backend (agent_app/ 的 Python), frontend (Next.js 界面), operations (怎么把它跑起来). 动手改这个仓库之前先读, 尤其是重构, 挪文件, 加模块, 加 agent tool, 改界面, 换数据集, 或者要判断某个东西该放哪一层的时候.
 ---
 
@@ -93,7 +93,7 @@ description: 这个仓库的事实标准, 分四块: architecture (边界与设�
 教学自动化的命令行: 造数据集, 发布到 PostgreSQL, 逐表核对.
 
 ```bash
-.venv/bin/python .claude/skills/about-bi-agent-app-scaffold-cn/scripts/teaching_cli.py --help
+.venv/bin/python .agents/skills/about-ba-agent-app-scaffold-cn/scripts/teaching_cli.py --help
 ```
 
 它住在这里而不是 `mise.toml` 里, 因为 mise 跑的是应用, 而这些都不是应用 —— 教学层要能靠

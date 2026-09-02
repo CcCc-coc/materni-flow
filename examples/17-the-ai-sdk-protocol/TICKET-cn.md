@@ -43,7 +43,7 @@ description: "你能用自己的话讲清协议解决的那个组合爆炸问题
 9. 再点一个别的按钮, 这次找找有没有思考那三行事件; 想清楚什么情况下它们会整段消失.
 10. 打开那份协议的官方文档, 从第 7 节那张表里挑一个这个项目没实现的事件, 想清楚它解决
     什么问题, 以及要用上它前端那边还得做什么.
-11. 开一个叫 `17-the-ai-sdk-protocol` 的 branch, 加载 `/about-bi-agent-app-scaffold-cn`,
+11. 开一个叫 `17-the-ai-sdk-protocol` 的 branch, 加载 `/about-ba-agent-app-scaffold-cn`,
     问它前端新增一种 part 类型时后端要动哪些文件, 明确要求先不要动手.
 12. 再问它换一家 LLM 供应商要不要动 vendor 那个文件, 看它答不答得出理由.
 

@@ -292,7 +292,7 @@ grep -rniE "drop table|drop_all|\.insert\(" agent_app/ --include="*.py"
 3. 特别想清楚第三个: 这个 app 有登录吗? 那么在一个公开的作品集网站上, 谁能触发它?
 4. 然后按第 7 节的要求, 给这个工具写一段说明, 必须回答那两个额外的问题: 它会改什么,
    以及可不可逆
-5. 最后加载 `/about-bi-agent-app-scaffold-cn`, 问它:
+5. 最后加载 `/about-ba-agent-app-scaffold-cn`, 问它:
 
 ```text
 假设要给这个 agent 加一个会修改数据库的工具, 按这个仓库现有的约定,

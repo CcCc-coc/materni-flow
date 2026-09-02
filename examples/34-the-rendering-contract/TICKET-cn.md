@@ -35,7 +35,7 @@ description: "你把这个契约的三半在三个文件里各找到一次, 能�
 4. 读脚本最后那一段, 对每一种单看一半会漏掉的情况问一句: 这种情况下有没有任何东西会红.
 5. 跑 `mise run cli-check-content`, 找到渲染配额那一项.
 6. 回答一句: 那个检查盖住了三半里的哪一半, 另外两半为什么没盖.
-7. 加载 `/about-bi-agent-app-scaffold-cn`, 派一个加 timeline 围栏块的任务, 明确要求先出计划
+7. 加载 `/about-ba-agent-app-scaffold-cn`, 派一个加 timeline 围栏块的任务, 明确要求先出计划
    再停下.
 8. 检查它的清单里有没有 `data/system-prompt.md`; 没有就追问一句只改前端的话这个渲染器会不会
    被调用到.

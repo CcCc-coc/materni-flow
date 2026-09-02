@@ -21,7 +21,7 @@ dataset/04-*_data_generator*.py   →   dataset/<name>.sqlite   →   PostgreSQL
       teaching_cli gen-data            teaching_cli sync-db
 ```
 
-入口是 `.agents/skills/about-bi-agent-app-scaffold-cn/scripts/teaching_cli.py`, **不在
+入口是 `.claude/skills/about-ba-agent-app-scaffold-cn/scripts/teaching_cli.py`, **不在
 `mise.toml` 里**: mise 跑的是应用, 而这些都不是应用. 放在解释它们的那个 skill 旁边, 教学层
 就是"删几个目录", 而不是"从共用配置里挑行删".
 

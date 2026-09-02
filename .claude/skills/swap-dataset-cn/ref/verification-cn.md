@@ -245,6 +245,6 @@ print('dropped')"
 
 ```bash
 # skill 根: Claude Code 是 .claude/skills, Codex / Antigravity 是 .agents/skills
-CLI=$(ls {.claude,.agents}/skills/about-bi-agent-app-scaffold-cn/scripts/teaching_cli.py 2>/dev/null | head -1)
+CLI=$(ls {.claude,.agents}/skills/about-ba-agent-app-scaffold-cn/scripts/teaching_cli.py 2>/dev/null | head -1)
 .venv/bin/python $CLI gen-data
 ```

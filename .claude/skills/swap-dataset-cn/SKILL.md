@@ -58,7 +58,7 @@ description: "换数据集的索引与路由: 这件事的全貌, 两个阶段�
 | [`ref/phase-2-cn.md`](ref/phase-2-cn.md) | 阶段二全流程, 含力度边界和收尾交付 | 阶段二 |
 | [`ref/verification-cn.md`](ref/verification-cn.md) | 全部验证脚本和判据 | **两个阶段** |
 
-仓库本身的事实标准 (边界, 为什么这么设计) 在 `about-bi-agent-app-scaffold-cn` skill, 不在
+仓库本身的事实标准 (边界, 为什么这么设计) 在 `about-ba-agent-app-scaffold-cn` skill, 不在
 这里.
 
 ---

@@ -172,7 +172,7 @@ Git 擅长的是文本. 你改了一行代码, `git diff` 会告诉你改了哪�
 上一篇你敲过这一条:
 
 ```bash
-.venv/bin/python .claude/skills/about-bi-agent-app-scaffold-cn/scripts/teaching_cli.py gen-data
+.venv/bin/python .claude/skills/about-ba-agent-app-scaffold-cn/scripts/teaching_cli.py gen-data
 ```
 
 它先装生成器自己的依赖, 然后跑那个脚本, 几分钟之后在 [`dataset/`](../../dataset) 下面留下
@@ -400,7 +400,7 @@ ER 文档和生成器都有明确的套路可循, 而业务背景要求你真的
 **造数据:**
 
 ```bash
-CLI=.claude/skills/about-bi-agent-app-scaffold-cn/scripts/teaching_cli.py
+CLI=.claude/skills/about-ba-agent-app-scaffold-cn/scripts/teaching_cli.py
 .venv/bin/python $CLI gen-data
 ```
 

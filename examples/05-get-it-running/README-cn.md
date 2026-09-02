@@ -463,7 +463,7 @@ Application startup complete.   uvicorn
 
 **卡住了叫助教:**
 
-先敲 `/showcase-learn-cn` 或者 `/about-bi-agent-app-scaffold-cn`, 然后照抄这句开场:
+先敲 `/showcase-learn-cn` 或者 `/about-ba-agent-app-scaffold-cn`, 然后照抄这句开场:
 
 ```text
 我在读 examples/05-get-it-running/README-cn.md 这一篇.
