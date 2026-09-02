@@ -590,7 +590,7 @@ it now lives where it belongs, which is the point:
 | `test_06` / `test_07` sync and verify | The teaching layer's own `scripts/01_*.py` and `02_*.py`, next to `teaching_cli.py` |
 | `test_11`–`test_15` per-provider probes | The course, under `examples/15-call-the-model-directly/` |
 
-Only `test_21_agent.py` is left, and it is on its way into the course too.
+Only `test_agent.py` is left, and it is on its way into the course too.
 
 Moving `test_06` / `test_07` was not tidying. The teaching layer's CLI used to reach
 *back* into the repo's top-level `scripts/` to find them, which meant the layer that

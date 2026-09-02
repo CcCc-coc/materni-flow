@@ -307,7 +307,7 @@ mise run cli-check-content                      # 空表 / 外键成环, 当场�
 
 | 文件 | 里面是什么 |
 | :--- | :--- |
-| `scripts/test_21_agent.py` | 10 个 `request_NN` 变量, 全是上一个领域的业务问题, 全部重写 |
+| `scripts/test_agent.py` | 10 个 `request_NN` 变量, 全是上一个领域的业务问题, 全部重写 |
 | `tests_python/one/test_one_one_04_agent.py` | 断言里写死了旧表名 (`FROM loan`, `DROP TABLE loan`), 换成新库里真实存在的表 |
 
 **E. 明确不用改的**
