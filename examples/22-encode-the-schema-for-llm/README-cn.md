@@ -235,17 +235,25 @@ Table loan(
 
 代码在 [`agent_app/db_schema/`](../../agent_app/db_schema) 下面, 一共三个文件, 是一条流水线:
 
-```text
-数据库
-  │  反射 (extractor.py)  ——  问数据库你有哪些表
-  ▼
-中间模型 (model.py)       ——  一组普通的 Python 对象
-  │  编码 (encoder.py)    ——  拼成那个字符串
-  ▼
-交给模型的那段文本
+```mermaid
+flowchart LR
+    S(["数据库"])
+    A("反射")
+    B("中间模型")
+    C("编码")
+    D(["交给模型的文本"])
+
+    S --> A --> B --> C --> D
+
+    classDef startNode fill:#D1F0DB,stroke:#1B7F4B,color:#0B3D24
+    classDef finishNode fill:#FDE2E1,stroke:#C0392B,color:#5A1710
+
+    class S startNode
+    class D finishNode
 ```
 
-**关键是这条线只能往一个方向走**, 没有任何一步会回头:
+**关键是这条线只能往一个方向走**, 没有任何一步会回头 —— 中间那个模型是唯一穿过这条线的
+东西, 而它两头的代码谁也不认识谁:
 
 | 文件 | 干什么 | 它不干什么 |
 | :--- | :--- | :--- |

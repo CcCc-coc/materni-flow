@@ -127,6 +127,7 @@ description: "学完你能讲清界面上一句话从磁盘走到浏览器的三
 带走的那句话是: **一句话拆在两个文件里, 就没有任何一个地方能看出它读起来是什么样.**
 
 ---
+
 ## 5. 三段路径
 
 你在那个文案文件里敲下一句话, 它最后出现在别人的浏览器里. 中间它要走三步.
@@ -223,10 +224,9 @@ mise run build-web
 welcomeMessage = "I'm here to help you with SMB lending analytics."
 ```
 
-不要把它写成半句, 再让组件补上另外半句:
+不要把它写成半句, 再让组件补上另外半句 (下面这段是**反例**):
 
 ```jsx
-// 不要这样
 I'm here to help you with{" "}<span>{site.chat.messages.welcomeMessage}</span>.
 ```
 
@@ -278,8 +278,10 @@ title = "..."
 [chat]
 [[chat.suggestedActions]]
 title = "..."
-agent = "Lending Lens"     # 这一行现在属于上面那个按钮, 不属于 chat
+agent = "Lending Lens"
 ```
+
+最后那行 `agent` 现在属于上面那个按钮, 不属于 `chat`.
 
 写反了不报错, 只会**静默错位**: 那个 key 跑到了别的地方, 而它原来该在的位置变成了缺失, 于是
 你收到的是必填 key 检查的报错, 而报出来的 key 名和你刚改的地方看起来毫无关系.

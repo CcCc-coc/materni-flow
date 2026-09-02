@@ -129,14 +129,35 @@ customer ||--o{ application : submits
 
 把主角按外键串起来, 你会看到一条非常清晰的线:
 
-```text
-客户 (customer)
-  └─ 提交申请 (application)        一个客户可以申请很多次
-       └─ 批了才有贷款 (loan)      被拒的申请到这里就断了
-            ├─ 还款计划 (repayment_schedule)   放款时就排好的期数
-            ├─ 实际还款 (payment)              真实发生的每一笔
-            └─ 违约事件 (default_event)        最多一次, 大多数贷款没有
+```mermaid
+flowchart LR
+    S(["客户"])
+    A("申请")
+    B{{"审批"}}
+    C("贷款")
+    D(["结清或违约"])
+
+    S --> A --> B --> C --> D
+
+    classDef startNode fill:#D1F0DB,stroke:#1B7F4B,color:#0B3D24
+    classDef keyNode fill:#FFF3CD,stroke:#B8860B,color:#3D2E00
+    classDef finishNode fill:#FDE2E1,stroke:#C0392B,color:#5A1710
+
+    class S startNode
+    class B keyNode
+    class D finishNode
 ```
+
+这张图真正要说的是: **被拒的申请在审批那一步就断了**, 所以 application 和 loan 之间是零或
+一, 不是一对一 —— 这一个符号背后是一整类业务分析, 下面马上会讲.
+
+贷款放出去之后, 有三张表挂在它身上, 记的是这笔钱后来发生了什么:
+
+| 挂在 loan 上的 | 表名 | 一笔贷款有几条 |
+| :--- | :--- | :--- |
+| 还款计划 | `repayment_schedule` | 放款时就排好的那几期 |
+| 实际还款 | `payment` | 真实发生的每一笔 |
+| 违约事件 | `default_event` | **最多一条**, 大多数贷款一条都没有 |
 
 **这条线就是这门生意本身**: 有人来借钱, 我们审, 批了就放款, 然后收钱, 收不回来就是违约.
 
@@ -421,8 +442,8 @@ customer -> application -> loan -> (repayment_schedule / payment / default_event
 想用脚本跑任意 SQL 的话, 第 19 篇
 ([用业务问题学 SQL](../19-sql-by-business-question/README-cn.md)) 自带一个.
 
-改那个文件里的 `QUERY` 就能跑自己的查询. agent 眼里的库结构长什么样是另一件事, 第 22 篇
-(压缩库结构) 专门讲.
+那个脚本是 `examples/19-sql-by-business-question/02_run_any_sql.py`, 改里面的 `QUERY` 就能
+跑自己的查询. agent 眼里的库结构长什么样是另一件事, 第 22 篇 (压缩库结构) 专门讲.
 
 **两条判据:**
 

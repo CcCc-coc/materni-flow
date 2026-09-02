@@ -260,16 +260,12 @@ schema 的前缀, 所以它够不着别人.
 
 schema 干的是一样的事:
 
-```text
-那个 Neon 实例
-├── fintech_smb_lending_pipeline_medium/   <- 我们的
-│   ├── loan
-│   ├── customer
-│   └── ...
-└── 别的项目的 schema/
-    ├── loan                                <- 同名, 毫无问题
-    └── ...
-```
+同一个 Neon 实例里可以并排放好几个 schema, 各装各的表:
+
+| 实例里的这个 schema | 里面的表 | 说明 |
+| :--- | :--- | :--- |
+| `fintech_smb_lending_pipeline_medium` | `loan`, `customer`, ... | **我们的** |
+| 别的项目的那个 | `loan`, ... | 表名**同名, 毫无问题** |
 
 **表名回到了 `loan`, 两边一样.** 于是一份提示词在哪儿都是诚实的.
 

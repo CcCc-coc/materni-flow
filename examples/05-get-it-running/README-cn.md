@@ -465,6 +465,15 @@ Application startup complete.   uvicorn
 
 先敲 `/showcase-learn-cn` 或者 `/about-bi-agent-app-scaffold-cn`, 然后照抄这句开场:
 
+```text
+我在读 examples/05-get-it-running/README-cn.md 这一篇.
+我敲的命令是:
+(把命令粘在这里)
+终端打出来的是:
+(把完整输出粘在这里)
+帮我判断是哪一步出了问题. 一步一步来, 每一步等我做完再往下.
+```
+
 **这一篇不需要连数据库.** 验连通性那条 `mise run cli-test-db-conn` 要等第 13 篇填完凭据
 才有意义, 现在敲它一定失败.
 

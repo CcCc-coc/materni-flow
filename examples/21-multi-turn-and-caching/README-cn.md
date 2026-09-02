@@ -263,7 +263,7 @@ messages = []
 response = client.messages.create(
     model=MODEL_ID,
     max_tokens=200,
-    system=SYSTEM_PROMPT,      # 单独一个参数, 不在 messages 里
+    system=SYSTEM_PROMPT,
     messages=messages,
 )
 ```
@@ -307,20 +307,17 @@ print(session.ask("把它翻倍."))
 ### 那三步去哪了
 
 它们没消失, 只是搬进了 `ask` 这个方法里面. 打开那个文件, 你会看到 `ask` 里面还是那三步,
-一个不少:
+一个不少 —— 第一步塞进列表, 第二步整个列表发上去, 第三步把回答也塞回列表:
 
 ```python
 def ask(self, question: str) -> str:
-    # 第一步: 塞进列表
     self._messages.append({"role": "user", "content": question})
 
-    # 第二步: 整个列表发上去
     response = self._client.chat.completions.create(
         model=self.model_id,
         messages=self._messages,
     )
 
-    # 第三步: 回答也塞回列表
     answer = response.choices[0].message.content
     self._messages.append({"role": "assistant", "content": answer})
 

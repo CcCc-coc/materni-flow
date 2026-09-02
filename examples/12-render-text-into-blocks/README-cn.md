@@ -25,9 +25,8 @@ description: "agent 交回来的只是一段纯文本, 屏幕上却出现了表�
 
 这一层有一个反直觉的性质, 而它是这一篇最值得带走的东西.
 
-agent 的回答是**一个字一个字流过来的**. 所以在它写完之前, 页面上一定存在一个
-**没有闭合的代码围栏**
-: 一段写到一半的流程图语法, 一个被截断的 JSON.
+agent 的回答是**一个字一个字流过来的**. 所以在它写完之前,
+页面上一定存在一个**没有闭合的代码围栏**: 一段写到一半的流程图语法, 一个被截断的 JSON.
 
 对这一层来说, 这不是边缘情况, 是**每一次画图的必经状态**. 一次回答里可能有几十次渲染, 其中
 前面几十次全都是失败的.
@@ -104,7 +103,7 @@ Grade C 的实际违约率比它的定价假设高了 3.9 个百分点.
 
 ```tsx
 code: ({ className, children }) => {
-  if (!className) return <code className="...">{children}</code>   // 行内代码
+  if (!className) return <code className="...">{children}</code>
   const language = /language-(\w+)/.exec(className)?.[1] ?? ''
   const Block = getBlockRenderer(language)
   return <Block source={String(children).replace(/\n$/, '')} language={language} />

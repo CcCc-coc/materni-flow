@@ -171,7 +171,7 @@ git switch -c 07-teaching-and-production 01-showcase
 | [`dataset/`](../../dataset) | 数据集的源材料和生成器 | 四份领域文档加一个造假数据的脚本. 成品仓库连的是一个已经灌好的数据库, 不需要带着造数据的工具 |
 | [`agent_app/dataset.py`](../../agent_app/dataset.py) | 造数据加同步 PostgreSQL 的代码 | 唯一一个住在生产代码包里的教学文件. 它是那条边界最容易被破坏的地方, 所以专门有测试守着 |
 | [`tests_python/test_dataset.py`](../../tests_python/test_dataset.py) | 上面那个模块的测试 | 跟着它一起删 |
-| [`scripts/`](../../scripts) | 编号的安装与连通性验证脚本 | 配置自检, 跑 SQL, 同步, 逐个 LLM 供应商探活. 都是搭环境时用的一次性工具 |
+| [`scripts/`](../../scripts) | 剩下的一个验证脚本 | 曾经是一批搭环境用的一次性工具, 现在只剩一个. 它一样属于教学层, 跟着一起删 |
 
 **删掉它们之后剩下的是**: [`agent_app/`](../../agent_app) (除 `dataset.py`), [`api/`](../../api), [`app/`](../../app), [`components/`](../../components),
 [`lib/`](../../lib), [`data/`](../../data), 加上 `.env.defaults`. 那正好是一个连着 PostgreSQL 的 agent 应用, 而且
