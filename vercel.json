@@ -1,21 +1,14 @@
 {
-  "$schema": "https://openapi.vercel.sh/vercel.json",
-  "services": {
-    "app": {
-      "root": ".",
-      "framework": "nextjs"
-    },
-    "dataset": {
-      "root": "dataset",
-      "runtime": "python"
+  "functions": {
+    "api/**": {
+      "excludeFiles": "{.next,.git,node_modules}/**"
     }
   },
-  "rewrites": [
-    {
-      "source": "/(.*)",
-      "destination": {
-        "service": "app"
-      }
+  "build": {
+    "env": {
+      "PYTHON_VERSION": "3.12",
+      "ENABLE_EXPERIMENTAL_COREPACK": "1"
     }
-  ]
+  },
+  "crons": []
 }
