@@ -97,8 +97,8 @@ export function MultimodalInput({
       {/* Suggested Questions */}
       {messages.length === 0 && (
         <div className="flex flex-col gap-3">
-          <div className="bg-white border border-slate-200 rounded-xl p-4">
-            <p className="font-display text-sm text-slate-500 text-center">
+          <div className="bg-[#0D263A] border border-[#23445A] rounded-xl p-4">
+            <p className="font-display text-sm text-[#8DAFC0] text-center">
               {site.chat.suggestionsHint}
             </p>
           </div>
@@ -121,9 +121,9 @@ export function MultimodalInput({
                         content: suggestedAction.action,
                       });
                     }}
-                    className="group text-left border border-slate-200 bg-white hover:bg-slate-50 hover:border-brand-soft px-4 py-3 text-sm flex-1 gap-1 sm:flex-col w-full h-auto justify-start items-start transition-all cursor-pointer rounded-xl"
+                    className="group text-left border border-[#23445A] bg-[#102F45] hover:bg-[#163A50] hover:border-[#49D3C7] px-4 py-3 text-sm flex-1 gap-1 sm:flex-col w-full h-auto justify-start items-start transition-all cursor-pointer rounded-xl"
                   >
-                    <span className="font-display text-sm text-primary">
+                    <span className="font-display text-sm text-[#EAF7F6]">
                       {suggestedAction.title}
                     </span>
                     {/* The glyph says what pressing this will draw. Nine of the
@@ -150,9 +150,9 @@ export function MultimodalInput({
           onChange={handleInput}
           className={cn(
             "min-h-[24px] max-h-[calc(75dvh)] overflow-hidden resize-none !text-base",
-            "bg-white border border-slate-200 rounded-xl",
-            "focus:border-brand-light focus:ring-brand-light focus:ring-2",
-            "text-primary placeholder:text-slate-400",
+            "bg-[#0D263A] border border-[#23445A] rounded-xl",
+            "focus:border-[#49D3C7] focus:ring-[#49D3C7] focus:ring-2",
+            "text-[#EAF7F6] placeholder:text-[#7295A7]",
             "pr-12",
             className,
           )}
@@ -173,7 +173,7 @@ export function MultimodalInput({
 
         {isLoading ? (
           <Button
-            className="p-2 h-fit absolute bottom-2 right-2 bg-white border border-slate-200 hover:bg-slate-100 text-slate-700 cursor-pointer rounded-lg"
+            className="p-2 h-fit absolute bottom-2 right-2 bg-[#163A50] border border-[#41677B] hover:bg-[#23445A] text-[#EAF7F6] cursor-pointer rounded-lg"
             onClick={(event) => {
               event.preventDefault();
               stop();
@@ -183,7 +183,7 @@ export function MultimodalInput({
           </Button>
         ) : (
           <Button
-            className="p-2 h-fit absolute bottom-2 right-2 bg-brand hover:bg-brand-dark text-white disabled:opacity-50 disabled:cursor-not-allowed transition-all cursor-pointer rounded-lg"
+            className="p-2 h-fit absolute bottom-2 right-2 bg-[#49D3C7] hover:bg-[#8DE6DF] text-[#071A2B] disabled:opacity-50 disabled:cursor-not-allowed transition-all cursor-pointer rounded-lg"
             onClick={(event) => {
               event.preventDefault();
               submitForm();

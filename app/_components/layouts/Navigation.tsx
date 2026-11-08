@@ -42,17 +42,17 @@ export default function Navigation({
   }
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-primary">
+    <nav className="fixed top-0 left-0 right-0 z-50 bg-[#071A2B]/95 backdrop-blur border-b border-[#23445A]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo / Brand */}
           <Link
             href="/"
-            className="flex items-center gap-3 text-white hover:opacity-90 transition-opacity"
+            className="flex items-center gap-3 text-[#EAF7F6] hover:opacity-90 transition-opacity"
           >
             <span className="font-display text-xl font-semibold tracking-tight">
               {logoPrefix}
-              <span className="text-accent">{logoAccent}</span>
+              <span className="text-[#49D3C7]">{logoAccent}</span>
             </span>
           </Link>
 
@@ -67,7 +67,7 @@ export default function Navigation({
                   <Link
                     key={item.href}
                     href={item.href}
-                    className="font-medium text-sm px-5 py-2 bg-brand text-white rounded-lg hover:bg-brand-light transition-colors cursor-pointer"
+                    className="font-medium text-sm px-5 py-2 bg-[#49D3C7] text-[#071A2B] rounded-lg hover:bg-[#8DE6DF] transition-colors cursor-pointer"
                   >
                     Start Chat
                   </Link>
@@ -81,8 +81,8 @@ export default function Navigation({
                   className={`
                     font-medium text-sm transition-colors cursor-pointer
                     ${active
-                      ? "text-accent"
-                      : "text-slate-300 hover:text-white"
+                      ? "text-[#49D3C7]"
+                      : "text-[#8DAFC0] hover:text-[#EAF7F6]"
                     }
                   `}
                 >
@@ -96,7 +96,7 @@ export default function Navigation({
           <div className="md:hidden">
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="p-2 text-slate-300 hover:text-white transition-colors cursor-pointer"
+              className="p-2 text-[#8DAFC0] hover:text-[#EAF7F6] transition-colors cursor-pointer"
               aria-label="Toggle menu"
             >
               {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
@@ -106,7 +106,7 @@ export default function Navigation({
 
         {/* Mobile Navigation Menu */}
         {isMenuOpen && (
-          <div className="md:hidden border-t border-slate-700">
+          <div className="md:hidden border-t border-[#23445A]">
             <div className="py-4 space-y-2">
               {items.map((item) => {
                 const active = isActive(item.href)

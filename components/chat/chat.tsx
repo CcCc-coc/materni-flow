@@ -63,7 +63,7 @@ export function Chat({ site }: { site: SiteConfig }) {
   }, [messages.length]);
 
   return (
-    <div className="flex flex-col min-w-0 h-[calc(100dvh-64px)] bg-slate-50">
+    <div className="flex flex-col min-w-0 h-[calc(100dvh-64px)] bg-[#071A2B]">
       <div
         ref={messagesContainerRef}
         className="flex flex-col min-w-0 gap-4 flex-1 overflow-y-scroll pt-4 px-4"
@@ -74,13 +74,13 @@ export function Chat({ site }: { site: SiteConfig }) {
         {/* Context Banner */}
         {messages.length > 0 && isContextBannerVisible && (
           <div className="max-w-3xl mx-auto w-full">
-            <div className="bg-white border border-slate-200 rounded-xl p-4">
+            <div className="bg-[#0D263A] border border-[#23445A] rounded-xl p-4">
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-start gap-3 flex-1">
                   <AssistantAvatar size="md" />
                   <div className="flex-1">
-                    <h3 className="font-display text-sm text-primary">{site.chat.agent}</h3>
-                    <p className="text-xs text-slate-500 mt-1">
+                  <h3 className="font-display text-sm text-[#EAF7F6]">{site.chat.agent}</h3>
+                  <p className="text-xs text-[#8DAFC0] mt-1">
                       {site.chat.messages.welcomeMessage}
                     </p>
                   </div>
@@ -113,7 +113,7 @@ export function Chat({ site }: { site: SiteConfig }) {
         />
       </div>
 
-      <div className="p-4 bg-white border-t border-slate-200">
+      <div className="p-4 bg-[#071A2B] border-t border-[#23445A]">
         <form className="flex mx-auto gap-2 w-full md:max-w-3xl">
           <MultimodalInput
             site={site}

@@ -7,9 +7,8 @@ import type { ReactNode } from "react"
  * Explains a domain term on hover, focus, or tap.
  *
  * These four labels name concepts, and a concept name is only readable by
- * someone who already knows the concept. "Portfolio Concentration" is precise
- * to anyone in lending and opaque to everyone else, which is the wrong way
- * round for a landing page whose whole job is to bring the reader in.
+ * someone who already knows the domain. The tooltip explains the concept
+ * for readers who are seeing it for the first time.
  *
  * Built rather than installed: the app has no tooltip primitive, and one
  * non-interactive hint does not justify a positioning library.

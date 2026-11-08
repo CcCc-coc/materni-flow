@@ -1,221 +1,148 @@
-# data/site.toml
-#
-# Every sentence this app says, grouped by the surface it appears on.
-#
-# The contract is one way: every key named in `REQUIRED_SITE_KEYS`
-# (lib/site/schema.ts) must exist here, extra keys are allowed and only the
-# component that knows about them reads them.
-#
-# TOML trap: once an array of tables starts, every bare key after it belongs to
-# the last element of that array. So each section's plain fields come first.
-
-
-# === Brand =================================================================
 [brand]
-displayName = "SMB Lending Lens"
+displayName = "MaterniFlow"
+logoPrefix = "Materni"
+logoAccent = "Flow"
+footerName = "MaterniFlow"
 
-logoPrefix = "lending"
-logoAccent = "lens"
-
-footerName = "LendingLens"
-
-
-# === <head> ================================================================
 [seo]
 locale = "en_US"
-title = "SMB Lending Lens: AI-Powered Fintech Analytics Agent"
-description = "An AI agent for fintech lending analytics. Query loan portfolios, analyze risk pricing, detect approval leakage, identify early warning signals, and understand customer lifecycle value through natural conversation."
-keywords = [
-    "Fintech",
-    "SMB Lending",
-    "Loan Analytics",
-    "Risk Pricing",
-    "AI Agent",
-    "Portfolio Analysis",
-    "Credit Risk",
-    "Lending Intelligence",
-]
-
-
-# === The four business threads. Exactly four ==============================
-#
-# One config, rendered twice: the capability cards on the home page and the
-# insight cards on the agent welcome screen.
-#
-#   title    the concept name. Precise to an insider, opaque to everyone else
-#   subtitle one plain sentence. This is what a stranger reads first
-#   tooltip  two or three sentences: define the term, then say what moves it
-#
-# No jargon inside a tooltip. Explaining one insider word with another is the
-# mistake this field exists to prevent.
-#
-# This used to be two arrays, `home.capabilities` and `chat.insights`, naming
-# the same four things in two vocabularies. They had already drifted: the
-# second thread was "Portfolio Concentration" on one screen and "Portfolio
-# Health" on the other, with a different icon and no tooltip.
-
-[[capabilities]]
-icon = "BarChart3"
-title = "Risk Pricing"
-subtitle = "Whether each grade is priced for the losses it actually produces"
-tooltip = "Every loan is priced on an assumed default rate, meaning the share of borrowers in that risk grade expected not to repay. Pricing analysis puts that assumption next to how many actually defaulted, because the gap between the two is margin the lender never charged for."
-
-[[capabilities]]
-icon = "Shield"
-title = "Portfolio Concentration"
-subtitle = "How much of the money on loan sits in a single industry"
-tooltip = "Concentration is how much of the money out on loan sits in one industry. It matters because loans in the same industry fail together, so one bad year for restaurants hits every restaurant loan at once. Nobody ever decides to become concentrated. It accumulates one approval at a time."
-
-[[capabilities]]
-icon = "AlertTriangle"
-title = "Early Warning Signals"
-subtitle = "The payment patterns that show up months before a default"
-tooltip = "A borrower rarely stops paying without warning: payments start arriving late, or arriving short, months before the loan is written off. Early warning is reading those patterns while there is still time to call the customer, rather than after the loss is booked."
+title = "MaterniFlow | Obstetrics Ward Analytics"
+description = "Explore a simulated obstetrics ward. Check bed availability, review shift handovers, follow blood pressure trends, and see upcoming procedures."
+keywords = ["obstetrics", "ward operations", "shift handover", "bed availability", "postpartum stay", "procedure scheduling"]
 
 [[capabilities]]
 icon = "Users"
-title = "Customer Lifecycle Value"
-subtitle = "What a returning borrower is worth, and what a wrong rejection costs"
-tooltip = "A borrower who has already repaid a loan is a known quantity, and defaults at roughly half the rate of a first-time borrower. Lifecycle value is what that track record is worth, and what it costs to turn away a good applicant who would have become one."
+title = "Shift Handover"
+subtitle = "See who is on the ward and where they are in their stay."
+tooltip = "A shift handover gives the next team a shared picture of the ward. Counts change as patients arrive, give birth, and go home. Patients waiting to go home still count until they leave."
 
+[[capabilities]]
+icon = "BarChart3"
+title = "Bed Capacity"
+subtitle = "Find beds that are ready now and beds still being cleaned."
+tooltip = "Bed capacity shows how many beds the ward can put to use. A bed can be occupied, ready for a patient, being cleaned, or out for repair. Each state matters when you need a bed now."
 
-# === Home page =============================================================
+[[capabilities]]
+icon = "AlertTriangle"
+title = "Risk Monitoring"
+subtitle = "Review pending alerts and changes in recorded readings."
+tooltip = "An alert points to a reading or recorded condition that may need attention. Looking at several readings in time order can reveal a steady rise. The alert list also shows which flags staff have seen."
+
+[[capabilities]]
+icon = "Clock"
+title = "Care Scheduling"
+subtitle = "Review planned procedures, staffing, and expected discharge."
+tooltip = "A procedure schedule shows what is planned, when it starts, and who is assigned. Staff rosters show who is listed to work that shift. Expected discharge times help the team see when a bed might open."
+
 [home]
-tagline = "Fintech Lending Analytics Agent"
-
-description = "An AI agent that helps fintech lending teams analyze loan portfolios through natural conversation. Query risk metrics, identify mispriced segments, detect early warning signals, and surface actionable insights from your lending data."
-
-blurb = "Analyzing SMB lending data: 10 tables, ~111,000 records covering applications, loans, payments, and defaults"
-
-techStack = ["Strands SDK", "AWS Bedrock", "PostgreSQL", "Next.js"]
+tagline = "Obstetrics Ward Analytics"
+description = "Ask about a simulated maternity ward in plain English. See who is on the ward, which beds are ready, what needs a closer look, and which procedures are scheduled next."
+blurb = "Explore 11 tables and 355 synthetic records covering admissions, beds, staffing, and care events."
+techStack = ["Strands SDK", "PostgreSQL", "Next.js"]
 
 [home.headline]
-prefix = "SMB Lending "
-accent = "Lens"
+prefix = "Materni"
+accent = "Flow"
 
 [home.cta]
-title = "Start Analyzing"
-subtitle = "Ask questions about your lending portfolio in plain English"
+title = "Explore the Ward"
+subtitle = "Ask a question about the ward snapshot."
 
-# Labels for the overlay that renders business-context.md.
 [home.businessContext]
 triggerLabel = "What problem does this solve?"
 title = "The business behind the agent"
-subtitle = "A small-business lender can grow its book, hold its rates, and still lose money, because the losses arrive quietly and late. This is where they come from, and what this agent does about them."
+subtitle = "A closer look at the questions maternity ward teams answer between shifts."
 
-
-# === Agent page ============================================================
 [chat]
-agent = "Lending Lens"
-welcomeSubtitle = "Ask questions about the SMB lending portfolio in plain English."
-tryExamples = "Try: \"What's the default rate by risk grade?\" or \"Which industries have the highest concentration?\""
-
-suggestionsHint = "Ask me directly or click a suggestion"
-inputPlaceholder = "Enter your question..."
+agent = "MaterniFlow"
+welcomeSubtitle = "Ask about beds, handovers, alerts, or the schedule in the simulated ward."
+tryExamples = "Try asking which beds are ready or what procedures are scheduled in the next 48 hours."
+suggestionsHint = "Ask a question or choose an example."
+inputPlaceholder = "Ask about the ward..."
 
 [chat.messages]
-# A whole sentence: the banner prints it as-is. It used to be a fragment that
-# a component wrapped in "I'm here to help you with ...", and the two halves
-# drifted into printing the frame twice.
-welcomeMessage = "I'm here to help you with SMB lending analytics."
+welcomeMessage = "I’m here to help you explore the simulated obstetrics ward."
 waitForResponse = "Wait for the current answer to finish first."
 
-
-# === kickstart questions: exactly 12 ======================================
-#
-# Every one is a rewrite of a line in the Analysis Index of system-prompt.md.
-# Nothing here may ask for an analysis the prompt does not teach.
-#
-# Render quota, exactly 3 of each:
-#
-#   table      "as a Markdown table" and "show the SQL"
-#   flowchart  "as a flowchart"
-#   chart      "as a bar chart" or "as a line chart"
-#   free       none of those phrases may appear
-#
-# The render field draws the icon on the button, the phrase is what actually
-# makes the block appear. `mise run check` verifies both directions.
-
-# === free 1 / 3 ===
 [[chat.suggestedActions]]
 render = "free"
 title = "Introduction"
 label = "What can you do?"
-action = "What can you help me analyze? Give me a short tour of the portfolio and the kinds of questions you answer well."
+action = "What can you do? Give me a short tour of the simulated obstetrics ward and the kinds of questions you can answer."
 
-# === chart 1 / 3 (bar, two series: a gap) ===
-[[chat.suggestedActions]]
-render = "chart"
-title = "Risk Pricing"
-label = "Is pricing aligned with risk?"
-action = "For each risk grade, give me the implied default rate we priced for and the default rate we actually got. Show it as a bar chart with one series for each, then say in one line which grades are underpriced."
-
-# === flowchart 1 / 3 (funnel) ===
+# Q1
 [[chat.suggestedActions]]
 render = "flowchart"
-title = "Application Funnel"
-label = "What happened to every application?"
-action = "Trace what happened to every application: how many were approved, how many rejected, and what the approved loans became. Put the count on each stage. Show it as a flowchart."
+title = "Ward Handover"
+label = "Where is everyone in their stay?"
+action = "Show the obstetrics admission stages as a flowchart. Label each stage with its count at the snapshot. State how many admissions are active, with discharged patients counted separately."
 
-# === table 1 / 3 (scorecard) ===
+# Q2
 [[chat.suggestedActions]]
 render = "table"
-title = "Officer Scorecard"
-label = "Who approves the best loans?"
-action = "For each loan officer, give me the officer name, region, applications handled, approval rate, and the default rate on the loans they approved. Show it as a Markdown table, and show the SQL you ran."
+title = "Bed Availability"
+label = "Which beds are ready now?"
+action = "Show bed availability by room type as a Markdown table, and show the SQL you ran. Include room type, available now, occupied, cleaning, maintenance, and total beds."
 
-# === free 2 / 3 ===
+# Q7
+[[chat.suggestedActions]]
+render = "chart"
+title = "Blood Pressure Trend"
+label = "How did blood pressure change?"
+action = "Pick the active high-risk admission with the most blood pressure readings. Show systolic and diastolic pressure by reading time as a line chart, and briefly describe the observed change."
+
+# Q5
 [[chat.suggestedActions]]
 render = "free"
-title = "Early Warnings"
-label = "What comes before a default?"
-action = "What payment behaviour showed up in the months before loans defaulted, compared with loans that are still current? Say which signal appears earliest and how much warning it gives."
+title = "Labor Progress"
+label = "Who has the most advanced labor exam?"
+action = "Among patients who are admitted or in labor, which three have the greatest dilation on their latest recorded exam? Include room, dilation, membrane status, and exam time."
 
-# === chart 2 / 3 (line: ordered scale) ===
-[[chat.suggestedActions]]
-render = "chart"
-title = "Lateness Trend"
-label = "Is lateness getting worse?"
-action = "Give me the late payment rate for each month across the whole period. Show it as a line chart, then say in one line whether lateness is getting better or worse."
-
-# === table 2 / 3 (exposure list) ===
-[[chat.suggestedActions]]
-render = "table"
-title = "Largest Exposures"
-label = "Where is the biggest loss sitting?"
-action = "List the ten active loans with the largest expected loss. Give me the loan id, industry, risk grade, outstanding balance, and expected loss. Show it as a Markdown table, and show the SQL you ran."
-
-# === flowchart 2 / 3 (state machine) ===
+# Q6
 [[chat.suggestedActions]]
 render = "flowchart"
-title = "The Default Path"
-label = "How does a loan go bad?"
-action = "Show the stages a loan passes through on its way from disbursed to written off, and how many loans sit at each stage right now. Show it as a flowchart."
+title = "Alert Review"
+label = "Which alerts still need review?"
+action = "Show the alert review process as a flowchart. Split the current alerts into acknowledged and pending branches with counts. Break the pending branch down by severity."
 
-# === chart 3 / 3 (bar, ranking) ===
-[[chat.suggestedActions]]
-render = "chart"
-title = "Industry Exposure"
-label = "How concentrated are we?"
-action = "Rank the top ten industries by outstanding balance. Show it as a bar chart, then say in one line how concentrated the portfolio is."
-
-# === table 3 / 3 (banded detail) ===
+# Q3
 [[chat.suggestedActions]]
 render = "table"
-title = "Recovery"
-label = "What comes back after a default?"
-action = "For each risk grade, give me the number of defaults, the average amount recovered, and the recovery rate. Show it as a Markdown table, and show the SQL you ran."
+title = "High Risk Rounds"
+label = "Who is on the high risk list?"
+action = "List currently admitted patients with a high risk rating as a Markdown table, and show the SQL you ran. Include patient, gestational weeks, number of fetuses, admission stage, room, and bed."
 
-# === flowchart 3 / 3 (loop) ===
+# Q10
 [[chat.suggestedActions]]
-render = "flowchart"
-title = "Repeat Borrowers"
-label = "Who comes back for a second loan?"
-action = "Trace the repeat borrower path from first loan to paid off to a second loan, with the number of borrowers at each step. Show it as a flowchart."
+render = "chart"
+title = "Bed Utilization"
+label = "Which room types are fullest?"
+action = "Show the percentage of beds occupied in each room type as a bar chart. Use all beds of that type as the denominator and identify the room type with the highest occupancy."
 
-# === free 3 / 3 ===
+# Q18
 [[chat.suggestedActions]]
 render = "free"
-title = "Early Payers"
-label = "Does paying early predict anything?"
-action = "Do borrowers who pay on time in their first three months default less often than those who are late early on? Say how big the difference is and whether it is big enough to act on."
+title = "Multiple Pregnancies"
+label = "How many neonatal beds are open?"
+action = "How many neonatal intensive care beds are available now? Summarize how many patients with multiple pregnancies are currently admitted and where they are on the ward."
+
+# Q19
+[[chat.suggestedActions]]
+render = "flowchart"
+title = "Order Status"
+label = "Where do open orders stand?"
+action = "Show the recorded order states as a flowchart, with all orders branching into scheduled, in progress, completed, and cancelled. Label each branch with its current count."
+
+# Q4
+[[chat.suggestedActions]]
+render = "table"
+title = "Procedure Schedule"
+label = "What is scheduled in the next 48 hours?"
+action = "List cesareans and inductions scheduled in the next 48 hours from the ward snapshot as a Markdown table, and show the SQL you ran. Include time, procedure, patient, room, and assigned provider."
+
+# Q9
+[[chat.suggestedActions]]
+render = "chart"
+title = "Postpartum Stay"
+label = "How long are patients expected to stay?"
+action = "Show the average predicted hours after delivery by actual delivery method as a bar chart. State how many deliveries contribute to each average."

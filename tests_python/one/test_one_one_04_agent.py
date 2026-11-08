@@ -4,12 +4,8 @@
 Test for the agent's read-only tools.
 
 These call the tool methods directly, the same way the strands agent does at
-runtime, but without building a model or an Agent -- so no API key, no network,
-no tokens spent. The tools only touch the local SQLite database and the
-filesystem, which is what makes that possible.
-
-The write-operation tools are not covered here: they are commented out of the
-agent's tool list and target tables that do not exist in this dataset.
+runtime, but without building a model or an Agent. The tools use the configured
+PostgreSQL schema for SQL and the local filesystem for debug reports.
 """
 
 import pytest
@@ -23,12 +19,12 @@ class TestReadOnlyTools:
         """The schema tool returns the encoded schema, including real tables."""
         result = one.tool_get_database_schema()
         assert isinstance(result, str)
-        assert "loan" in result
-        assert "customer" in result
+        assert "admission" in result
+        assert "patient" in result
 
     def test_execute_sql_query(self):
         """A valid SELECT comes back as a Markdown table."""
-        result = one.tool_execute_sql_query(sql="SELECT COUNT(*) AS n FROM loan")
+        result = one.tool_execute_sql_query(sql="SELECT COUNT(*) AS n FROM admission")
         assert "|" in result  # Markdown table pipes
         assert "n" in result
 
@@ -40,28 +36,27 @@ class TestReadOnlyTools:
     def test_execute_sql_query_accepts_cte(self):
         """A CTE opens with WITH, not SELECT, and must still be allowed."""
         result = one.tool_execute_sql_query(
-            sql="WITH d AS (SELECT id FROM loan) SELECT COUNT(*) AS n FROM d"
+            sql="WITH d AS (SELECT admission_id FROM admission) SELECT COUNT(*) AS n FROM d"
         )
         assert "|" in result
         assert "n" in result
 
     def test_execute_sql_query_rejects_non_select(self):
         """Write statements are refused: this agent is read-only."""
-        result = one.tool_execute_sql_query(sql="DROP TABLE loan")
+        result = one.tool_execute_sql_query(sql="DROP TABLE admission")
         assert "Invalid query" in result
 
     def test_write_hidden_behind_a_cte_does_not_land(self):
         """
-        SQLite accepts ``WITH x AS (...) DELETE FROM ...``, so the opening
-        keyword alone cannot decide this. What protects the data is that every
-        agent query runs in a transaction that is always rolled back -- so the
-        assertion is on the row count, not on an error string.
+        PostgreSQL accepts ``WITH x AS (...) DELETE FROM ...``, so the opening
+        keyword alone cannot decide this. Check that the read-only transaction
+        preserves the row count.
         """
-        before = one.tool_execute_sql_query(sql="SELECT COUNT(*) AS n FROM loan")
+        before = one.tool_execute_sql_query(sql="SELECT COUNT(*) AS n FROM admission")
         one.tool_execute_sql_query(
-            sql="WITH d AS (SELECT id FROM loan) DELETE FROM loan"
+            sql="WITH d AS (SELECT admission_id FROM admission) DELETE FROM admission"
         )
-        after = one.tool_execute_sql_query(sql="SELECT COUNT(*) AS n FROM loan")
+        after = one.tool_execute_sql_query(sql="SELECT COUNT(*) AS n FROM admission")
         assert before == after
 
     def test_execute_sql_query_reports_bad_sql(self):

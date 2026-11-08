@@ -10,20 +10,20 @@
   --font-noto-sans: "Noto Sans", sans-serif;
   --font-inter: "Inter", sans-serif;
 
-  --background: #FFFFFF;
-  --foreground: #0A1628;
+  --background: #071A2B;
+  --foreground: #EAF7F6;
 
   /* shadcn primitives. Only the handful `components/ui/*` and
    * `tailwind.config.ts` actually resolve are kept; the palette this app draws
    * with is `tailwind.config.ts`, not these. */
-  --card: 0 0% 100%;
-  --card-foreground: 220 39% 11%;
-  --popover: 0 0% 100%;
-  --popover-foreground: 220 39% 11%;
+  --card: 204 55% 14%;
+  --card-foreground: 170 43% 94%;
+  --popover: 204 55% 14%;
+  --popover-foreground: 170 43% 94%;
   --destructive: 0 84% 60%;
   --destructive-foreground: 0 0% 100%;
-  --input: 214 32% 91%;
-  --ring: 217 91% 60%;
+  --input: 201 34% 27%;
+  --ring: 174 62% 55%;
 }
 
 @layer base {
@@ -55,16 +55,16 @@
 }
 
 ::-webkit-scrollbar-track {
-  background: #F1F5F9;
+  background: #0D263A;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #0A1628;
+  background: #49D3C7;
   border-radius: 5px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #1E3A5F;
+  background: #F4B860;
 }
 
 /* ---------------------------------------------------------------------------
@@ -75,16 +75,16 @@
  * so assign them in order and never cycle past the last one.
  * ------------------------------------------------------------------------ */
 .viz-root {
-  color-scheme: light;
-  --viz-surface: #fcfcfb;
-  --viz-ink: #0b0b0b;
-  --viz-ink-muted: #898781;
-  --viz-grid: #e1e0d9;
-  --viz-axis: #c3c2b7;
+  color-scheme: dark;
+  --viz-surface: #0D263A;
+  --viz-ink: #EAF7F6;
+  --viz-ink-muted: #8DAFC0;
+  --viz-grid: #23445A;
+  --viz-axis: #41677B;
   /* Single-series bars and lines use one hue (sequential), never one hue per bar. */
-  --viz-seq: #2a78d6;
-  --viz-series-1: #2a78d6;
-  --viz-series-2: #eb6834;
-  --viz-series-3: #1baf7a;
-  --viz-series-4: #eda100;
+  --viz-seq: #49D3C7;
+  --viz-series-1: #49D3C7;
+  --viz-series-2: #FF776C;
+  --viz-series-3: #8CC8F2;
+  --viz-series-4: #F4B860;
 }

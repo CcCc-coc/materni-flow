@@ -37,23 +37,23 @@ export default function CapabilityCard({
     <ConceptTooltip
       text={capability.tooltip}
       align={align}
-      className={`group rounded-xl bg-slate-50 border border-slate-200 cursor-help hover:border-brand-soft transition-colors ${
+      className={`group rounded-xl bg-[#102F45] border border-[#23445A] cursor-help hover:border-[#49D3C7] transition-colors ${
  compact ?"p-4" : "p-5"
       } ${className}`}
     >
       <Icon
-        className={`text-brand ${compact ?"w-5 h-5 mb-2" : "w-6 h-6 mb-3"}`}
+        className={`text-[#49D3C7] ${compact ?"w-5 h-5 mb-2" : "w-6 h-6 mb-3"}`}
         aria-hidden="true"
       />
       <p
-        className={`font-medium text-primary ${
+        className={`font-medium text-[#EAF7F6] ${
  compact ?"text-sm" : "text-sm"
         }`}
       >
         {capability.title}
       </p>
       <p
-        className={`text-slate-500 mt-0.5 leading-snug ${
+        className={`text-[#8DAFC0] mt-0.5 leading-snug ${
  compact ?"text-xs" : "text-xs"
         }`}
       >
@@ -63,7 +63,7 @@ export default function CapabilityCard({
           to hover over. Without it the hint is invisible. */}
       <span
         aria-hidden="true"
-        className="mt-3 block w-8 border-b border-dashed border-slate-300 group-hover:border-brand-light transition-colors"
+        className="mt-3 block w-8 border-b border-dashed border-[#41677B] group-hover:border-[#49D3C7] transition-colors"
       />
     </ConceptTooltip>
   )

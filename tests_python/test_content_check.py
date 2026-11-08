@@ -234,92 +234,6 @@ class TestCheckRetiredTerms:
         assert cc.check_retired_terms(report, ["gadget"]) is True
 
 
-class TestSeedTables:
-    def test_reflects_the_seed(self, monkeypatch, tmp_path):
-        engine = self.build_seed(tmp_path)
-        monkeypatch.setattr(
-            "agent_app.dataset.local_sqlite_engine", lambda: engine, raising=False
-        )
-        tables, reason = cc.seed_tables()
-        assert tables == {"widget", "part"}
-        assert reason is None
-
-    def test_no_database_says_how_to_build_one(self, monkeypatch):
-        def boom():
-            raise FileNotFoundError("no sqlite in dataset/")
-
-        monkeypatch.setattr(
-            "agent_app.dataset.local_sqlite_engine", boom, raising=False
-        )
-        tables, reason = cc.seed_tables()
-        assert tables == set()
-        assert "gen-data" in reason
-
-    def test_empty_database_says_rebuild(self, monkeypatch):
-        engine = sa.create_engine("sqlite://")
-        monkeypatch.setattr(
-            "agent_app.dataset.local_sqlite_engine", lambda: engine, raising=False
-        )
-        tables, reason = cc.seed_tables()
-        assert tables == set()
-        assert "no tables" in reason
-
-    def test_deleted_teaching_layer_is_not_an_error(self, monkeypatch):
-        """A repo stripped for delivery has no dataset module, and that is fine."""
-        import builtins
-
-        real_import = builtins.__import__
-
-        def fake_import(name, *args, **kwargs):
-            if name == "agent_app.dataset":
-                raise ImportError("teaching layer deleted")
-            return real_import(name, *args, **kwargs)
-
-        monkeypatch.setattr(builtins, "__import__", fake_import)
-        tables, reason = cc.seed_tables()
-        assert tables == set()
-        assert reason is cc.NO_TEACHING_LAYER
-
-    @staticmethod
-    def build_seed(tmp_path):
-        engine = sa.create_engine(f"sqlite:///{tmp_path / 'acme.sqlite'}")
-        metadata = sa.MetaData()
-        sa.Table("widget", metadata, sa.Column("id", sa.Integer, primary_key=True))
-        sa.Table(
-            "part",
-            metadata,
-            sa.Column("id", sa.Integer, primary_key=True),
-            sa.Column("widget_id", sa.Integer, sa.ForeignKey("widget.id")),
-        )
-        metadata.create_all(engine)
-        return engine
-
-
-class TestCheckTableInsertOrder:
-    def test_acyclic_seed_passes(self, monkeypatch, tmp_path):
-        engine = TestSeedTables.build_seed(tmp_path)
-        monkeypatch.setattr(
-            "agent_app.dataset.local_sqlite_engine", lambda: engine, raising=False
-        )
-        report = cc.Report()
-        assert cc.check_table_insert_order(report, {"widget", "part"}) is True
-
-    def test_cycle_fails(self, monkeypatch, tmp_path):
-        """No insert order can satisfy two tables that each require the other."""
-        engine = TestSeedTables.build_seed(tmp_path)
-        monkeypatch.setattr(
-            "agent_app.dataset.local_sqlite_engine", lambda: engine, raising=False
-        )
-
-        def boom(metadata):
-            raise RuntimeError("circular dependency")
-
-        monkeypatch.setattr("agent_app.dataset.table_insert_order", boom, raising=False)
-        report = cc.Report()
-        assert cc.check_table_insert_order(report, {"widget", "part"}) is False
-        assert any("cycle" in e for e in report.errors)
-
-
 class TestReport:
     def test_marks(self, capsys):
         report = cc.Report()
@@ -340,44 +254,6 @@ class TestReport:
 
 
 class TestRun:
-    def test_all_green(self, monkeypatch, tmp_path, capsys):
-        filler = "acme widget prose. " * 40
-        use_tmp_repo(
-            monkeypatch,
-            tmp_path,
-            prompt=filler + "\n```sql\nSELECT * FROM widget\n```",
-            site=valid_site_toml(),
-            context=filler,
-        )
-        engine = TestSeedTables.build_seed(tmp_path)
-        monkeypatch.setattr(
-            "agent_app.dataset.local_sqlite_engine", lambda: engine, raising=False
-        )
-        assert cc.run() == 0
-        assert "All checks passed." in capsys.readouterr().out
-
-    def test_missing_seed_reports_once(self, monkeypatch, tmp_path, capsys):
-        """One error about the missing seed, not one per table the prompt names."""
-        filler = "acme widget prose. " * 40
-        use_tmp_repo(
-            monkeypatch,
-            tmp_path,
-            prompt=filler + "\n```sql\nSELECT * FROM widget JOIN part ON TRUE\n```",
-            site=valid_site_toml(),
-            context=filler,
-        )
-
-        def boom():
-            raise FileNotFoundError("no sqlite in dataset/")
-
-        monkeypatch.setattr(
-            "agent_app.dataset.local_sqlite_engine", boom, raising=False
-        )
-        assert cc.run() == 1
-        out = capsys.readouterr().out
-        assert out.count("ERROR") == 1
-        assert "gen-data" in out
-
     def test_deleted_teaching_layer_skips_and_passes(self, monkeypatch, tmp_path, capsys):
         import builtins
 

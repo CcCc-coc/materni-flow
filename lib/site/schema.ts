@@ -20,11 +20,8 @@ import type { IconName } from "@/lib/icons"
  * One of this app's four business lines.
  *
  * Rendered twice, as a card on the home page and again on the agent's welcome
- * screen, from this one entry. It used to be two arrays -- `home.capabilities`
- * and `chat.insights` -- naming the same four things in two vocabularies, and
- * they had already drifted: the second thread was "Portfolio Concentration" on
- * one screen and "Portfolio Health" on the other, with a different icon and no
- * tooltip at all.
+ * screen, from this one entry. Sharing the entry keeps the label, icon, and
+ * tooltip consistent across both screens.
  */
 export interface Capability {
   icon: IconName
